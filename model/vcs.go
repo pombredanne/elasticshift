@@ -1,0 +1,23 @@
+package model
+
+import "time"
+
+// VCSUser contains the information common amongst most OAuth and OAuth2 providers.
+// All of the "raw" datafrom the provider can be found in the `RawData` field.
+type VCSUser struct {
+	RawData           map[string]interface{}
+	Provider          string
+	Email             string
+	Name              string
+	FirstName         string
+	LastName          string
+	NickName          string
+	Description       string
+	UserID            string
+	AvatarURL         string
+	Location          string
+	AccessToken       string
+	AccessTokenSecret string
+	RefreshToken      string
+	ExpiresAt         time.Time
+}

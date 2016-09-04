@@ -1,0 +1,10 @@
+package: gitlab.com/conspico/esh
+import:
+- package: github.com/gorilla/handlers
+  version: ~1.1.0
+- package: github.com/gorilla/mux
+  version: ~1.1.0
+- package: github.com/justinas/alice
+  version: ~1.0.0
+- package: github.com/spf13/viper
+- package: golang.org/x/oauth2
