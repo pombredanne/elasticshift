@@ -27,6 +27,7 @@ install-go:
 build-esh:
   stage: build
   script:
+    - echo $CURRENT_BUILD_PATH 
     - cd $CURRENT_BUILD_PATH
     - go build
 
