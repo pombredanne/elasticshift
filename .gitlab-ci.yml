@@ -24,13 +24,13 @@ install-go:
     - go env
     - which go
 
-build-my-project:
+build-esh:
   stage: build
   script:
     - cd $CURRENT_BUILD_PATH
     - go build
 
-test-my-project:
+test-esh:
   stage: test
   script:
     - cd $CURRENT_BUILD_PATH
