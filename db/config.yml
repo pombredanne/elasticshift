@@ -1,0 +1,4 @@
+develop:
+    dialect: mysql
+    datasource: esh:eshpazz@/esh?parseTime=true
+    dir: mysql
