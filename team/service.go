@@ -9,8 +9,6 @@ import (
 // Service ..
 type Service interface {
 	Create(name string) (bool, error)
-
-	IsAvailable(name string) (bool, error)
 }
 
 type service struct {
@@ -18,6 +16,11 @@ type service struct {
 }
 
 func (t service) Create(name string) (bool, error) {
+
+	result, err := t.teamRepository.CheckExists(name)
+	if result {
+		return false, errTeamAlreadyExists
+	}
 
 	id, err := util.NewUUID()
 	if err != nil {
@@ -37,10 +40,6 @@ func (t service) Create(name string) (bool, error) {
 	t.teamRepository.Save(team)
 
 	return true, nil
-}
-
-func (t service) IsAvailable(name string) (bool, error) {
-	return false, nil
 }
 
 // NewService ..

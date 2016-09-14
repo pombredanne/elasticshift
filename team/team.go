@@ -1,6 +1,17 @@
 package team
 
-import "time"
+import (
+	"errors"
+	"time"
+)
+
+var (
+	errDomainNameIsEmpty         = errors.New("Team name is empty")
+	errDomainNameMinLength       = errors.New("Team name should should be minimum of 6 chars")
+	errDomainNameMaxLength       = errors.New("Team name should not exceed 63 chars")
+	errDomainNameContainsSymbols = errors.New("Team name should be alpha-numeric, no symbols allowed")
+	errTeamAlreadyExists         = errors.New("Team name already exists")
+)
 
 // Team ..
 type Team struct {
@@ -16,4 +27,6 @@ type Team struct {
 // Repository provides access a team.
 type Repository interface {
 	Save(team *Team) error
+	CheckExists(name string) (bool, error)
+	FindByName(name string) (Team, error)
 }

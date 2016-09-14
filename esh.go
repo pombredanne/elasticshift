@@ -74,7 +74,7 @@ func main() {
 	router := http.NewServeMux()
 	//router.PathPrefix("/views/").Handler(http.StripPrefix("/views/", http.FileServer(http.Dir("public"))))
 
-	router.Handle("/teams/v1", team.MakeRequestHandler(ctx, ts))
+	router.Handle("/teams/v1", accessControl(team.MakeRequestHandler(ctx, ts)))
 	router.Handle("/", accessControl(router))
 	// Router (includes subdomain)
 	fmt.Println("Router Registration")

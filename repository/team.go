@@ -24,11 +24,30 @@ func (t *teamRepository) Save(team *team.Team) error {
 	return nil
 }
 
+func (t *teamRepository) CheckExists(name string) (bool, error) {
+
+	t.mtx.Lock()
+	defer t.mtx.Unlock()
+
+	var result struct {
+		Exist int
+	}
+	err := t.db.Raw("SELECT 1 as 'exist' FROM TEAMS WHERE name = ? LIMIT 1", name).Scan(&result).Error
+
+	return result.Exist == 1, err
+}
+
+func (t *teamRepository) FindByName(name string) (team.Team, error) {
+
+	t.mtx.Lock()
+	defer t.mtx.Unlock()
+
+	var result team.Team
+	err := t.db.Where("name = ?", name).First(&result).Error
+	return result, err
+}
+
 // NewTeam ..
 func NewTeam(db *gorm.DB) team.Repository {
 	return &teamRepository{db: db}
 }
-
-// func (t *teamRepository) Find(puuid string) team.Team {
-
-// }

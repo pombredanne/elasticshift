@@ -3,23 +3,16 @@ package team
 import (
 	"context"
 	"encoding/json"
-	"errors"
 	"fmt"
 	"net/http"
 
 	"gitlab.com/conspico/esh/core/edge"
-)
-
-var (
-	errBadRoute            = errors.New("bad route")
-	errDomainNameIsEmpty   = errors.New("Team name is empty")
-	errDomainNameMinLength = errors.New("Team name should be atleast 6 chars")
-	errDomainNameMaxLength = errors.New("Team name should not exceed 63 chars")
+	"gitlab.com/conspico/esh/core/util"
 )
 
 // create team
 type createTeamRequest struct {
-	Name string
+	Name string `json:"name"`
 }
 
 type createTeamResponse struct {
@@ -30,17 +23,24 @@ type createTeamResponse struct {
 
 func decodeCreateTeamRequest(ctx context.Context, r *http.Request) (interface{}, error) {
 
-	var body struct {
-		Name string `json:"name"`
-	}
+	var body createTeamRequest
 
 	if err := json.NewDecoder(r.Body).Decode(&body); err != nil {
 		return false, err
 	}
 
+	// team name validation
 	nameLength := len(body.Name)
 	if nameLength == 0 {
 		return false, errDomainNameIsEmpty
+	}
+
+	alpNumOnly, err := util.IsAlphaNumericOnly(body.Name)
+	if err != nil {
+	}
+
+	if !alpNumOnly {
+		return false, errDomainNameContainsSymbols
 	}
 
 	if nameLength < 6 {
