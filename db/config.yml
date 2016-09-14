@@ -2,3 +2,8 @@ develop:
     dialect: mysql
     datasource: esh:eshpazz@/esh?parseTime=true
     dir: mysql
+
+qa:
+    dialect: mysql
+    datasource: eshqa:eshpazz@/esh?parseTime=true
+    dir: mysql

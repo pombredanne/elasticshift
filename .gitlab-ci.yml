@@ -23,5 +23,6 @@ build-esh:
     - go env
     - which go
     - curl https://glide.sh/get | sh
+    - cd $CURRENT_BUILD_PATH
     - glide up
-    - go build
+    - go build .

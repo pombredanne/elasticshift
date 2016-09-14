@@ -5,11 +5,15 @@ import (
 	"net/http"
 
 	"github.com/gorilla/mux"
+	"gitlab.com/conspico/esh/model"
 	"gitlab.com/conspico/esh/vcs"
 )
 
+type VCSService interface {
+}
+
 // Authorize vcs repository
-func Authorize(w http.ResponseWriter, r *http.Request) {
+func Authorize(ctx model.AppContext, w http.ResponseWriter, r *http.Request) {
 
 	provider, err := getProvider(r)
 	if err != nil {
@@ -21,9 +25,9 @@ func Authorize(w http.ResponseWriter, r *http.Request) {
 	http.Redirect(w, r, url, http.StatusTemporaryRedirect)
 }
 
-// Autorized ..
+// Authorized ..
 // Invoked when authorization finished by oauth app
-func Autorized(w http.ResponseWriter, r *http.Request) {
+func Authorized(ctx model.AppContext, w http.ResponseWriter, r *http.Request) {
 
 	provider, err := getProvider(r)
 	if err != nil {
@@ -34,6 +38,7 @@ func Autorized(w http.ResponseWriter, r *http.Request) {
 
 	// persist user
 	fmt.Println(u.AccessToken)
+
 }
 
 // getProvider fetches the provider by name
