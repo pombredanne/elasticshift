@@ -8,6 +8,7 @@ import (
 
 	"github.com/spf13/viper"
 	"gitlab.com/conspico/esh/team"
+	"gitlab.com/conspico/esh/user"
 	"gitlab.com/conspico/esh/vcs"
 
 	"gitlab.com/conspico/esh/repository"
@@ -65,17 +66,23 @@ func main() {
 
 	var (
 		teamRepo = repository.NewTeam(db)
+		userRepo = repository.NewUser(db)
 	)
 
 	//team
 	var ts team.Service
 	ts = team.NewService(teamRepo)
 
+	var us user.Service
+	us = user.NewService(userRepo, teamRepo)
+
 	router := http.NewServeMux()
 	//router.PathPrefix("/views/").Handler(http.StripPrefix("/views/", http.FileServer(http.Dir("public"))))
 
 	router.Handle("/teams/v1", accessControl(team.MakeRequestHandler(ctx, ts)))
+	router.Handle("/users/v1", accessControl(user.MakeRequestHandler(ctx, us)))
 	router.Handle("/", accessControl(router))
+
 	// Router (includes subdomain)
 	fmt.Println("Router Registration")
 	//service.RegisterRoutes(appCtx, router)

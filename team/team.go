@@ -9,7 +9,7 @@ var (
 	errDomainNameIsEmpty         = errors.New("Team name is empty")
 	errDomainNameMinLength       = errors.New("Team name should should be minimum of 6 chars")
 	errDomainNameMaxLength       = errors.New("Team name should not exceed 63 chars")
-	errDomainNameContainsSymbols = errors.New("Team name should be alpha-numeric, no symbols allowed")
+	errDomainNameContainsSymbols = errors.New("Team name should be alpha-numeric, no special chars or whitespace is allowed")
 	errTeamAlreadyExists         = errors.New("Team name already exists")
 )
 
@@ -28,5 +28,6 @@ type Team struct {
 type Repository interface {
 	Save(team *Team) error
 	CheckExists(name string) (bool, error)
+	GetTeamID(name string) (string, error)
 	FindByName(name string) (Team, error)
 }

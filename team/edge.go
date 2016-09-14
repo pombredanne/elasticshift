@@ -3,7 +3,6 @@ package team
 import (
 	"context"
 	"encoding/json"
-	"fmt"
 	"net/http"
 
 	"gitlab.com/conspico/esh/core/edge"
@@ -18,28 +17,23 @@ type createTeamRequest struct {
 type createTeamResponse struct {
 	Created bool
 	Err     error
-	status  int
 }
 
 func decodeCreateTeamRequest(ctx context.Context, r *http.Request) (interface{}, error) {
 
-	var body createTeamRequest
+	var team createTeamRequest
 
-	if err := json.NewDecoder(r.Body).Decode(&body); err != nil {
+	if err := json.NewDecoder(r.Body).Decode(&team); err != nil {
 		return false, err
 	}
 
 	// team name validation
-	nameLength := len(body.Name)
+	nameLength := len(team.Name)
 	if nameLength == 0 {
 		return false, errDomainNameIsEmpty
 	}
 
-	alpNumOnly, err := util.IsAlphaNumericOnly(body.Name)
-	if err != nil {
-	}
-
-	if !alpNumOnly {
+	if !util.IsAlphaNumericOnly(team.Name) {
 		return false, errDomainNameContainsSymbols
 	}
 
@@ -50,7 +44,7 @@ func decodeCreateTeamRequest(ctx context.Context, r *http.Request) (interface{},
 	if nameLength > 63 {
 		return false, errDomainNameMaxLength
 	}
-	return createTeamRequest{Name: body.Name}, nil
+	return team, nil
 }
 
 func encodeCreateTeamResponse(ctx context.Context, w http.ResponseWriter, response interface{}) error {
@@ -67,7 +61,6 @@ func makeCreateTeamEdge(s Service) edge.Edge {
 
 	return func(ctx context.Context, request interface{}) (interface{}, error) {
 		req := request.(createTeamRequest)
-		fmt.Println("domain name", req.Name)
 		created, err := s.Create(req.Name)
 		return createTeamResponse{Created: created, Err: err}, nil
 	}
