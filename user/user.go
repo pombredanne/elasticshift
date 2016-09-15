@@ -32,6 +32,6 @@ type User struct {
 // Repository provides access a user.
 type Repository interface {
 	Save(user *User) error
-	CheckExists(email string) (bool, error)
+	CheckExists(email string, teamID string) (bool, error)
 	FindByName(username string) (User, error)
 }

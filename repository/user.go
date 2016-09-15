@@ -24,7 +24,7 @@ func (t *userRepository) Save(user *user.User) error {
 	return nil
 }
 
-func (t *userRepository) CheckExists(email string) (bool, error) {
+func (t *userRepository) CheckExists(email, teamID string) (bool, error) {
 
 	t.mtx.Lock()
 	defer t.mtx.Unlock()
@@ -32,7 +32,7 @@ func (t *userRepository) CheckExists(email string) (bool, error) {
 	var result struct {
 		Exist int
 	}
-	err := t.db.Raw("SELECT 1 as 'exist' FROM USERS WHERE email = ? LIMIT 1", email).Scan(&result).Error
+	err := t.db.Raw("SELECT 1 as 'exist' FROM USERS WHERE email = ? AND TEAM_PUUID = ? LIMIT 1", email, teamID).Scan(&result).Error
 
 	return result.Exist == 1, err
 }

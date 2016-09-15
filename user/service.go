@@ -20,19 +20,18 @@ type service struct {
 
 func (t service) Create(teamName, firstname, lastname, email string) (bool, error) {
 
-	result, err := t.userRepository.CheckExists(email)
+	teamID, err := t.teamRepository.GetTeamID(teamName)
+
+	result, err := t.userRepository.CheckExists(email, teamID)
 	if result {
 		return false, errUserAlreadyExists
 	}
 
+	userName := strings.Split(email, "@")[0]
 	id, err := util.NewUUID()
 	if err != nil {
 
 	}
-
-	teamID, err := t.teamRepository.GetTeamID(teamName)
-
-	userName := strings.Split(email, "@")[0]
 
 	user := &User{
 		PUUID:      id,
@@ -52,9 +51,9 @@ func (t service) Create(teamName, firstname, lastname, email string) (bool, erro
 		UpdatedDt:  time.Now(),
 	}
 
-	t.userRepository.Save(user)
+	err = t.userRepository.Save(user)
 
-	return true, nil
+	return true, err
 }
 
 // NewService ..

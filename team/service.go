@@ -37,9 +37,9 @@ func (t service) Create(name string) (bool, error) {
 		UpdatedDt: time.Now(),
 	}
 
-	t.teamRepository.Save(team)
+	err = t.teamRepository.Save(team)
 
-	return true, nil
+	return err == nil, err
 }
 
 // NewService ..
