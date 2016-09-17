@@ -22,7 +22,7 @@ type User struct {
 	Active       int8
 	BadAttemt    int8      `gorm:"column:bad_attempt"`
 	LastLogin    time.Time `gorm:"column:last_login"`
-	VerifyCode   int32     `gorm:"column:verify_code"`
+	VerifyCode   string    `gorm:"column:verify_code"`
 	CreatedDt    time.Time
 	CreatedBy    string
 	UpdatedDt    time.Time

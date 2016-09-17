@@ -1,6 +1,9 @@
 package user
 
 import (
+	"crypto/rand"
+	"fmt"
+	"math/big"
 	"strings"
 	"time"
 
@@ -28,10 +31,12 @@ func (t service) Create(teamName, firstname, lastname, email string) (bool, erro
 	}
 
 	userName := strings.Split(email, "@")[0]
-	id, err := util.NewUUID()
-	if err != nil {
 
-	}
+	// generate verify code
+	n, _ := rand.Int(rand.Reader, big.NewInt(999999))
+	randCode := fmt.Sprintf("%06d", n.Int64())
+
+	id, _ := util.NewUUID()
 
 	user := &User{
 		PUUID:      id,
@@ -43,7 +48,7 @@ func (t service) Create(teamName, firstname, lastname, email string) (bool, erro
 		Locked:     1,
 		Active:     1,
 		BadAttemt:  0,
-		VerifyCode: 123456,
+		VerifyCode: randCode,
 		LastLogin:  time.Now(),
 		CreatedBy:  "sysadmin",
 		CreatedDt:  time.Now(),

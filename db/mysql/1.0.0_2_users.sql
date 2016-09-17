@@ -14,7 +14,7 @@ CREATE TABLE USERS (
     ACTIVE TINYINT DEFAULT 1 COMMENT '1-active,0-inactive',
     BAD_ATTEMPT TINYINT COMMENT 'Bad login attempt count',
     LAST_LOGIN DATETIME COMMENT 'User last login datetime',
-    VERIFY_CODE MEDIUMINT COMMENT 'verification code',
+    VERIFY_CODE VARCHAR(6) COMMENT 'verification code',
     CREATED_DT DATETIME DEFAULT CURRENT_TIMESTAMP COMMENT 'User creation datetime',
     UPDATED_DT DATETIME ON UPDATE CURRENT_TIMESTAMP COMMENT 'User updated datetime',
     CREATED_BY VARCHAR(100) COMMENT 'who created this record',
