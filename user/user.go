@@ -6,7 +6,11 @@ import (
 )
 
 var (
-	errUserAlreadyExists = errors.New("User already exists")
+	errUserAlreadyExists       = errors.New("User already exists")
+	errNoTeamIDNotExist        = errors.New("Team ID does not exist")
+	errVerificationCodeIsEmpty = errors.New("Verification code is empty")
+	errVerificationCodeExpired = errors.New("Verification code expired")
+	errVerificationCodeFailed  = errors.New("Verification code seems to be failed")
 )
 
 // User ..
@@ -32,6 +36,6 @@ type User struct {
 // Repository provides access a user.
 type Repository interface {
 	Save(user *User) error
-	CheckExists(email string, teamID string) (bool, error)
+	CheckExists(email, teamID string) (bool, error)
 	FindByName(username string) (User, error)
 }

@@ -2,24 +2,45 @@ package user
 
 import (
 	"context"
-	"net/http"
 
 	"github.com/gorilla/mux"
 	chttp "gitlab.com/conspico/esh/core/http"
 )
 
 // MakeRequestHandler ..
-func MakeRequestHandler(ctx context.Context, s Service) http.Handler {
+func MakeRequestHandler(ctx context.Context, s Service, r *mux.Router) {
 
-	createuserHandler := chttp.NewRequestHandler(
+	createUserHandler := chttp.NewRequestHandler(
 		ctx,
 		decodeCreateUserRequest,
 		encodeCreateUserResponse,
 		makeCreateUserEdge(s),
 	)
 
-	r := mux.NewRouter()
-	r.Handle("/users/v1", createuserHandler).Methods("POST")
+	verifyCodeHandler := chttp.NewRequestHandler(
+		ctx,
+		decodeVerifyCodeRequest,
+		encodeVerifyCodeRequest,
+		makeVerifyCodeEdge(s),
+	)
 
-	return r
+	// verifyAndSignInHandler := chttp.NewRequestHandler(
+	// 	ctx,
+	// 	decodeCreateUserRequest,
+	// 	encodeCreateUserResponse,
+	// 	makeCreateUserEdge(s),
+	// )
+
+	// signinHandler := chttp.NewRequestHandler(
+	// 	ctx,
+	// 	decodeCreateUserRequest,
+	// 	encodeCreateUserResponse,
+	// 	makeCreateUserEdge(s),
+	// )
+
+	r.Handle("/users", createUserHandler).Methods("POST")
+	r.Handle("/users/verify/{code}", verifyCodeHandler).Methods("POST")
+	//r.Handle("/users/verifyAndSignIn", verifyAndSignInHandler).Methods("POST")
+	//r.Handle("/users/signin", signinHandler).Methods("POST")
+
 }

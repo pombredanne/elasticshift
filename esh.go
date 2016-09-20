@@ -11,6 +11,7 @@ import (
 	"gitlab.com/conspico/esh/user"
 	"gitlab.com/conspico/esh/vcs"
 
+	"github.com/gorilla/mux"
 	"gitlab.com/conspico/esh/repository"
 
 	"github.com/jinzhu/gorm"
@@ -31,7 +32,6 @@ func main() {
 	conf.ReadInConfig()
 
 	// Unwrap DEK - data encryption key
-
 	ctx := context.Background()
 
 	// DB Initialization
@@ -50,7 +50,7 @@ func main() {
 	db.DB().SetMaxOpenConns(conf.GetInt("db.max_connections"))
 	db.DB().SetMaxIdleConns(conf.GetInt("db.idle_connections"))
 
-	db.LogMode(true)
+	db.LogMode(conf.GetBool("db.log"))
 	defer db.Close()
 
 	// TLS
@@ -61,31 +61,29 @@ func main() {
 		vcs.New(conf.GetString("github.key"), conf.GetString("github.secret")),
 	)
 
-	// ESH UI pages
-	fmt.Println("Map the View directory..")
-
+	// Init repository
 	var (
 		teamRepo = repository.NewTeam(db)
 		userRepo = repository.NewUser(db)
 	)
 
-	//team
+	// Initialize services
 	var ts team.Service
 	ts = team.NewService(teamRepo)
 
 	var us user.Service
-	us = user.NewService(userRepo, teamRepo)
+	us = user.NewService(userRepo, teamRepo, conf)
 
-	router := http.NewServeMux()
-	//router.PathPrefix("/views/").Handler(http.StripPrefix("/views/", http.FileServer(http.Dir("public"))))
-
-	router.Handle("/teams/v1", accessControl(team.MakeRequestHandler(ctx, ts)))
-	router.Handle("/users/v1", accessControl(user.MakeRequestHandler(ctx, us)))
+	//router := http.NewServeMux()
+	router := mux.NewRouter()
 	router.Handle("/", accessControl(router))
 
+	// ESH UI pages
+	router.PathPrefix("/views/").Handler(http.StripPrefix("/views/", http.FileServer(http.Dir("public"))))
+
 	// Router (includes subdomain)
-	fmt.Println("Router Registration")
-	//service.RegisterRoutes(appCtx, router)
+	team.MakeRequestHandler(ctx, ts, router)
+	user.MakeRequestHandler(ctx, us, router)
 
 	// Start the server
 	fmt.Println("ESH Server listening on port 5050")

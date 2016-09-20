@@ -15,9 +15,9 @@ type service struct {
 	teamRepository Repository
 }
 
-func (t service) Create(name string) (bool, error) {
+func (s service) Create(name string) (bool, error) {
 
-	result, err := t.teamRepository.CheckExists(name)
+	result, err := s.teamRepository.CheckExists(name)
 	if result {
 		return false, errTeamAlreadyExists
 	}
@@ -37,7 +37,7 @@ func (t service) Create(name string) (bool, error) {
 		UpdatedDt: time.Now(),
 	}
 
-	err = t.teamRepository.Save(team)
+	err = s.teamRepository.Save(team)
 
 	return err == nil, err
 }

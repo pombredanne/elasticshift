@@ -16,6 +16,7 @@ type createTeamRequest struct {
 
 type createTeamResponse struct {
 	Created bool
+	Code    string
 	Err     error
 }
 
