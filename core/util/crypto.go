@@ -4,7 +4,9 @@ import (
 	"crypto/aes"
 	"crypto/cipher"
 	"crypto/rand"
+	"crypto/sha512"
 	"encoding/base64"
+	"encoding/hex"
 	"encoding/json"
 	"io"
 )
@@ -19,8 +21,8 @@ func Encrypt(key string, text []byte) (string, error) {
 	}
 
 	// creates a random iv and have it first part of cipher text
-	ciperText := make([]byte, aes.BlockSize+len(text))
-	iv := ciperText[:aes.BlockSize]
+	cipherText := make([]byte, aes.BlockSize+len(text))
+	iv := cipherText[:aes.BlockSize]
 	if _, err := io.ReadFull(rand.Reader, iv); err != nil {
 
 	}
@@ -28,9 +30,10 @@ func Encrypt(key string, text []byte) (string, error) {
 	// create a encrypter with iv
 	cfb := cipher.NewCFBEncrypter(block, iv)
 
-	cfb.XORKeyStream(ciperText, text)
+	cfb.XORKeyStream(cipherText, text)
 
-	return base64.StdEncoding.EncodeToString(ciperText), nil
+	return base64.StdEncoding.EncodeToString(cipherText), nil
+	//return hex.EncodeToString(cipherText[:]), nil
 }
 
 // Decrypt - cipher to text
@@ -38,6 +41,7 @@ func Decrypt(key, cipherText string) ([]byte, error) {
 
 	// decodes the cipher text
 	cipherBytes, err := base64.StdEncoding.DecodeString(cipherText)
+	//cipherBytes, err := hex.DecodeString(cipherText)
 	if err != nil {
 		return nil, err
 	}
@@ -48,6 +52,7 @@ func Decrypt(key, cipherText string) ([]byte, error) {
 		return nil, err
 	}
 
+	//cipherBytes := []byte(cipherText)
 	// Extract iv from cipher bytes
 	iv := cipherBytes[:aes.BlockSize]
 
@@ -80,4 +85,43 @@ func DecryptStruct(key string, cipherText string, value interface{}) error {
 	}
 
 	return json.Unmarshal(b, &value)
+}
+
+// Sha512Hash conversion
+func Sha512Hash(text string) string {
+
+	hashed := sha512.Sum512([]byte(text))
+	//return base64.StdEncoding.EncodeToString(hashed[:])
+	//return string(hashed[:])
+	return hex.EncodeToString(hashed[:])
+}
+
+// CompareSha512Hash ..
+func CompareSha512Hash(plain, hashed string) bool {
+	return hashed == Sha512Hash(plain)
+}
+
+func XOREncrypt(key, input string) string {
+
+	enc := xorEncrypeDecrypt(key, input)
+	return hex.EncodeToString([]byte(enc))
+	//return enc
+}
+
+func XORDecrypt(key, input string) (string, error) {
+
+	decoded, err := hex.DecodeString(input)
+	if err != nil {
+		return "", err
+	}
+	return xorEncrypeDecrypt(key, string(decoded[:])), nil
+}
+
+func xorEncrypeDecrypt(key, input string) string {
+
+	var output string
+	for i := 0; i < len(input); i++ {
+		output += string(input[i] ^ key[i%len(key)])
+	}
+	return output
 }

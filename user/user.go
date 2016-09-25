@@ -7,10 +7,32 @@ import (
 
 var (
 	errUserAlreadyExists       = errors.New("User already exists")
+	errUserCreationFailed      = errors.New("User creation failed ")
 	errNoTeamIDNotExist        = errors.New("Team ID does not exist")
 	errVerificationCodeIsEmpty = errors.New("Verification code is empty")
 	errVerificationCodeExpired = errors.New("Verification code expired")
 	errVerificationCodeFailed  = errors.New("Verification code seems to be failed")
+
+	errCantLoadSignerKey   = errors.New("Can't load signer key")
+	errCantLoadVerifierKey = errors.New("Can't load verifier key")
+)
+
+const (
+
+	// Separator used to delimit user info sent for activation
+	Separator = ";"
+
+	// Inactive ..
+	Inactive = 0
+
+	// Active ..
+	Active = 1
+
+	// Unlocked ..
+	Unlocked = 0
+
+	// Locked ..
+	Locked = 1
 )
 
 // User ..
@@ -24,7 +46,7 @@ type User struct {
 	PasswordHash string `gorm:"column:hashed_password"`
 	Locked       int8
 	Active       int8
-	BadAttemt    int8      `gorm:"column:bad_attempt"`
+	BadAttempt   int8      `gorm:"column:bad_attempt"`
 	LastLogin    time.Time `gorm:"column:last_login"`
 	VerifyCode   string    `gorm:"column:verify_code"`
 	CreatedDt    time.Time
