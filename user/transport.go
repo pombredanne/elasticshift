@@ -9,16 +9,23 @@ import (
 )
 
 // MakeRequestHandler ..
-func MakeRequestHandler(ctx context.Context, s Service, r *mux.Router) {
+func MakeRequestHandler(ctx context.Context, s Service, r *mux.Router, verifier []byte) {
 
-	createUserHandler := chttp.NewRequestHandler(
+	signUpHandler := chttp.NewPublicRequestHandler(
 		ctx,
-		decodeSignupRequest,
+		decodeSignUpRequest,
 		encodeSignInResponse,
 		makeSignupEdge(s),
 	)
 
-	verifyCodeHandler := chttp.NewRequestHandler(
+	signInHandler := chttp.NewPublicRequestHandler(
+		ctx,
+		decodeSignInRequest,
+		encodeSignInResponse,
+		makeSignInEdge(s),
+	)
+
+	verifyCodeHandler := chttp.NewPublicRequestHandler(
 		ctx,
 		decodeVerifyCodeRequest,
 		encodeVerifyCodeRequest,
@@ -39,11 +46,11 @@ func MakeRequestHandler(ctx context.Context, s Service, r *mux.Router) {
 	// 	makeCreateUserEdge(s),
 	// )
 
-	r.Handle("/api/users", accessControl(createUserHandler)).Methods("POST")
+	r.Handle("/api/users/signup", accessControl(signUpHandler)).Methods("POST")
+	r.Handle("/api/users/signin", accessControl(signInHandler)).Methods("POST")
 	r.Handle("/api/users/verify/{code}", verifyCodeHandler).Methods("POST")
 	//r.Handle("/users/verifyAndSignIn", verifyAndSignInHandler).Methods("POST")
 	//r.Handle("/users/signin", signinHandler).Methods("POST")
-
 }
 
 func accessControl(h http.Handler) http.Handler {

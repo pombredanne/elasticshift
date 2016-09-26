@@ -11,7 +11,7 @@ import (
 // MakeRequestHandler ..
 func MakeRequestHandler(ctx context.Context, s Service, r *mux.Router) {
 
-	createTeamHandler := chttp.NewRequestHandler(
+	createTeamHandler := chttp.NewPublicRequestHandler(
 		ctx,
 		decodeCreateTeamRequest,
 		encodeCreateTeamResponse,

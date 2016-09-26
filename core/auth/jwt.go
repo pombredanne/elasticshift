@@ -10,7 +10,8 @@ import (
 
 var (
 	errUnexpectedSigningMethod = "Unexpected signing method : %v"
-	errInvalidIssuer           = errors.New("Invalid token")
+	errInvalidIssuer           = errors.New("Token seems to be invalid")
+	errTokenExpired            = errors.New("Token is expired")
 )
 
 // Token ..
@@ -37,7 +38,7 @@ func GenerateToken(key []byte, t Token) (string, error) {
 }
 
 // VefifyToken ..
-func VefifyToken(key []byte, signedToken string) (bool, error) {
+func VefifyToken(key []byte, signedToken string) (*jwt.Token, error) {
 
 	token, err := jwt.Parse(signedToken, func(token *jwt.Token) (interface{}, error) {
 
@@ -49,11 +50,15 @@ func VefifyToken(key []byte, signedToken string) (bool, error) {
 		if claims["iss"] != "elasticshift.com" {
 			return false, errInvalidIssuer
 		}
+
+		// if time.Now().Sub(claims["exp"].(time.Time)) > 0 {
+		// 	return false, errTokenExpired
+		// }
 		return key, nil
 	})
 
 	if err != nil {
-		return false, err
+		return nil, err
 	}
-	return token.Valid, nil
+	return token, nil
 }

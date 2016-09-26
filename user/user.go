@@ -6,15 +6,14 @@ import (
 )
 
 var (
-	errUserAlreadyExists       = errors.New("User already exists")
-	errUserCreationFailed      = errors.New("User creation failed ")
-	errNoTeamIDNotExist        = errors.New("Team ID does not exist")
-	errVerificationCodeIsEmpty = errors.New("Verification code is empty")
-	errVerificationCodeExpired = errors.New("Verification code expired")
-	errVerificationCodeFailed  = errors.New("Verification code seems to be failed")
-
-	errCantLoadSignerKey   = errors.New("Can't load signer key")
-	errCantLoadVerifierKey = errors.New("Can't load verifier key")
+	errUserAlreadyExists         = errors.New("User already exists")
+	errUserCreationFailed        = errors.New("User creation failed ")
+	errNoTeamIDNotExist          = errors.New("Team ID does not exist")
+	errVerificationCodeIsEmpty   = errors.New("Verification code is empty")
+	errVerificationCodeExpired   = errors.New("Verification code expired")
+	errVerificationCodeFailed    = errors.New("Verification code seems to be failed")
+	errUsernameOrPasswordIsEmpty = errors.New("User or password is empty ")
+	errInvalidEmailOrPassword    = errors.New("Invalid email or password")
 )
 
 const (
@@ -59,5 +58,6 @@ type User struct {
 type Repository interface {
 	Save(user *User) error
 	CheckExists(email, teamID string) (bool, error)
+	GetUser(email, teamID string) (User, error)
 	FindByName(username string) (User, error)
 }

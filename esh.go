@@ -1,6 +1,7 @@
 package main
 
 import (
+	"io/ioutil"
 	"net/http"
 
 	"context"
@@ -67,12 +68,22 @@ func main() {
 		userRepo = repository.NewUser(db)
 	)
 
+	// load keys
+	signer, err := ioutil.ReadFile(conf.GetString("key.signer"))
+	if err != nil {
+		panic(err)
+	}
+	verifier, err := ioutil.ReadFile(conf.GetString("key.verifier"))
+	if err != nil {
+		panic(err)
+	}
+
 	// Initialize services
 	var ts team.Service
 	ts = team.NewService(teamRepo)
 
 	var us user.Service
-	us = user.NewService(userRepo, teamRepo, conf)
+	us = user.NewService(userRepo, teamRepo, conf, signer)
 
 	//router := http.NewServeMux()
 	router := mux.NewRouter()
@@ -83,7 +94,7 @@ func main() {
 
 	// Router (includes subdomain)
 	team.MakeRequestHandler(ctx, ts, router)
-	user.MakeRequestHandler(ctx, us, router)
+	user.MakeRequestHandler(ctx, us, router, verifier)
 
 	// Start the server
 	fmt.Println("ESH Server listening on port 5050")

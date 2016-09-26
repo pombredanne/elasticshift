@@ -3,6 +3,7 @@ package user
 import (
 	"context"
 	"net/http"
+	"time"
 )
 
 type genericResponse struct {
@@ -22,7 +23,16 @@ func encodeSignInResponse(ctx context.Context, w http.ResponseWriter, r interfac
 		return resp.Err
 	}
 
+	cookie := &http.Cookie{
+		Name:     "access-token",
+		Value:    resp.Token,
+		Expires:  time.Now().Add(time.Minute * 15),
+		HttpOnly: true,
+		//Secure : true, // TODO enable this to ensure the cookie is passed only with https
+	}
+	http.SetCookie(w, cookie)
 	w.WriteHeader(http.StatusOK)
+
 	return nil
 }
 

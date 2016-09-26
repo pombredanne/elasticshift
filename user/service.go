@@ -3,7 +3,6 @@ package user
 import (
 	"crypto/rand"
 	"fmt"
-	"io/ioutil"
 	"math/big"
 	"strings"
 	"time"
@@ -18,6 +17,7 @@ import (
 // Service ..
 type Service interface {
 	Create(teamName, firstName, lastName, email, password string) (string, error)
+	SignIn(team, email, password string) (string, error)
 	Verify(code string) (bool, error)
 }
 
@@ -26,27 +26,16 @@ type service struct {
 	teamRepository team.Repository
 	config         *viper.Viper
 	signer         []byte
-	verifier       string
 }
 
 // NewService ..
-func NewService(u Repository, t team.Repository, conf *viper.Viper) Service {
-
-	signer, err := ioutil.ReadFile(conf.GetString("key.signer"))
-	if err != nil {
-		panic(err)
-	}
-	verifier, err := ioutil.ReadFile(conf.GetString("key.verifier"))
-	if err != nil {
-		panic(err)
-	}
+func NewService(u Repository, t team.Repository, conf *viper.Viper, signer []byte) Service {
 
 	return &service{
 		userRepository: u,
 		teamRepository: t,
 		config:         conf,
-		signer:         signer[:],
-		verifier:       string(verifier[:]),
+		signer:         signer,
 	}
 }
 
@@ -126,6 +115,24 @@ func (s service) generateAuthToken(teamID, emailID string) (string, error) {
 	return signedStr, nil
 }
 
+// SignIn ..
+func (s service) SignIn(team, email, password string) (string, error) {
+
+	teamID, err := s.teamRepository.GetTeamID(team)
+	if err != nil {
+		return "", errNoTeamIDNotExist
+	}
+	user, err := s.userRepository.GetUser(email, teamID)
+	if err != nil {
+		return "", errInvalidEmailOrPassword
+	}
+	err = bcrypt.CompareHashAndPassword([]byte(user.PasswordHash), []byte(password))
+	if err != nil {
+		return "", errInvalidEmailOrPassword
+	}
+	return s.generateAuthToken(teamID, email)
+}
+
 // Verify .. the user code sent via email
 func (s service) Verify(code string) (bool, error) {
 
@@ -134,6 +141,7 @@ func (s service) Verify(code string) (bool, error) {
 	if err != nil {
 		return false, errVerificationCodeFailed
 	}
+
 	// TODO fetch based on name and email and see if the data's been tampered
 	v := strings.Split(decrypted, Separator)
 	teamID := v[0]

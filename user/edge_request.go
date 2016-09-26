@@ -18,12 +18,23 @@ type signupRequest struct {
 	Team      string `json:"team"`
 }
 
-func decodeSignupRequest(ctx context.Context, r *http.Request) (interface{}, error) {
+type signInRequest struct {
+	Team     string `json:"team"`
+	Username string `json:"username"`
+	Password string `json:"password"`
+}
+
+func decodeSignUpRequest(ctx context.Context, r *http.Request) (interface{}, error) {
 
 	var user signupRequest
 
 	if err := json.NewDecoder(r.Body).Decode(&user); err != nil {
 		return false, err
+	}
+
+	team := ctx.Value("team").(string)
+	if len(team) > 0 {
+		user.Team = team
 	}
 
 	// team
@@ -34,6 +45,32 @@ func decodeSignupRequest(ctx context.Context, r *http.Request) (interface{}, err
 	// validate firstname and lastname
 	// validate password
 	return user, nil
+}
+
+func decodeSignInRequest(ctx context.Context, r *http.Request) (interface{}, error) {
+
+	var req signInRequest
+
+	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
+		return false, err
+	}
+
+	team := ctx.Value("team").(string)
+	if len(team) > 0 {
+		req.Team = team
+	}
+
+	// team
+	if len(req.Team) == 0 {
+		return false, errNoTeamIDNotExist
+	}
+
+	// validate username and password
+	if len(req.Username) == 0 || len(req.Password) == 0 {
+		return false, errUsernameOrPasswordIsEmpty
+	}
+
+	return req, nil
 }
 
 // verify code

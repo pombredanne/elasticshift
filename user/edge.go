@@ -15,6 +15,15 @@ func makeSignupEdge(s Service) edge.Edge {
 	}
 }
 
+func makeSignInEdge(s Service) edge.Edge {
+
+	return func(ctx context.Context, request interface{}) (interface{}, error) {
+		req := request.(signInRequest)
+		token, err := s.SignIn(req.Team, req.Username, req.Password)
+		return signInResponse{Token: token, Err: err}, nil
+	}
+}
+
 func makeVerifyCodeEdge(s Service) edge.Edge {
 
 	return func(ctx context.Context, request interface{}) (interface{}, error) {
