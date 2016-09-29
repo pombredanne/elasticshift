@@ -32,7 +32,7 @@ func (t *teamRepository) CheckExists(name string) (bool, error) {
 	var result struct {
 		Exist int
 	}
-	err := t.db.Raw("SELECT 1 as 'exist' FROM TEAMS WHERE name = ? LIMIT 1", name).Scan(&result).Error
+	err := t.db.Raw("SELECT 1 as 'exist' FROM TEAM WHERE name = ? LIMIT 1", name).Scan(&result).Error
 
 	return result.Exist == 1, err
 }
@@ -43,11 +43,10 @@ func (t *teamRepository) GetTeamID(name string) (string, error) {
 	defer t.mtx.Unlock()
 
 	var result struct {
-		PUUID string `gorm:"column:PUUID"`
+		ID string
 	}
-	err := t.db.Raw("SELECT PUUID FROM TEAMS WHERE name = ? LIMIT 1", name).Scan(&result).Error
-
-	return result.PUUID, err
+	err := t.db.Raw("SELECT id FROM TEAM WHERE name = ? LIMIT 1", name).Scan(&result).Error
+	return result.ID, err
 }
 
 func (t *teamRepository) FindByName(name string) (team.Team, error) {

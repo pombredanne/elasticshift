@@ -1,9 +1,6 @@
 package user
 
 import (
-	"crypto/rand"
-	"fmt"
-	"math/big"
 	"strings"
 	"time"
 
@@ -16,7 +13,7 @@ import (
 
 // Service ..
 type Service interface {
-	Create(teamName, firstName, lastName, email, password string) (string, error)
+	Create(teamName, domain, fullName, email, password string) (string, error)
 	SignIn(team, email, password string) (string, error)
 	Verify(code string) (bool, error)
 }
@@ -46,12 +43,17 @@ type verification struct {
 }
 
 // Create a new user for a team
-func (s service) Create(teamName, firstname, lastname, email, password string) (string, error) {
+func (s service) Create(teamName, domain, fullname, email, password string) (string, error) {
 
-	// TODO : user teamid from session
-	teamID, err := s.teamRepository.GetTeamID(teamName)
+	// checks the team from subdomain
+	teamID, err := s.teamRepository.GetTeamID(domain)
 	if err != nil {
-		return "", errNoTeamIDNotExist
+
+		// checks the team from JSON request
+		teamID, err = s.teamRepository.GetTeamID(teamName)
+		if err != nil {
+			return "", errNoTeamIDNotExist
+		}
 	}
 
 	result, err := s.userRepository.CheckExists(email, teamID)
@@ -62,10 +64,6 @@ func (s service) Create(teamName, firstname, lastname, email, password string) (
 	// strip username from email
 	userName := strings.Split(email, "@")[0]
 
-	// generate verify code
-	n, _ := rand.Int(rand.Reader, big.NewInt(999999))
-	randCode := fmt.Sprintf("%06d", n.Int64())
-
 	id, _ := util.NewUUID()
 
 	// generate hashed password
@@ -75,22 +73,19 @@ func (s service) Create(teamName, firstname, lastname, email, password string) (
 	}
 
 	user := &User{
-		PUUID:        id,
-		TeamID:       teamID,
-		FirstName:    firstname,
-		LastName:     lastname,
-		UserName:     userName,
-		Email:        email,
-		Locked:       Unlocked,
-		Active:       Active,
-		BadAttempt:   0,
-		PasswordHash: string(hashedPwd[:]),
-		VerifyCode:   randCode,
-		LastLogin:    time.Now(),
-		CreatedBy:    "sysadmin",
-		CreatedDt:    time.Now(),
-		UpdatedBy:    "sysadmin",
-		UpdatedDt:    time.Now(),
+		ID:         id,
+		TeamID:     teamID,
+		Fullname:   fullname,
+		Username:   userName,
+		Email:      email,
+		Locked:     Unlocked,
+		Active:     Active,
+		BadAttempt: 0,
+		Password:   string(hashedPwd[:]),
+		CreatedBy:  "sysadmin",
+		CreatedDt:  time.Now(),
+		UpdatedBy:  "sysadmin",
+		UpdatedDt:  time.Now(),
 	}
 
 	err = s.userRepository.Save(user)
@@ -126,7 +121,8 @@ func (s service) SignIn(team, email, password string) (string, error) {
 	if err != nil {
 		return "", errInvalidEmailOrPassword
 	}
-	err = bcrypt.CompareHashAndPassword([]byte(user.PasswordHash), []byte(password))
+
+	err = bcrypt.CompareHashAndPassword([]byte(user.Password), []byte(password))
 	if err != nil {
 		return "", errInvalidEmailOrPassword
 	}
@@ -144,13 +140,8 @@ func (s service) Verify(code string) (bool, error) {
 
 	// TODO fetch based on name and email and see if the data's been tampered
 	v := strings.Split(decrypted, Separator)
-	teamID := v[0]
-	email := v[1]
 	expireAt, err := time.Parse(time.RFC3339Nano, v[2])
 	diff := expireAt.Sub(time.Now())
-	fmt.Println("Team id = ", teamID)
-	fmt.Println("Email id = ", email)
-	fmt.Println(diff)
 
 	if diff.Hours() <= 0 && diff.Minutes() <= 0 {
 		return false, errVerificationCodeExpired

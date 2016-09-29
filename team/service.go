@@ -28,7 +28,7 @@ func (s service) Create(name string) (bool, error) {
 	}
 
 	team := &Team{
-		PUUID:     id,
+		ID:        id,
 		Name:      name,
 		Domain:    name,
 		CreatedBy: "sysadmin",

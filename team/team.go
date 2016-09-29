@@ -15,7 +15,7 @@ var (
 
 // Team ..
 type Team struct {
-	PUUID     string `gorm:"column:puuid"`
+	ID        string
 	Domain    string
 	Name      string
 	CreatedDt time.Time

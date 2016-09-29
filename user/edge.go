@@ -10,7 +10,7 @@ func makeSignupEdge(s Service) edge.Edge {
 
 	return func(ctx context.Context, request interface{}) (interface{}, error) {
 		req := request.(signupRequest)
-		token, err := s.Create(req.Team, req.Firstname, req.Lastname, req.Email, req.Password)
+		token, err := s.Create(req.Team, req.Domain, req.Fullname, req.Email, req.Password)
 		return signInResponse{Token: token, Err: err}, nil
 	}
 }
@@ -19,7 +19,7 @@ func makeSignInEdge(s Service) edge.Edge {
 
 	return func(ctx context.Context, request interface{}) (interface{}, error) {
 		req := request.(signInRequest)
-		token, err := s.SignIn(req.Team, req.Username, req.Password)
+		token, err := s.SignIn(req.Team, req.Email, req.Password)
 		return signInResponse{Token: token, Err: err}, nil
 	}
 }

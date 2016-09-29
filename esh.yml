@@ -12,7 +12,7 @@ db:
     datasource: esh:eshpazz@/esh?charset=utf8&parseTime=True&loc=Local
     idle_connections: 5
     max_connections: 100
-    log: true
+    log: false
 
 key:
     verifycode: $h1n1ngF1@tC@r4r$h@hBr0$p01l@ch1

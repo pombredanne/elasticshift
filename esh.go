@@ -48,6 +48,8 @@ func main() {
 		panic(err)
 	}
 
+	// set the configurations
+	db.SingularTable(true)
 	db.DB().SetMaxOpenConns(conf.GetInt("db.max_connections"))
 	db.DB().SetMaxIdleConns(conf.GetInt("db.idle_connections"))
 

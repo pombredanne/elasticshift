@@ -32,7 +32,7 @@ func (t *userRepository) CheckExists(email, teamID string) (bool, error) {
 	var result struct {
 		Exist int
 	}
-	err := t.db.Raw("SELECT 1 as 'exist' FROM USERS WHERE email = ? AND TEAM_PUUID = ? LIMIT 1", email, teamID).Scan(&result).Error
+	err := t.db.Raw("SELECT 1 as 'exist' FROM USER WHERE email = ? AND TEAM_ID = ? LIMIT 1", email, teamID).Scan(&result).Error
 
 	return result.Exist == 1, err
 }
@@ -43,8 +43,16 @@ func (t *userRepository) GetUser(email, teamID string) (user.User, error) {
 	defer t.mtx.Unlock()
 
 	var result user.User
-	err := t.db.Raw("SELECT * FROM USERS WHERE email = ? AND TEAM_PUUID = ? LIMIT 1", email, teamID).Scan(&result).Error
-
+	err := t.db.Raw(`SELECT id, 
+							team_id, 
+							fullname, 
+							username,
+							email,
+							password,
+							locked,
+							active,
+							bad_attempt
+				     FROM USER WHERE email = ? AND TEAM_ID = ? LIMIT 1`, email, teamID).Scan(&result).Error
 	return result, err
 }
 
