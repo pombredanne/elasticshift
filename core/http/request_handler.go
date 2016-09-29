@@ -77,7 +77,7 @@ func (h *RequestHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	// extract headers
 	subdomain := strings.Split(r.Host, ".")
 	fmt.Println("subdomain = ", subdomain[0])
-	ctx = context.WithValue(ctx, "team", subdomain[0])
+	ctx = context.WithValue(ctx, "subdomain", subdomain[0])
 
 	// Verify the access-token
 	if h.protected {

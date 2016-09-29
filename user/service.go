@@ -14,7 +14,7 @@ import (
 // Service ..
 type Service interface {
 	Create(teamName, domain, fullName, email, password string) (string, error)
-	SignIn(team, email, password string) (string, error)
+	SignIn(teamName, domain, email, password string) (string, error)
 	Verify(code string) (bool, error)
 }
 
@@ -45,15 +45,9 @@ type verification struct {
 // Create a new user for a team
 func (s service) Create(teamName, domain, fullname, email, password string) (string, error) {
 
-	// checks the team from subdomain
-	teamID, err := s.teamRepository.GetTeamID(domain)
+	teamID, err := s.getTeamID(teamName, domain)
 	if err != nil {
-
-		// checks the team from JSON request
-		teamID, err = s.teamRepository.GetTeamID(teamName)
-		if err != nil {
-			return "", errNoTeamIDNotExist
-		}
+		return "", err
 	}
 
 	result, err := s.userRepository.CheckExists(email, teamID)
@@ -96,6 +90,26 @@ func (s service) Create(teamName, domain, fullname, email, password string) (str
 	return s.generateAuthToken(teamID, email)
 }
 
+// SignIn ..
+func (s service) SignIn(teamName, domain, email, password string) (string, error) {
+
+	teamID, err := s.getTeamID(teamName, domain)
+	if err != nil {
+		return "", err
+	}
+	user, err := s.userRepository.GetUser(email, teamID)
+	if err != nil {
+		return "", errInvalidEmailOrPassword
+	}
+
+	err = bcrypt.CompareHashAndPassword([]byte(user.Password), []byte(password))
+	if err != nil {
+		return "", errInvalidEmailOrPassword
+	}
+	return s.generateAuthToken(teamID, email)
+}
+
+// Generates the auth token
 func (s service) generateAuthToken(teamID, emailID string) (string, error) {
 
 	t := auth.Token{
@@ -108,25 +122,6 @@ func (s service) generateAuthToken(teamID, emailID string) (string, error) {
 		return "", err
 	}
 	return signedStr, nil
-}
-
-// SignIn ..
-func (s service) SignIn(team, email, password string) (string, error) {
-
-	teamID, err := s.teamRepository.GetTeamID(team)
-	if err != nil {
-		return "", errNoTeamIDNotExist
-	}
-	user, err := s.userRepository.GetUser(email, teamID)
-	if err != nil {
-		return "", errInvalidEmailOrPassword
-	}
-
-	err = bcrypt.CompareHashAndPassword([]byte(user.Password), []byte(password))
-	if err != nil {
-		return "", errInvalidEmailOrPassword
-	}
-	return s.generateAuthToken(teamID, email)
 }
 
 // Verify .. the user code sent via email
@@ -148,4 +143,18 @@ func (s service) Verify(code string) (bool, error) {
 	}
 
 	return true, nil
+}
+
+func (s service) getTeamID(teamName, domain string) (string, error) {
+
+	// checks the team from subdomain
+	teamID, err := s.teamRepository.GetTeamID(domain)
+	if err != nil {
+		// checks the team from JSON request
+		teamID, err = s.teamRepository.GetTeamID(teamName)
+		if err != nil {
+			return "", errNoTeamIDNotExist
+		}
+	}
+	return teamID, nil
 }

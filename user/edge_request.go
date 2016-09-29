@@ -21,25 +21,26 @@ type signInRequest struct {
 	Team     string `json:"team"`
 	Email    string `json:"email"`
 	Password string `json:"password"`
+	Domain   string
 }
 
 func decodeSignUpRequest(ctx context.Context, r *http.Request) (interface{}, error) {
 
-	var user signupRequest
+	var req signupRequest
 
-	if err := json.NewDecoder(r.Body).Decode(&user); err != nil {
+	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
 		return false, err
 	}
 
-	subdomain := ctx.Value("team").(string)
+	subdomain := ctx.Value("subdomain").(string)
 	if len(subdomain) >= 6 {
-		user.Domain = subdomain
+		req.Domain = subdomain
 	}
 
 	// validate email
-	// validate firstname and lastname
+	// validate fullname
 	// validate password
-	return user, nil
+	return req, nil
 }
 
 func decodeSignInRequest(ctx context.Context, r *http.Request) (interface{}, error) {
@@ -50,18 +51,13 @@ func decodeSignInRequest(ctx context.Context, r *http.Request) (interface{}, err
 		return false, err
 	}
 
-	team := ctx.Value("team").(string)
-	if team == "" {
-		req.Team = team
-	}
-
-	// team
-	if req.Team == "" {
-		return false, errNoTeamIDNotExist
+	subdomain := ctx.Value("subdomain").(string)
+	if len(subdomain) >= 6 {
+		req.Domain = subdomain
 	}
 
 	// validate username and password
-	if len(req.Email) == 0 || len(req.Password) == 0 {
+	if req.Email == "" || req.Password == "" {
 		return false, errUsernameOrPasswordIsEmpty
 	}
 
