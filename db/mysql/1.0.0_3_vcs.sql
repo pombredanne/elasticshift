@@ -2,7 +2,7 @@
 -- SQL in section 'Up' is executed when this migration is applied
 
 -- +migrate StatementBegin
-CREATE TABLE VCS_ACCOUNT (
+CREATE TABLE VCS (
     ID VARCHAR(32) PRIMARY KEY COMMENT 'UUID of vcs account',
     TEAM_ID VARCHAR(32) COMMENT 'UUID of TEAM',
     NAME VARCHAR(100) NOT NULL COMMENT 'username of version control system',
@@ -17,8 +17,8 @@ CREATE TABLE VCS_ACCOUNT (
 -- +migrate StatementEnd
 
 -- +migrate StatementBegin
-ALTER TABLE VCS_ACCOUNT
-ADD CONSTRAINT FK_VCS_ACCOUNT_TEAM_ID FOREIGN KEY (TEAM_ID)
+ALTER TABLE VCS
+ADD CONSTRAINT FK_VCS_TEAM_ID FOREIGN KEY (TEAM_ID)
 REFERENCES TEAM(ID)
 -- +migrate StatementEnd
 
@@ -26,6 +26,6 @@ REFERENCES TEAM(ID)
 -- +migrate Down
 -- SQL section 'Down' is executed when this migration is rolled back
 
-ALTER TABLE VCS_ACCOUNT DROP CONSTRAINT FK_VCS_ACCOUNT_TEAM_ID;
+ALTER TABLE VCS DROP CONSTRAINT FK_VCS_TEAM_ID;
 
-DROP TABLE VCS_ACCOUNT;
+DROP TABLE VCS;

@@ -1,10 +1,14 @@
-package model
+package vcs
 
 import "time"
 
-// VCSUser contains the information common amongst most OAuth and OAuth2 providers.
+var (
+	errNoProviderFound = "No provider found for %s"
+)
+
+// VCS contains the information common amongst most OAuth and OAuth2 providers.
 // All of the "raw" datafrom the provider can be found in the `RawData` field.
-type VCSUser struct {
+type User struct {
 	RawData           map[string]interface{}
 	Provider          string
 	Email             string
@@ -20,4 +24,9 @@ type VCSUser struct {
 	AccessTokenSecret string
 	RefreshToken      string
 	ExpiresAt         time.Time
+}
+
+// Repository provides access a user.
+type Repository interface {
+	Save(user *User) error
 }

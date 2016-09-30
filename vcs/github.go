@@ -10,7 +10,6 @@ import (
 	"net/url"
 	"strconv"
 
-	"gitlab.com/conspico/esh/model"
 	"golang.org/x/oauth2"
 )
 
@@ -28,9 +27,9 @@ type Github struct {
 	Config   *oauth2.Config
 }
 
-// New ...
+// GithubProvider ...
 // Creates a new Github provider
-func New(clientID, secret string) *Github {
+func GithubProvider(clientID, secret string) *Github {
 
 	conf := &oauth2.Config{
 		ClientID:     clientID,
@@ -65,16 +64,14 @@ func (g *Github) Authorize() string {
 
 // Authorized ...
 // Finishes the authorize
-func (g *Github) Authorized(reqURL *url.URL) (model.VCSUser, error) {
-
-	code := reqURL.Query().Get("code")
+func (g *Github) Authorized(code string) (User, error) {
 
 	tok, err := g.Config.Exchange(oauth2.NoContext, code)
 	if err != nil {
 		log.Fatal(err)
 	}
 
-	user := model.VCSUser{
+	user := User{
 		AccessToken: tok.AccessToken,
 		Provider:    name,
 	}
@@ -103,7 +100,7 @@ func (g *Github) Authorized(reqURL *url.URL) (model.VCSUser, error) {
 }
 
 // Helper method to convert reader to user
-func readUser(reader io.Reader, user *model.VCSUser) error {
+func readUser(reader io.Reader, user *User) error {
 
 	u := struct {
 		ID       int    `json:"id"`

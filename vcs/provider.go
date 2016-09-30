@@ -1,11 +1,6 @@
 package vcs
 
-import (
-	"fmt"
-	"net/url"
-
-	"gitlab.com/conspico/esh/model"
-)
+import "fmt"
 
 // Provider ..
 type Provider interface {
@@ -13,27 +8,30 @@ type Provider interface {
 
 	Authorize() string
 
-	Authorized(*url.URL) (model.VCSUser, error)
+	Authorized(code string) (User, error)
 }
 
 // Providers type
-type Providers map[string]Provider
+type Providers struct {
+	Providers map[string]Provider
+}
 
-var providers = Providers{}
+// NewProviders ...
+func NewProviders(pvider ...Provider) *Providers {
 
-// Use or initialize the providers
-func Use(pvider ...Provider) {
+	var prov = make(map[string]Provider)
 	for _, p := range pvider {
-		providers[p.Name()] = p
+		prov[p.Name()] = p
 	}
+	return &Providers{prov}
 }
 
 // Get the provider by namee
-func Get(name string) (Provider, error) {
+func (prov Providers) Get(name string) (Provider, error) {
 
-	p := providers[name]
+	p := prov.Providers[name]
 	if p == nil {
-		return nil, fmt.Errorf("No provider found for %s", name)
+		return nil, fmt.Errorf(errNoProviderFound, name)
 	}
 	return p, nil
 }

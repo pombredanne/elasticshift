@@ -60,14 +60,12 @@ func main() {
 
 	// register vcs providers
 	fmt.Println("Register the VCS providers..")
-	vcs.Use(
-		vcs.New(conf.GetString("github.key"), conf.GetString("github.secret")),
-	)
 
 	// Init repository
 	var (
 		teamRepo = repository.NewTeam(db)
 		userRepo = repository.NewUser(db)
+		vcsRepo  = repository.NewVCS(db)
 	)
 
 	// load keys
@@ -87,7 +85,9 @@ func main() {
 	var us user.Service
 	us = user.NewService(userRepo, teamRepo, conf, signer)
 
-	//router := http.NewServeMux()
+	var vs vcs.Service
+	vs = vcs.NewService(vcsRepo, teamRepo, conf)
+
 	router := mux.NewRouter()
 	router.Handle("/", accessControl(router))
 
@@ -97,6 +97,7 @@ func main() {
 	// Router (includes subdomain)
 	team.MakeRequestHandler(ctx, ts, router)
 	user.MakeRequestHandler(ctx, us, router, verifier)
+	vcs.MakeRequestHandler(ctx, vs, router, verifier)
 
 	// Start the server
 	fmt.Println("ESH Server listening on port 5050")
