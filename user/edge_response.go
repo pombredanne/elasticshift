@@ -3,6 +3,7 @@ package user
 import (
 	"context"
 	"net/http"
+	"strings"
 	"time"
 )
 
@@ -19,7 +20,13 @@ type signInResponse struct {
 func encodeSignInResponse(ctx context.Context, w http.ResponseWriter, r interface{}) error {
 
 	resp := r.(signInResponse)
-	if resp.Err != nil {
+	if strings.EqualFold(resp.Token, errInvalidEmailOrPassword.Error()) {
+
+		// Setting the error code on encode phase only applicable for
+		// sign in request
+		w.WriteHeader(http.StatusUnauthorized)
+		return resp.Err
+	} else if resp.Err != nil {
 		return resp.Err
 	}
 

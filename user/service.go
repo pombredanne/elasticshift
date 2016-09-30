@@ -104,7 +104,7 @@ func (s service) SignIn(teamName, domain, email, password string) (string, error
 
 	err = bcrypt.CompareHashAndPassword([]byte(user.Password), []byte(password))
 	if err != nil {
-		return "", errInvalidEmailOrPassword
+		return errInvalidEmailOrPassword.Error(), nil
 	}
 	return s.generateAuthToken(teamID, email)
 }

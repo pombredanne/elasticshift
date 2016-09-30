@@ -6,6 +6,8 @@ import (
 	"net/http"
 	"strings"
 
+	"errors"
+
 	"gitlab.com/conspico/esh/core/auth"
 	"gitlab.com/conspico/esh/core/edge"
 )
@@ -16,6 +18,10 @@ const (
 	DECODE  = 1
 	PROCESS = 2
 	ENCODE  = 3
+)
+
+var (
+	errUnauthorized = errors.New("Unauthorized")
 )
 
 // RequestHandler ..
@@ -84,7 +90,7 @@ func (h *RequestHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 
 		cookie, err := r.Cookie("access-token")
 		if err != nil {
-			handleError(ctx, err, AUTH, w)
+			handleError(ctx, errUnauthorized, AUTH, w)
 		}
 
 		token, err := auth.VefifyToken(h.verifier, cookie.String())
