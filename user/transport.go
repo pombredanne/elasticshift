@@ -9,7 +9,7 @@ import (
 )
 
 // MakeRequestHandler ..
-func MakeRequestHandler(ctx context.Context, s Service, r *mux.Router, verifier []byte) {
+func MakeRequestHandler(ctx context.Context, s Service, r *mux.Router, signer interface{}, verifier interface{}) {
 
 	signUpHandler := chttp.NewPublicRequestHandler(
 		ctx,

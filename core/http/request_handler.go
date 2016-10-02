@@ -5,9 +5,11 @@ import (
 	"fmt"
 	"net/http"
 	"strings"
+	"time"
 
 	"errors"
 
+	"github.com/dgrijalva/jwt-go"
 	"gitlab.com/conspico/esh/core/auth"
 	"gitlab.com/conspico/esh/core/edge"
 )
@@ -33,7 +35,8 @@ type RequestHandler struct {
 	encode    ResponseEncoderFunc
 	process   edge.Edge
 	protected bool
-	verifier  []byte
+	signer    interface{}
+	verifier  interface{}
 }
 
 // NewPrivateRequestHandler creates a reqeust handler for given edge
@@ -43,7 +46,8 @@ func NewPrivateRequestHandler(
 	decoder RequestDecoderFunc,
 	encoder ResponseEncoderFunc,
 	exec edge.Edge,
-	verifier []byte) *RequestHandler {
+	signer interface{},
+	verifier interface{}) *RequestHandler {
 
 	rh := &RequestHandler{
 		ctx,
@@ -51,6 +55,7 @@ func NewPrivateRequestHandler(
 		encoder,
 		exec,
 		true,
+		signer,
 		verifier,
 	}
 	return rh
@@ -70,6 +75,7 @@ func NewPublicRequestHandler(
 		encoder,
 		exec,
 		false,
+		nil,
 		nil,
 	}
 	return rh
@@ -91,13 +97,19 @@ func (h *RequestHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		cookie, err := r.Cookie("access-token")
 		if err != nil {
 			handleError(ctx, errUnauthorized, AUTH, w)
+			return
 		}
 
-		token, err := auth.VefifyToken(h.verifier, cookie.String())
+		token, err := auth.VefifyToken(h.verifier, cookie.Value)
 		if err != nil || !token.Valid {
+			fmt.Println(err)
 			handleError(ctx, err, AUTH, w)
+			return
 		}
 		ctx = context.WithValue(ctx, "token", token)
+
+		// Refresh the token
+		refreshtoken(token, h.signer, h.protected, w)
 	}
 
 	// decodes the request
@@ -133,5 +145,25 @@ func handleError(ctx context.Context, err error, phase int, w http.ResponseWrite
 		http.Error(w, err.Error(), http.StatusServiceUnavailable)
 	case ENCODE:
 		http.Error(w, err.Error(), http.StatusInternalServerError)
+	}
+}
+
+func refreshtoken(token *jwt.Token, signer interface{}, protected bool, w http.ResponseWriter) {
+
+	if protected {
+		signedTok, err := auth.RefreshToken(signer, token)
+		if err != nil {
+			fmt.Println("Failed to refresh the token.", err)
+		}
+
+		cookie := &http.Cookie{
+			Name:     "access-token",
+			Value:    signedTok,
+			Expires:  time.Now().Add(time.Minute * 15),
+			HttpOnly: true,
+			Path:     "/",
+			//Secure : true, // TODO enable this to ensure the cookie is passed only with https
+		}
+		http.SetCookie(w, cookie)
 	}
 }

@@ -2,10 +2,12 @@
 github:
     key: 2bb421705ee7f6bb0970
     secret: ffd145f08ec0ba1261762f29754ab2a9d12544b7
+    callback: http://eshift:5050/auth/github/callback
 
 bitbucket:
     key: 4EuzbzNEwa7x3SP5yZ
     secret: dqHP8bc5qyzwTXuW2dduSSTBJqCa8jzj
+    callback: http://eshift:5050/auth/bitbucket/callback
 
 db:
     dialect: mysql

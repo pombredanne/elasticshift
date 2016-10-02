@@ -1,6 +1,7 @@
 package auth
 
 import (
+	"crypto/rsa"
 	"errors"
 	"fmt"
 	"time"
@@ -21,24 +22,25 @@ type Token struct {
 }
 
 // GenerateToken ..
-func GenerateToken(key []byte, t Token) (string, error) {
+func GenerateToken(key interface{}, t Token) (string, error) {
 
-	tok := jwt.New(jwt.SigningMethodHS512)
+	tok := jwt.New(jwt.SigningMethodRS512)
 	claims := tok.Claims.(jwt.MapClaims)
 	now := time.Now()
 	claims["iat"] = now
 	claims["exp"] = now.Add(time.Minute * 15).Unix()
 	claims["iss"] = "elasticshift.com"
 	claims["tok"] = t
-	signedString, err := tok.SignedString(key)
+	signedString, err := tok.SignedString(key.(*rsa.PrivateKey))
 	if err != nil {
 		return "", err
 	}
+
 	return signedString, err
 }
 
 // VefifyToken ..
-func VefifyToken(key []byte, signedToken string) (*jwt.Token, error) {
+func VefifyToken(key interface{}, signedToken string) (*jwt.Token, error) {
 
 	token, err := jwt.Parse(signedToken, func(token *jwt.Token) (interface{}, error) {
 
@@ -61,4 +63,18 @@ func VefifyToken(key []byte, signedToken string) (*jwt.Token, error) {
 		return nil, err
 	}
 	return token, nil
+}
+
+// RefreshToken ..
+func RefreshToken(key interface{}, token *jwt.Token) (string, error) {
+
+	claims := token.Claims.(jwt.MapClaims)
+	claims["exp"] = time.Now().Add(time.Minute * 15).Unix()
+	signedString, err := token.SignedString(key.(*rsa.PrivateKey))
+
+	if err != nil {
+		return "", err
+	}
+
+	return signedString, err
 }

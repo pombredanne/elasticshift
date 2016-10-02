@@ -1,6 +1,8 @@
 package main
 
 import (
+	"crypto/x509"
+	"encoding/pem"
 	"io/ioutil"
 	"net/http"
 
@@ -69,11 +71,12 @@ func main() {
 	)
 
 	// load keys
-	signer, err := ioutil.ReadFile(conf.GetString("key.signer"))
+	signer, err := loadKey(conf.GetString("key.signer"))
 	if err != nil {
 		panic(err)
 	}
-	verifier, err := ioutil.ReadFile(conf.GetString("key.verifier"))
+
+	verifier, err := loadKey(conf.GetString("key.verifier"))
 	if err != nil {
 		panic(err)
 	}
@@ -89,19 +92,37 @@ func main() {
 	vs = vcs.NewService(vcsRepo, teamRepo, conf)
 
 	router := mux.NewRouter()
-	router.Handle("/", accessControl(router))
-
-	// ESH UI pages
-	router.PathPrefix("/views/").Handler(http.StripPrefix("/views/", http.FileServer(http.Dir("public"))))
 
 	// Router (includes subdomain)
 	team.MakeRequestHandler(ctx, ts, router)
-	user.MakeRequestHandler(ctx, us, router, verifier)
-	vcs.MakeRequestHandler(ctx, vs, router, verifier)
+	user.MakeRequestHandler(ctx, us, router, signer, verifier)
+	vcs.MakeRequestHandler(ctx, vs, router, signer, verifier)
+
+	// ESH UI pages
+	router.PathPrefix("/").Handler(http.FileServer(http.Dir("./dist/")))
+	router.Handle("/", accessControl(router))
 
 	// Start the server
 	fmt.Println("ESH Server listening on port 5050")
 	fmt.Println(http.ListenAndServe(":5050", router))
+}
+
+func loadKey(path string) (interface{}, error) {
+
+	keyBytes, err := ioutil.ReadFile(path)
+	if err != nil {
+		return nil, err
+	}
+	keyBlock, _ := pem.Decode(keyBytes)
+
+	switch keyBlock.Type {
+	case "PUBLIC KEY":
+		return x509.ParsePKIXPublicKey(keyBlock.Bytes)
+	case "RSA PRIVATE KEY":
+		return x509.ParsePKCS1PrivateKey(keyBlock.Bytes)
+	default:
+		return nil, fmt.Errorf("unsupported key type %q", keyBlock.Type)
+	}
 }
 
 func accessControl(h http.Handler) http.Handler {

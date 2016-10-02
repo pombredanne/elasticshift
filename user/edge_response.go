@@ -35,6 +35,7 @@ func encodeSignInResponse(ctx context.Context, w http.ResponseWriter, r interfac
 		Value:    resp.Token,
 		Expires:  time.Now().Add(time.Minute * 15),
 		HttpOnly: true,
+		Path:     "/",
 		//Secure : true, // TODO enable this to ensure the cookie is passed only with https
 	}
 	http.SetCookie(w, cookie)

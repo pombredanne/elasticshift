@@ -22,11 +22,11 @@ type service struct {
 	userRepository Repository
 	teamRepository team.Repository
 	config         *viper.Viper
-	signer         []byte
+	signer         interface{}
 }
 
 // NewService ..
-func NewService(u Repository, t team.Repository, conf *viper.Viper, signer []byte) Service {
+func NewService(u Repository, t team.Repository, conf *viper.Viper, signer interface{}) Service {
 
 	return &service{
 		userRepository: u,
