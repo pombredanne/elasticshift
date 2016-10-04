@@ -24,6 +24,10 @@ type signInRequest struct {
 	Domain   string
 }
 
+type signOut struct {
+	Request *http.Request
+}
+
 func decodeSignUpRequest(ctx context.Context, r *http.Request) (interface{}, error) {
 
 	var req signupRequest
@@ -76,4 +80,8 @@ func decodeVerifyCodeRequest(ctx context.Context, r *http.Request) (interface{},
 		return false, errVerificationCodeIsEmpty
 	}
 	return verifyCodeRequest{Code: code}, nil
+}
+
+func decodeSignOutRequest(ctx context.Context, r *http.Request) (interface{}, error) {
+	return signOut{Request: r}, nil
 }

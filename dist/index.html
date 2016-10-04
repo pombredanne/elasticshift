@@ -3,9 +3,61 @@
 	<head>
 		<meta charset="utf-8">
 		<title>prototype</title>
+
+	<script>
+		function submit() {
+
+			var data = JSON.stringify({
+			"email": "ghazni.nattarshah@conspico.com",
+			"password": "Password1"
+			});
+
+			var xhr = new XMLHttpRequest();
+			xhr.withCredentials = true;
+
+			xhr.addEventListener("readystatechange", function () {
+			if (this.readyState === 4) {
+			console.log(this.responseText);
+			}
+			});
+
+			xhr.open("POST", "/api/users/signin");
+			xhr.setRequestHeader("content-type", "application/json");
+			xhr.setRequestHeader("cache-control", "no-cache");
+
+			xhr.send(data);
+		}
+
+		function signout() {
+
+			var data = JSON.stringify(false);
+
+			var xhr = new XMLHttpRequest();
+			xhr.withCredentials = true;
+
+			xhr.addEventListener("readystatechange", function () {
+			if (this.readyState === 4) {
+			console.log(this.responseText);
+			}
+			});
+
+			xhr.open("POST", "/api/users/signout");
+			xhr.setRequestHeader("content-type", "application/json");
+			xhr.setRequestHeader("cache-control", "no-cache");
+
+			xhr.send(data);
+		}
+	</script>
 	</head>
 	<body>
 
         <a href="/api/auth/github">github</a>
+
+	<br>
+	<input type="button" onclick="submit()" value="Signin">
+	<br>
+	<input type="button" onclick="signout()" value="Signout">
+	<br>
+	
 	</body>
 </html>

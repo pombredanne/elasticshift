@@ -100,6 +100,11 @@ func (h *RequestHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 			return
 		}
 
+		if "" == cookie.Value {
+			handleError(ctx, errUnauthorized, AUTH, w)
+			return
+		}
+
 		token, err := auth.VefifyToken(h.verifier, cookie.Value)
 		if err != nil || !token.Valid {
 			fmt.Println(err)

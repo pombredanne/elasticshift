@@ -25,6 +25,15 @@ func MakeRequestHandler(ctx context.Context, s Service, r *mux.Router, signer in
 		makeSignInEdge(s),
 	)
 
+	signOutHandler := chttp.NewPrivateRequestHandler(
+		ctx,
+		decodeSignOutRequest,
+		encodeSignOutResponse,
+		makeSignOutEdge(s),
+		signer,
+		verifier,
+	)
+
 	verifyCodeHandler := chttp.NewPublicRequestHandler(
 		ctx,
 		decodeVerifyCodeRequest,
@@ -48,6 +57,7 @@ func MakeRequestHandler(ctx context.Context, s Service, r *mux.Router, signer in
 
 	r.Handle("/api/users/signup", accessControl(signUpHandler)).Methods("POST")
 	r.Handle("/api/users/signin", accessControl(signInHandler)).Methods("POST")
+	r.Handle("/api/users/signout", accessControl(signOutHandler)).Methods("POST")
 	r.Handle("/api/users/verify/{code}", verifyCodeHandler).Methods("POST")
 	//r.Handle("/users/verifyAndSignIn", verifyAndSignInHandler).Methods("POST")
 	//r.Handle("/users/signin", signinHandler).Methods("POST")

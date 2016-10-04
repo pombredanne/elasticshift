@@ -15,6 +15,7 @@ import (
 type Service interface {
 	Create(teamName, domain, fullName, email, password string) (string, error)
 	SignIn(teamName, domain, email, password string) (string, error)
+	SignOut() (bool, error)
 	Verify(code string) (bool, error)
 }
 
@@ -107,6 +108,11 @@ func (s service) SignIn(teamName, domain, email, password string) (string, error
 		return errInvalidEmailOrPassword.Error(), nil
 	}
 	return s.generateAuthToken(teamID, email)
+}
+
+// SignOut ..
+func (s service) SignOut() (bool, error) {
+	return true, nil
 }
 
 // Generates the auth token

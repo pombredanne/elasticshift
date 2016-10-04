@@ -44,6 +44,25 @@ func encodeSignInResponse(ctx context.Context, w http.ResponseWriter, r interfac
 	return nil
 }
 
+func encodeSignOutResponse(ctx context.Context, w http.ResponseWriter, r interface{}) error {
+
+	//remove the existing cookie.
+	w.Header().Del("Set-Cookie")
+
+	// sets the new dummy cookie.
+	cookie := &http.Cookie{
+		Name:     "access-token",
+		Value:    "",
+		MaxAge:   -1,
+		HttpOnly: true,
+		Path:     "/",
+		//Secure : true, // TODO enable this to ensure the cookie is passed only with https
+	}
+	http.SetCookie(w, cookie)
+	w.WriteHeader(http.StatusOK)
+	return nil
+}
+
 func encodeVerifyCodeRequest(ctx context.Context, w http.ResponseWriter, r interface{}) error {
 
 	resp := r.(genericResponse)

@@ -24,6 +24,15 @@ func makeSignInEdge(s Service) edge.Edge {
 	}
 }
 
+func makeSignOutEdge(s Service) edge.Edge {
+
+	return func(ctx context.Context, request interface{}) (interface{}, error) {
+		req := request.(signOut)
+		s.SignOut()
+		return req, nil
+	}
+}
+
 func makeVerifyCodeEdge(s Service) edge.Edge {
 
 	return func(ctx context.Context, request interface{}) (interface{}, error) {
