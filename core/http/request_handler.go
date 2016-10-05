@@ -24,6 +24,9 @@ const (
 
 var (
 	errUnauthorized = errors.New("Unauthorized")
+
+	// AuthTokenCookieName ..
+	AuthTokenCookieName = "__at"
 )
 
 // RequestHandler ..
@@ -94,7 +97,7 @@ func (h *RequestHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	// Verify the access-token
 	if h.protected {
 
-		cookie, err := r.Cookie("access-token")
+		cookie, err := r.Cookie(AuthTokenCookieName)
 		if err != nil {
 			handleError(ctx, errUnauthorized, AUTH, w)
 			return
@@ -162,7 +165,7 @@ func refreshtoken(token *jwt.Token, signer interface{}, protected bool, w http.R
 		}
 
 		cookie := &http.Cookie{
-			Name:     "access-token",
+			Name:     AuthTokenCookieName,
 			Value:    signedTok,
 			Expires:  time.Now().Add(time.Minute * 15),
 			HttpOnly: true,

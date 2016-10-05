@@ -5,6 +5,8 @@ import (
 	"net/http"
 	"strings"
 	"time"
+
+	chttp "gitlab.com/conspico/esh/core/http"
 )
 
 type genericResponse struct {
@@ -31,7 +33,7 @@ func encodeSignInResponse(ctx context.Context, w http.ResponseWriter, r interfac
 	}
 
 	cookie := &http.Cookie{
-		Name:     "access-token",
+		Name:     chttp.AuthTokenCookieName,
 		Value:    resp.Token,
 		Expires:  time.Now().Add(time.Minute * 15),
 		HttpOnly: true,
@@ -51,7 +53,7 @@ func encodeSignOutResponse(ctx context.Context, w http.ResponseWriter, r interfa
 
 	// sets the new dummy cookie.
 	cookie := &http.Cookie{
-		Name:     "access-token",
+		Name:     chttp.AuthTokenCookieName,
 		Value:    "",
 		MaxAge:   -1,
 		HttpOnly: true,
