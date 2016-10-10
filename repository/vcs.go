@@ -13,15 +13,15 @@ type vcsRepository struct {
 	db  *gorm.DB
 }
 
-func (r *vcsRepository) Save(v *vcs.User) error {
+func (r *vcsRepository) Save(v *vcs.VCS) error {
 
 	r.mtx.Lock()
 	defer r.mtx.Unlock()
 
 	r.db.NewRecord(v)
-	r.db.Create(&v)
+	err := r.db.Create(&v).Error
 
-	return nil
+	return err
 }
 
 // NewVCS ..

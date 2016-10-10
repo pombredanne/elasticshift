@@ -6,9 +6,9 @@ import "fmt"
 type Provider interface {
 	Name() string
 
-	Authorize() string
+	Authorize(team string) string
 
-	Authorized(code string) (User, error)
+	Authorized(code string) (VCS, error)
 }
 
 // Providers type

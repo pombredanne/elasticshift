@@ -2,19 +2,19 @@
 github:
     key: 2bb421705ee7f6bb0970
     secret: ffd145f08ec0ba1261762f29754ab2a9d12544b7
-    callback: http://eshift:5050/auth/github/callback
+    callback: http://eshift:5050/api/auth/github/callback
 
 bitbucket:
     key: 4EuzbzNEwa7x3SP5yZ
     secret: dqHP8bc5qyzwTXuW2dduSSTBJqCa8jzj
-    callback: http://eshift:5050/auth/bitbucket/callback
+    callback: http://eshift:5050/api/auth/bitbucket/callback
 
 db:
     dialect: mysql
     datasource: esh:eshpazz@/esh?charset=utf8&parseTime=True&loc=Local
     idle_connections: 5
     max_connections: 100
-    log: false
+    log: true
 
 key:
     verifycode: $h1n1ngF1@tC@r4r$h@hBr0$p01l@ch1

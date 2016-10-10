@@ -1,15 +1,9 @@
 package vcs
 
 import (
-	"bytes"
-	"encoding/json"
-	"io"
-	"io/ioutil"
 	"log"
-	"net/http"
-	"net/url"
-	"strconv"
 
+	chttp "gitlab.com/conspico/esh/core/http"
 	"golang.org/x/oauth2"
 )
 
@@ -22,14 +16,23 @@ const (
 
 // Github ...
 type Github struct {
-	ClientID string
-	Secret   string
-	Config   *oauth2.Config
+	ClientID    string
+	Secret      string
+	CallbackURL string
+	Config      *oauth2.Config
+}
+
+// GithubUser ..
+type githubUser struct {
+	RawData     map[string]interface{}
+	Type        int
+	AccessToken string
+	AvatarURL   string
 }
 
 // GithubProvider ...
 // Creates a new Github provider
-func GithubProvider(clientID, secret string) *Github {
+func GithubProvider(clientID, secret, callbackURL string) *Github {
 
 	conf := &oauth2.Config{
 		ClientID:     clientID,
@@ -44,6 +47,7 @@ func GithubProvider(clientID, secret string) *Github {
 	return &Github{
 		clientID,
 		secret,
+		callbackURL,
 		conf,
 	}
 }
@@ -56,74 +60,43 @@ func (g *Github) Name() string {
 // Authorize ...
 // Provide access to esh app on accessing the github user and repos.
 // the elasticshift application to have access to github repo
-func (g *Github) Authorize() string {
-
+func (g *Github) Authorize(team string) string {
+	g.Config.RedirectURL = g.CallbackURL + "/" + team
 	url := g.Config.AuthCodeURL("state", oauth2.AccessTypeOffline)
 	return url
 }
 
 // Authorized ...
 // Finishes the authorize
-func (g *Github) Authorized(code string) (User, error) {
+func (g *Github) Authorized(code string) (VCS, error) {
 
 	tok, err := g.Config.Exchange(oauth2.NoContext, code)
 	if err != nil {
 		log.Fatal(err)
 	}
 
-	user := User{
-		AccessToken: tok.AccessToken,
-		Provider:    name,
-	}
+	u := VCS{}
+	u.AccessToken = tok.AccessToken
+	u.Type = GithubType
 
-	res, err := http.Get(ProfileURL + "?access_token" + url.QueryEscape(tok.AccessToken))
-	if err != nil {
-		if res != nil {
-			res.Body.Close()
-		}
-		return user, err
-	}
-	defer res.Body.Close()
-
-	bits, err := ioutil.ReadAll(res.Body)
-	if err != nil {
-		return user, err
-	}
-
-	err = json.NewDecoder(bytes.NewReader(bits)).Decode(&user.RawData)
-	if err != nil {
-		return user, err
-	}
-
-	err = readUser(bytes.NewReader(bits), &user)
-	return user, err
-}
-
-// Helper method to convert reader to user
-func readUser(reader io.Reader, user *User) error {
-
-	u := struct {
-		ID       int    `json:"id"`
-		Email    string `json:"email"`
-		Bio      string `json:"bio"`
-		Name     string `json:"name"`
-		Login    string `json:"login"`
-		Picture  string `json:"avatar_url"`
-		Location string `json:"location"`
+	us := struct {
+		Email   string `json:"email"`
+		Name    string `json:"name"`
+		Login   string `json:"login"`
+		Picture string `json:"avatar_url"`
 	}{}
 
-	err := json.NewDecoder(reader).Decode(&u)
+	err = chttp.NewGetRequestMaker(ProfileURL).QueryParam("access_token", code).Scan(&us).Dispatch()
 	if err != nil {
-		return err
+		return u, err
 	}
 
-	user.Name = u.Name
-	user.NickName = u.Login
-	user.Email = u.Email
-	user.Description = u.Bio
-	user.AvatarURL = u.Picture
-	user.UserID = strconv.Itoa(u.ID)
-	user.Location = u.Location
+	u.AvatarURL = us.Picture
+	u.Name = us.Login
 
-	return err
+	return u, err
+}
+
+func (g *Github) ListRepos(accessToken, repoType string) {
+
 }

@@ -8,23 +8,34 @@ import (
 )
 
 // MakeRequestHandler ..
-func MakeRequestHandler(ctx context.Context, s Service, r *mux.Router, verifier []byte) {
+func MakeRequestHandler(ctx context.Context, s Service, r *mux.Router, signer interface{}, verifier interface{}) {
 
 	authorizeHandler := chttp.NewPrivateRequestHandler(
 		ctx,
 		decodeAuthorizeRequest,
 		encodeAuthorizeResponse,
 		makeAuthorizeEdge(s),
+		signer,
 		verifier,
 	)
 
 	authorizedHandler := chttp.NewPublicRequestHandler(
 		ctx,
-		decodeAuthorizeRequest,
-		encodeAuthorizeResponse,
-		makeAuthorizeEdge(s),
+		decodeAuthorizedRequest,
+		encodeListVCSResponse,
+		makeAuthorizedEdge(s),
 	)
 
-	r.Handle("/auth/{provider}", authorizeHandler)
-	r.Handle("/auth/{provider}/callback", authorizedHandler)
+	listVCSHandler := chttp.NewPrivateRequestHandler(
+		ctx,
+		decodeListVCSRequest,
+		encodeListVCSResponse,
+		makeAuthorizeEdge(s),
+		signer,
+		verifier,
+	)
+
+	r.Handle("/api/auth/{provider}", authorizeHandler)
+	r.Handle("/api/auth/{provider}/callback/{team}", authorizedHandler)
+	r.Handle("/api/vcs/", listVCSHandler)
 }

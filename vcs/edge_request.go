@@ -2,6 +2,7 @@ package vcs
 
 import (
 	"context"
+	"fmt"
 	"net/http"
 
 	"github.com/gorilla/mux"
@@ -12,6 +13,12 @@ type AuthorizeRequest struct {
 	Provider string
 	Domain   string
 	Request  *http.Request
+	Code     string
+}
+
+// ListVCSRequest ..
+type ListVCSRequest struct {
+	Domain string
 }
 
 func decodeAuthorizeRequest(ctx context.Context, r *http.Request) (interface{}, error) {
@@ -22,4 +29,21 @@ func decodeAuthorizeRequest(ctx context.Context, r *http.Request) (interface{}, 
 	prov := params["provider"]
 
 	return AuthorizeRequest{Domain: subdomain, Provider: prov, Request: r}, nil
+}
+
+func decodeAuthorizedRequest(ctx context.Context, r *http.Request) (interface{}, error) {
+
+	params := mux.Vars(r)
+	prov := params["provider"]
+	subdomain := params["team"]
+	code := r.FormValue("code")
+
+	fmt.Println("Subdomain from callback =", subdomain)
+	return AuthorizeRequest{Domain: subdomain, Provider: prov, Request: r, Code: code}, nil
+}
+
+func decodeListVCSRequest(ctx context.Context, r *http.Request) (interface{}, error) {
+
+	subdomain := ctx.Value("subdomain").(string)
+	return ListVCSRequest{Domain: subdomain}, nil
 }

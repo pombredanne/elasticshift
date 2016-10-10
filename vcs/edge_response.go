@@ -19,8 +19,17 @@ func encodeAuthorizeResponse(ctx context.Context, w http.ResponseWriter, r inter
 		return resp.Err
 	}
 
-	if resp.Err != nil {
-		http.Redirect(w, resp.Request, resp.URL, http.StatusTemporaryRedirect)
-	}
+	http.Redirect(w, resp.Request, resp.URL, http.StatusTemporaryRedirect)
+	return nil
+}
+
+func encodeListVCSResponse(ctx context.Context, w http.ResponseWriter, r interface{}) error {
+
+	//resp := r.(AuthorizeResponse)
+	//if resp.Err != nil {
+	//	return resp.Err
+	//}
+
+	//http.Redirect(w, resp.Request, resp.URL, http.StatusTemporaryRedirect)
 	return nil
 }
