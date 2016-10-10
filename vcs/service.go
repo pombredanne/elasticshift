@@ -40,28 +40,23 @@ func NewService(v Repository, t team.Repository, conf *viper.Viper) Service {
 	}
 }
 
-func (s service) Authorize(subdomain, provider string, r *http.Request) (AuthorizeResponse, error) {
+func (s service) Authorize(teamID, provider string, r *http.Request) (AuthorizeResponse, error) {
 
 	p, err := s.vcsProviders.Get(provider)
 	if err != nil {
 		return AuthorizeResponse{}, err
 	}
 
-	url := p.Authorize(subdomain)
+	url := p.Authorize(teamID)
 
 	return AuthorizeResponse{Err: nil, URL: url, Request: r}, nil
 }
 
 // Authorized ..
 // Invoked when authorization finished by oauth app
-func (s service) Authorized(subdomain, provider, code string, r *http.Request) (AuthorizeResponse, error) {
+func (s service) Authorized(teamID, provider, code string, r *http.Request) (AuthorizeResponse, error) {
 
 	p, err := s.vcsProviders.Get(provider)
-	if err != nil {
-		return AuthorizeResponse{}, err
-	}
-
-	teamID, err := s.teamRepository.GetTeamID(subdomain)
 	if err != nil {
 		return AuthorizeResponse{}, err
 	}
@@ -83,12 +78,7 @@ func (s service) Authorized(subdomain, provider, code string, r *http.Request) (
 	return AuthorizeResponse{Err: nil, URL: url, Request: r}, err
 }
 
-func (s service) GetVCS(subdomain string) (GetVCSResponse, error) {
-
-	teamID, err := s.teamRepository.GetTeamID(subdomain)
-	if err != nil {
-		return GetVCSResponse{}, err
-	}
+func (s service) GetVCS(teamID string) (GetVCSResponse, error) {
 
 	result, err := s.vcsRepository.GetVCS(teamID)
 	return GetVCSResponse{Result: result}, err

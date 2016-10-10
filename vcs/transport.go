@@ -26,7 +26,7 @@ func MakeRequestHandler(ctx context.Context, s Service, r *mux.Router, signer in
 		makeAuthorizedEdge(s),
 	)
 
-	listVCSHandler := chttp.NewPrivateRequestHandler(
+	getVCSHandler := chttp.NewPrivateRequestHandler(
 		ctx,
 		decodeGetVCSRequest,
 		encodeGetVCSResponse,
@@ -37,5 +37,5 @@ func MakeRequestHandler(ctx context.Context, s Service, r *mux.Router, signer in
 
 	r.Handle("/api/auth/{provider}", authorizeHandler).Methods("GET")
 	r.Handle("/api/auth/{provider}/callback/{team}", authorizedHandler).Methods("GET")
-	r.Handle("/api/vcs", listVCSHandler).Methods("GET")
+	r.Handle("/api/vcs", getVCSHandler).Methods("GET")
 }

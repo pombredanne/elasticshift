@@ -6,12 +6,13 @@ import (
 	"net/http"
 
 	"github.com/gorilla/mux"
+	"gitlab.com/conspico/esh/core/auth"
 )
 
 // AuthorizeRequest ..
 type AuthorizeRequest struct {
 	Provider string
-	Domain   string
+	TeamID   string
 	Request  *http.Request
 	Code     string
 }
@@ -23,27 +24,28 @@ type GetVCSRequest struct {
 
 func decodeAuthorizeRequest(ctx context.Context, r *http.Request) (interface{}, error) {
 
-	subdomain := ctx.Value("subdomain").(string)
+	teamID := ctx.Value("token").(auth.Token).TeamID
 
 	params := mux.Vars(r)
 	prov := params["provider"]
 
-	return AuthorizeRequest{Domain: subdomain, Provider: prov, Request: r}, nil
+	return AuthorizeRequest{TeamID: teamID, Provider: prov, Request: r}, nil
 }
 
 func decodeAuthorizedRequest(ctx context.Context, r *http.Request) (interface{}, error) {
 
 	params := mux.Vars(r)
 	prov := params["provider"]
-	subdomain := params["team"]
+	teamID := params["team"]
 	code := r.FormValue("code")
 
-	fmt.Println("Subdomain from callback =", subdomain)
-	return AuthorizeRequest{Domain: subdomain, Provider: prov, Request: r, Code: code}, nil
+	fmt.Println("Subdomain from callback =", teamID)
+	return AuthorizeRequest{TeamID: teamID, Provider: prov, Request: r, Code: code}, nil
 }
 
 func decodeGetVCSRequest(ctx context.Context, r *http.Request) (interface{}, error) {
 
-	subdomain := ctx.Value("subdomain").(string)
-	return subdomain, nil
+	teamID := ctx.Value("token").(auth.Token).TeamID
+	fmt.Println("TeamID = ", teamID)
+	return teamID, nil
 }

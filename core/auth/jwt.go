@@ -18,7 +18,7 @@ var (
 // Token ..
 type Token struct {
 	TeamID string
-	Email  string
+	UserID string
 }
 
 // GenerateToken ..
@@ -77,4 +77,17 @@ func RefreshToken(key interface{}, token *jwt.Token) (string, error) {
 	}
 
 	return signedString, err
+}
+
+// GetToken ..
+// Parse the JWT token
+func GetToken(token *jwt.Token) Token {
+
+	claims := token.Claims.(jwt.MapClaims)
+	tok := claims["tok"].(map[string]interface{})
+
+	return Token{
+		TeamID: tok["TeamID"].(string),
+		UserID: tok["UserID"].(string),
+	}
 }

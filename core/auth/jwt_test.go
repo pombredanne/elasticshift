@@ -26,7 +26,7 @@ func TestJWT(t *testing.T) {
 		t.Log("Failed to load verfier key", err)
 	}
 
-	tok := auth.Token{Email: "ghazni.nattarshah@conspico.com", TeamID: "conspico.com"}
+	tok := auth.Token{UserID: "ghazni.nattarshah@conspico.com", TeamID: "conspico.com"}
 	signedtoken, err := auth.GenerateToken(signer, tok)
 	if err != nil {
 		t.Log("Failed to generate auth token : ", err)
@@ -40,4 +40,6 @@ func TestJWT(t *testing.T) {
 		t.Log("Token valid = ", verifiedToken.Valid)
 	}
 
+	origTok := auth.GetToken(verifiedToken)
+	t.Log(origTok.TeamID)
 }

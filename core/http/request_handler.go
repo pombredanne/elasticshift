@@ -114,7 +114,8 @@ func (h *RequestHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 			handleError(ctx, err, AUTH, w)
 			return
 		}
-		ctx = context.WithValue(ctx, "token", token)
+
+		ctx = context.WithValue(ctx, "token", auth.GetToken(token))
 
 		// Refresh the token
 		refreshtoken(token, h.signer, h.protected, w)
