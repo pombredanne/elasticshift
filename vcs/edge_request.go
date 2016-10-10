@@ -16,8 +16,8 @@ type AuthorizeRequest struct {
 	Code     string
 }
 
-// ListVCSRequest ..
-type ListVCSRequest struct {
+// GetVCSRequest ..
+type GetVCSRequest struct {
 	Domain string
 }
 
@@ -42,8 +42,8 @@ func decodeAuthorizedRequest(ctx context.Context, r *http.Request) (interface{},
 	return AuthorizeRequest{Domain: subdomain, Provider: prov, Request: r, Code: code}, nil
 }
 
-func decodeListVCSRequest(ctx context.Context, r *http.Request) (interface{}, error) {
+func decodeGetVCSRequest(ctx context.Context, r *http.Request) (interface{}, error) {
 
 	subdomain := ctx.Value("subdomain").(string)
-	return ListVCSRequest{Domain: subdomain}, nil
+	return subdomain, nil
 }

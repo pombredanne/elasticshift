@@ -18,6 +18,14 @@ func makeAuthorizedEdge(s Service) edge.Edge {
 
 	return func(ctx context.Context, request interface{}) (interface{}, error) {
 		req := request.(AuthorizeRequest)
-		return s.Authorized(req.Domain, req.Provider, req.Code)
+		return s.Authorized(req.Domain, req.Provider, req.Code, req.Request)
+	}
+}
+
+func makeGetVCSEdge(s Service) edge.Edge {
+
+	return func(ctx context.Context, request interface{}) (interface{}, error) {
+		teamID := request.(string)
+		return s.GetVCS(teamID)
 	}
 }

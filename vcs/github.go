@@ -1,6 +1,7 @@
 package vcs
 
 import (
+	"fmt"
 	"log"
 
 	chttp "gitlab.com/conspico/esh/core/http"
@@ -75,7 +76,9 @@ func (g *Github) Authorized(code string) (VCS, error) {
 		log.Fatal(err)
 	}
 
+	fmt.Println("Extracted token = ", tok)
 	u := VCS{}
+	u.AccessCode = code
 	u.AccessToken = tok.AccessToken
 	u.Type = GithubType
 
@@ -86,17 +89,16 @@ func (g *Github) Authorized(code string) (VCS, error) {
 		Picture string `json:"avatar_url"`
 	}{}
 
-	err = chttp.NewGetRequestMaker(ProfileURL).QueryParam("access_token", code).Scan(&us).Dispatch()
+	err = chttp.NewGetRequestMaker(ProfileURL).QueryParam("access_token", tok.AccessToken).Scan(&us).Dispatch()
 	if err != nil {
 		return u, err
 	}
 
 	u.AvatarURL = us.Picture
 	u.Name = us.Login
-
 	return u, err
 }
 
-func (g *Github) ListRepos(accessToken, repoType string) {
+// func (g *Github) ListRepos(accessToken, repoType string) {
 
-}
+// }

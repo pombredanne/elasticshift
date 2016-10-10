@@ -14,7 +14,8 @@ import (
 // Service ..
 type Service interface {
 	Authorize(subdomain, provider string, r *http.Request) (AuthorizeResponse, error)
-	Authorized(subdomain, provider, code string) (VCS, error)
+	Authorized(subdomain, provider, code string, r *http.Request) (AuthorizeResponse, error)
+	GetVCS(teamID string) (GetVCSResponse, error)
 }
 
 type service struct {
@@ -53,31 +54,42 @@ func (s service) Authorize(subdomain, provider string, r *http.Request) (Authori
 
 // Authorized ..
 // Invoked when authorization finished by oauth app
-func (s service) Authorized(subdomain, provider, code string) (VCS, error) {
+func (s service) Authorized(subdomain, provider, code string, r *http.Request) (AuthorizeResponse, error) {
 
 	p, err := s.vcsProviders.Get(provider)
 	if err != nil {
-		return VCS{}, err
+		return AuthorizeResponse{}, err
 	}
 
 	teamID, err := s.teamRepository.GetTeamID(subdomain)
 	if err != nil {
-		return VCS{}, err
+		return AuthorizeResponse{}, err
 	}
 
 	u, err := p.Authorized(code)
 	if err != nil {
 		fmt.Println(err)
-		return VCS{}, err
+		return AuthorizeResponse{}, err
 	}
 
 	// persist user
-	fmt.Println(u)
 	u.ID, _ = util.NewUUID()
 	u.TeamID = teamID
 	u.CreatedDt = time.Now()
 	u.UpdatedDt = time.Now()
 	err = s.vcsRepository.Save(&u)
 
-	return u, err
+	url := r.Referer() + "/api/vcs"
+	return AuthorizeResponse{Err: nil, URL: url, Request: r}, err
+}
+
+func (s service) GetVCS(subdomain string) (GetVCSResponse, error) {
+
+	teamID, err := s.teamRepository.GetTeamID(subdomain)
+	if err != nil {
+		return GetVCSResponse{}, err
+	}
+
+	result, err := s.vcsRepository.GetVCS(teamID)
+	return GetVCSResponse{Result: result}, err
 }

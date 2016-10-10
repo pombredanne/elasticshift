@@ -22,20 +22,20 @@ func MakeRequestHandler(ctx context.Context, s Service, r *mux.Router, signer in
 	authorizedHandler := chttp.NewPublicRequestHandler(
 		ctx,
 		decodeAuthorizedRequest,
-		encodeListVCSResponse,
+		encodeAuthorizeResponse,
 		makeAuthorizedEdge(s),
 	)
 
 	listVCSHandler := chttp.NewPrivateRequestHandler(
 		ctx,
-		decodeListVCSRequest,
-		encodeListVCSResponse,
-		makeAuthorizeEdge(s),
+		decodeGetVCSRequest,
+		encodeGetVCSResponse,
+		makeGetVCSEdge(s),
 		signer,
 		verifier,
 	)
 
-	r.Handle("/api/auth/{provider}", authorizeHandler)
-	r.Handle("/api/auth/{provider}/callback/{team}", authorizedHandler)
-	r.Handle("/api/vcs/", listVCSHandler)
+	r.Handle("/api/auth/{provider}", authorizeHandler).Methods("GET")
+	r.Handle("/api/auth/{provider}/callback/{team}", authorizedHandler).Methods("GET")
+	r.Handle("/api/vcs", listVCSHandler).Methods("GET")
 }
