@@ -1,6 +1,8 @@
 package main
 
 import (
+	"net/http/pprof"
+
 	"crypto/x509"
 	"encoding/pem"
 	"io/ioutil"
@@ -97,6 +99,15 @@ func main() {
 	team.MakeRequestHandler(ctx, ts, router)
 	user.MakeRequestHandler(ctx, us, router, signer, verifier)
 	vcs.MakeRequestHandler(ctx, vs, router, signer, verifier)
+
+	// pprof
+	router.HandleFunc("/debug/pprof", pprof.Index)
+	router.HandleFunc("/debug/symbol", pprof.Symbol)
+	router.HandleFunc("/debug/profile", pprof.Profile)
+	router.Handle("/debug/heap", pprof.Handler("heap"))
+	router.Handle("/debug/goroutine", pprof.Handler("goroutine"))
+	router.Handle("/debug/threadcreate", pprof.Handler("threadcreate"))
+	router.Handle("/debug/block", pprof.Handler("block"))
 
 	// ESH UI pages
 	router.PathPrefix("/").Handler(http.FileServer(http.Dir("./dist/")))
