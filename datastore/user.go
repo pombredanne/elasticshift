@@ -1,4 +1,4 @@
-package repository
+package datastore
 
 import (
 	"sync"
@@ -8,12 +8,12 @@ import (
 	"github.com/jinzhu/gorm"
 )
 
-type userRepository struct {
+type userDatastore struct {
 	mtx sync.RWMutex
 	db  *gorm.DB
 }
 
-func (r *userRepository) Save(user *user.User) error {
+func (r *userDatastore) Save(user *user.User) error {
 
 	r.mtx.Lock()
 	defer r.mtx.Unlock()
@@ -24,7 +24,7 @@ func (r *userRepository) Save(user *user.User) error {
 	return nil
 }
 
-func (r *userRepository) CheckExists(email, teamID string) (bool, error) {
+func (r *userDatastore) CheckExists(email, teamID string) (bool, error) {
 
 	r.mtx.Lock()
 	defer r.mtx.Unlock()
@@ -37,7 +37,7 @@ func (r *userRepository) CheckExists(email, teamID string) (bool, error) {
 	return result.Exist == 1, err
 }
 
-func (r *userRepository) GetUser(email, teamID string) (user.User, error) {
+func (r *userDatastore) GetUser(email, teamID string) (user.User, error) {
 
 	r.mtx.Lock()
 	defer r.mtx.Unlock()
@@ -56,7 +56,7 @@ func (r *userRepository) GetUser(email, teamID string) (user.User, error) {
 	return result, err
 }
 
-func (r *userRepository) FindByName(name string) (user.User, error) {
+func (r *userDatastore) FindByName(name string) (user.User, error) {
 
 	r.mtx.Lock()
 	defer r.mtx.Unlock()
@@ -67,6 +67,6 @@ func (r *userRepository) FindByName(name string) (user.User, error) {
 }
 
 // NewUser ..
-func NewUser(db *gorm.DB) user.Repository {
-	return &userRepository{db: db}
+func NewUser(db *gorm.DB) user.Datastore {
+	return &userDatastore{db: db}
 }

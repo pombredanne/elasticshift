@@ -20,20 +20,20 @@ type Service interface {
 }
 
 type service struct {
-	userRepository Repository
-	teamRepository team.Repository
-	config         *viper.Viper
-	signer         interface{}
+	userDS Datastore
+	teamDS team.Datastore
+	config *viper.Viper
+	signer interface{}
 }
 
 // NewService ..
-func NewService(u Repository, t team.Repository, conf *viper.Viper, signer interface{}) Service {
+func NewService(u Datastore, t team.Datastore, conf *viper.Viper, signer interface{}) Service {
 
 	return &service{
-		userRepository: u,
-		teamRepository: t,
-		config:         conf,
-		signer:         signer,
+		userDS: u,
+		teamDS: t,
+		config: conf,
+		signer: signer,
 	}
 }
 
@@ -51,7 +51,7 @@ func (s service) Create(teamName, domain, fullname, email, password string) (str
 		return "", err
 	}
 
-	result, err := s.userRepository.CheckExists(email, teamID)
+	result, err := s.userDS.CheckExists(email, teamID)
 	if result {
 		return "", errUserAlreadyExists
 	}
@@ -83,7 +83,7 @@ func (s service) Create(teamName, domain, fullname, email, password string) (str
 		UpdatedDt:  time.Now(),
 	}
 
-	err = s.userRepository.Save(user)
+	err = s.userDS.Save(user)
 	if err != nil {
 		return "", errUserCreationFailed
 	}
@@ -98,7 +98,7 @@ func (s service) SignIn(teamName, domain, email, password string) (string, error
 	if err != nil {
 		return "", err
 	}
-	user, err := s.userRepository.GetUser(email, teamID)
+	user, err := s.userDS.GetUser(email, teamID)
 	if err != nil {
 		return "", errInvalidEmailOrPassword
 	}
@@ -154,10 +154,10 @@ func (s service) Verify(code string) (bool, error) {
 func (s service) getTeamID(teamName, domain string) (string, error) {
 
 	// checks the team from subdomain
-	teamID, err := s.teamRepository.GetTeamID(domain)
+	teamID, err := s.teamDS.GetTeamID(domain)
 	if err != nil {
 		// checks the team from JSON request
-		teamID, err = s.teamRepository.GetTeamID(teamName)
+		teamID, err = s.teamDS.GetTeamID(teamName)
 		if err != nil {
 			return "", errNoTeamIDNotExist
 		}

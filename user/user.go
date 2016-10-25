@@ -53,7 +53,7 @@ type User struct {
 }
 
 // Repository provides access a user.
-type Repository interface {
+type Datastore interface {
 	Save(user *User) error
 	CheckExists(email, teamID string) (bool, error)
 	GetUser(email, teamID string) (User, error)

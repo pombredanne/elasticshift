@@ -1,4 +1,4 @@
-package repository
+package datastore
 
 import (
 	"sync"
@@ -8,12 +8,12 @@ import (
 	"github.com/jinzhu/gorm"
 )
 
-type vcsRepository struct {
+type vcsDatastore struct {
 	mtx sync.RWMutex
 	db  *gorm.DB
 }
 
-func (r *vcsRepository) Save(v *vcs.VCS) error {
+func (r *vcsDatastore) Save(v *vcs.VCS) error {
 
 	r.mtx.Lock()
 	defer r.mtx.Unlock()
@@ -24,7 +24,7 @@ func (r *vcsRepository) Save(v *vcs.VCS) error {
 	return err
 }
 
-func (r *vcsRepository) GetVCS(teamID string) ([]vcs.VCS, error) {
+func (r *vcsDatastore) GetVCS(teamID string) ([]vcs.VCS, error) {
 
 	r.mtx.Lock()
 	defer r.mtx.Unlock()
@@ -39,7 +39,7 @@ func (r *vcsRepository) GetVCS(teamID string) ([]vcs.VCS, error) {
 	return result, err
 }
 
-func (r *vcsRepository) GetByID(id string) (vcs.VCS, error) {
+func (r *vcsDatastore) GetByID(id string) (vcs.VCS, error) {
 
 	r.mtx.Lock()
 	defer r.mtx.Unlock()
@@ -57,7 +57,7 @@ func (r *vcsRepository) GetByID(id string) (vcs.VCS, error) {
 	return result, err
 }
 
-func (r *vcsRepository) Update(old *vcs.VCS, updated vcs.VCS) error {
+func (r *vcsDatastore) Update(old *vcs.VCS, updated vcs.VCS) error {
 
 	r.mtx.Lock()
 	defer r.mtx.Unlock()
@@ -67,6 +67,6 @@ func (r *vcsRepository) Update(old *vcs.VCS, updated vcs.VCS) error {
 }
 
 // NewVCS ..
-func NewVCS(db *gorm.DB) vcs.Repository {
-	return &vcsRepository{db: db}
+func NewVCS(db *gorm.DB) vcs.Datastore {
+	return &vcsDatastore{db: db}
 }

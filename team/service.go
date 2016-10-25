@@ -12,12 +12,12 @@ type Service interface {
 }
 
 type service struct {
-	teamRepository Repository
+	teamDS Datastore
 }
 
 func (s service) Create(name string) (bool, error) {
 
-	result, err := s.teamRepository.CheckExists(name)
+	result, err := s.teamDS.CheckExists(name)
 	if result {
 		return false, errTeamAlreadyExists
 	}
@@ -37,14 +37,14 @@ func (s service) Create(name string) (bool, error) {
 		UpdatedDt: time.Now(),
 	}
 
-	err = s.teamRepository.Save(team)
+	err = s.teamDS.Save(team)
 
 	return err == nil, err
 }
 
 // NewService ..
-func NewService(t Repository) Service {
+func NewService(t Datastore) Service {
 	return &service{
-		teamRepository: t,
+		teamDS: t,
 	}
 }

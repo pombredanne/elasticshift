@@ -17,7 +17,7 @@ import (
 	"gitlab.com/conspico/esh/vcs"
 
 	"github.com/gorilla/mux"
-	"gitlab.com/conspico/esh/repository"
+	"gitlab.com/conspico/esh/datastore"
 
 	"github.com/jinzhu/gorm"
 	_ "github.com/jinzhu/gorm/dialects/mysql"
@@ -65,11 +65,11 @@ func main() {
 	// register vcs providers
 	fmt.Println("Register the VCS providers..")
 
-	// Init repository
+	// Init datastore
 	var (
-		teamRepo = repository.NewTeam(db)
-		userRepo = repository.NewUser(db)
-		vcsRepo  = repository.NewVCS(db)
+		teamDS = datastore.NewTeam(db)
+		userDS = datastore.NewUser(db)
+		vcsDS  = datastore.NewVCS(db)
 	)
 
 	// load keys
@@ -85,13 +85,13 @@ func main() {
 
 	// Initialize services
 	var ts team.Service
-	ts = team.NewService(teamRepo)
+	ts = team.NewService(teamDS)
 
 	var us user.Service
-	us = user.NewService(userRepo, teamRepo, conf, signer)
+	us = user.NewService(userDS, teamDS, conf, signer)
 
 	var vs vcs.Service
-	vs = vcs.NewService(vcsRepo, teamRepo, conf)
+	vs = vcs.NewService(vcsDS, teamDS, conf)
 
 	router := mux.NewRouter()
 

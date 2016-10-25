@@ -1,4 +1,4 @@
-package repository
+package datastore
 
 import (
 	"sync"
@@ -8,12 +8,12 @@ import (
 	"github.com/jinzhu/gorm"
 )
 
-type teamRepository struct {
+type teamDatastore struct {
 	mtx sync.RWMutex
 	db  *gorm.DB
 }
 
-func (r *teamRepository) Save(team *team.Team) error {
+func (r *teamDatastore) Save(team *team.Team) error {
 
 	r.mtx.Lock()
 	defer r.mtx.Unlock()
@@ -24,7 +24,7 @@ func (r *teamRepository) Save(team *team.Team) error {
 	return err
 }
 
-func (r *teamRepository) CheckExists(name string) (bool, error) {
+func (r *teamDatastore) CheckExists(name string) (bool, error) {
 
 	r.mtx.Lock()
 	defer r.mtx.Unlock()
@@ -37,7 +37,7 @@ func (r *teamRepository) CheckExists(name string) (bool, error) {
 	return result.Exist == 1, err
 }
 
-func (r *teamRepository) GetTeamID(name string) (string, error) {
+func (r *teamDatastore) GetTeamID(name string) (string, error) {
 
 	r.mtx.Lock()
 	defer r.mtx.Unlock()
@@ -49,7 +49,7 @@ func (r *teamRepository) GetTeamID(name string) (string, error) {
 	return result.ID, err
 }
 
-func (r *teamRepository) FindByName(name string) (team.Team, error) {
+func (r *teamDatastore) FindByName(name string) (team.Team, error) {
 
 	r.mtx.Lock()
 	defer r.mtx.Unlock()
@@ -60,6 +60,6 @@ func (r *teamRepository) FindByName(name string) (team.Team, error) {
 }
 
 // NewTeam ..
-func NewTeam(db *gorm.DB) team.Repository {
-	return &teamRepository{db: db}
+func NewTeam(db *gorm.DB) team.Datastore {
+	return &teamDatastore{db: db}
 }

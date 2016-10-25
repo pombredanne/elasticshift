@@ -25,7 +25,7 @@ type Team struct {
 }
 
 // Repository provides access a team.
-type Repository interface {
+type Datastore interface {
 	Save(team *Team) error
 	CheckExists(name string) (bool, error)
 	GetTeamID(name string) (string, error)

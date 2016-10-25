@@ -24,7 +24,7 @@ const (
 )
 
 // Repository provides access a user.
-type Repository interface {
+type Datastore interface {
 	Save(user *VCS) error
 	GetVCS(teamID string) ([]VCS, error)
 	GetByID(id string) (VCS, error)

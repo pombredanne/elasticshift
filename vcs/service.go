@@ -23,14 +23,14 @@ type Service interface {
 }
 
 type service struct {
-	vcsRepository  Repository
-	teamRepository team.Repository
-	vcsProviders   *Providers
-	config         *viper.Viper
+	vcsDS        Datastore
+	teamDS       team.Datastore
+	vcsProviders *Providers
+	config       *viper.Viper
 }
 
 // NewService ..
-func NewService(v Repository, t team.Repository, conf *viper.Viper) Service {
+func NewService(v Datastore, t team.Datastore, conf *viper.Viper) Service {
 
 	providers := NewProviders(
 		GithubProvider(conf.GetString("github.key"), conf.GetString("github.secret"), conf.GetString("github.callback")),
@@ -38,10 +38,10 @@ func NewService(v Repository, t team.Repository, conf *viper.Viper) Service {
 	)
 
 	return &service{
-		vcsProviders:   providers,
-		vcsRepository:  v,
-		teamRepository: t,
-		config:         conf,
+		vcsProviders: providers,
+		vcsDS:        v,
+		teamDS:       t,
+		config:       conf,
 	}
 }
 
@@ -77,7 +77,7 @@ func (s service) Authorized(teamID, provider, code string, r *http.Request) (Aut
 	u.TeamID = teamID
 	u.CreatedDt = time.Now()
 	u.UpdatedDt = time.Now()
-	err = s.vcsRepository.Save(&u)
+	err = s.vcsDS.Save(&u)
 
 	url := "/api/vcs"
 	return AuthorizeResponse{Err: nil, URL: url, Request: r}, err
@@ -85,13 +85,13 @@ func (s service) Authorized(teamID, provider, code string, r *http.Request) (Aut
 
 func (s service) GetVCS(teamID string) (GetVCSResponse, error) {
 
-	result, err := s.vcsRepository.GetVCS(teamID)
+	result, err := s.vcsDS.GetVCS(teamID)
 	return GetVCSResponse{Result: result}, err
 }
 
 func (s service) SyncVCS(teamID, providerID string) (bool, error) {
 
-	acc, err := s.vcsRepository.GetByID(providerID)
+	acc, err := s.vcsDS.GetByID(providerID)
 	if err != nil {
 		return false, err
 	}
@@ -106,7 +106,7 @@ func (s service) SyncVCS(teamID, providerID string) (bool, error) {
 func (s service) sync(acc VCS) error {
 
 	// Get the token
-	t, err := s.getToken(acc)
+	/*t, err := s.getToken(acc)
 	if err != nil {
 		return fmt.Errorf(errGetUpdatedFokenFailed, err)
 	}
@@ -118,7 +118,7 @@ func (s service) sync(acc VCS) error {
 	}
 
 	// repository received from provider
-	repos, err := p.GetRepos(t, acc.OwnerType)
+	repos, err := p.GetRepos(t, acc.OwnerType) */
 
 	// combine the result set
 
@@ -152,7 +152,7 @@ func (s service) getToken(a VCS) (string, error) {
 	tok, err := p.RefreshToken(a.RefreshToken)
 
 	// persist the updated token information
-	err = s.vcsRepository.Update(&a, VCS{
+	err = s.vcsDS.Update(&a, VCS{
 		AccessToken:  tok.AccessToken,
 		TokenExpiry:  tok.Expiry,
 		RefreshToken: tok.RefreshToken,
