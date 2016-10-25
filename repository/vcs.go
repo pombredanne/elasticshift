@@ -39,6 +39,33 @@ func (r *vcsRepository) GetVCS(teamID string) ([]vcs.VCS, error) {
 	return result, err
 }
 
+func (r *vcsRepository) GetByID(id string) (vcs.VCS, error) {
+
+	r.mtx.Lock()
+	defer r.mtx.Unlock()
+
+	var result vcs.VCS
+	err := r.db.Raw(`SELECT id, 
+							name, 
+							type, 
+							avatar_url,
+							access_token,
+							refresh_token,
+							token_expiry,
+							token_type
+				     FROM VCS WHERE ID = ? LIMIT 1`, id).Scan(&result).Error
+	return result, err
+}
+
+func (r *vcsRepository) Update(old *vcs.VCS, updated vcs.VCS) error {
+
+	r.mtx.Lock()
+	defer r.mtx.Unlock()
+
+	err := r.db.Model(old).Updates(updated).Error
+	return err
+}
+
 // NewVCS ..
 func NewVCS(db *gorm.DB) vcs.Repository {
 	return &vcsRepository{db: db}

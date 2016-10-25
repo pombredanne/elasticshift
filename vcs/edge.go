@@ -29,3 +29,11 @@ func makeGetVCSEdge(s Service) edge.Edge {
 		return s.GetVCS(teamID)
 	}
 }
+
+func makeSyncVCSEdge(s Service) edge.Edge {
+
+	return func(ctx context.Context, request interface{}) (interface{}, error) {
+		req := request.(SyncVCSRequest)
+		return s.SyncVCS(req.TeamID, req.ProviderID)
+	}
+}

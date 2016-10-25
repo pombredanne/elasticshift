@@ -22,7 +22,8 @@ func TestAuthorized(t *testing.T) {
 	p, _ := providers.Get("github")
 
 	//oDkyNxdDhY3Fwp3dgdfQ
-	c1 := "31e9f44fd3d83aac71f96b25c1e4c75d61b0fc9d"
+	//c1 := "124285a434e381f66ee2fca9351747e23055bc48"
+	c1 := "dda311e27fb9cfb0b2ca"
 	//c2 := "4f03ffd21003502b40a45d3569fc13850ac41f35"
 	u, err := p.Authorized(c1)
 	if err != nil {

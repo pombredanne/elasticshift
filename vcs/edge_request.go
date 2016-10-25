@@ -17,6 +17,12 @@ type AuthorizeRequest struct {
 	Code     string
 }
 
+// SyncVCSRequest ..
+type SyncVCSRequest struct {
+	TeamID     string
+	ProviderID string
+}
+
 // GetVCSRequest ..
 type GetVCSRequest struct {
 	Domain string
@@ -48,4 +54,13 @@ func decodeGetVCSRequest(ctx context.Context, r *http.Request) (interface{}, err
 	teamID := ctx.Value("token").(auth.Token).TeamID
 	fmt.Println("TeamID = ", teamID)
 	return teamID, nil
+}
+
+func decodeSyncVCSRequest(ctx context.Context, r *http.Request) (interface{}, error) {
+
+	teamID := ctx.Value("token").(auth.Token).TeamID
+	params := mux.Vars(r)
+	providerID := params["id"]
+
+	return SyncVCSRequest{TeamID: teamID, ProviderID: providerID}, nil
 }

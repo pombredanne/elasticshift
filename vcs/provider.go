@@ -1,6 +1,10 @@
 package vcs
 
-import "fmt"
+import (
+	"fmt"
+
+	"golang.org/x/oauth2"
+)
 
 // Provider ..
 type Provider interface {
@@ -9,6 +13,10 @@ type Provider interface {
 	Authorize(team string) string
 
 	Authorized(code string) (VCS, error)
+
+	RefreshToken(token string) (*oauth2.Token, error)
+
+	GetRepos(token string, owner int) ([]Repo, error)
 }
 
 // Providers type

@@ -19,6 +19,12 @@ type GetVCSResponse struct {
 	Result []VCS
 }
 
+// GenericResponse ..
+type GenericResponse struct {
+	Success bool
+	Err     error
+}
+
 func encodeAuthorizeResponse(ctx context.Context, w http.ResponseWriter, r interface{}) error {
 
 	resp := r.(AuthorizeResponse)
@@ -34,4 +40,13 @@ func encodeGetVCSResponse(ctx context.Context, w http.ResponseWriter, r interfac
 
 	resp := r.(GetVCSResponse)
 	return json.NewEncoder(w).Encode(resp.Result)
+}
+
+func encodeSyncVCSResponse(ctx context.Context, w http.ResponseWriter, r interface{}) error {
+
+	resp := r.(GenericResponse)
+	if resp.Success {
+		return nil
+	}
+	return resp.Err
 }

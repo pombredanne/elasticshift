@@ -3,22 +3,24 @@ package vcs
 import (
 	"fmt"
 	"log"
+	"time"
 
 	chttp "gitlab.com/conspico/esh/core/http"
 	"golang.org/x/oauth2"
+	gh "golang.org/x/oauth2/github"
 )
 
+// Github related properties
 const (
-	// ProfileURL ...
-	ProfileURL = "https://api.github.com/user"
-
-	name = "github"
+	GithubBaseURL        = "https://api.github.com"
+	GithubProfileURL     = GithubBaseURL + "/user"
+	GithubGetUserRepoURL = GithubBaseURL + "/users/:user/repos"
+	GithubGetOrgRepoURL  = GithubBaseURL + "/orgs/:org/repos"
+	GithubProviderName   = "github"
 )
 
 // Github ...
 type Github struct {
-	ClientID    string
-	Secret      string
 	CallbackURL string
 	Config      *oauth2.Config
 }
@@ -39,15 +41,10 @@ func GithubProvider(clientID, secret, callbackURL string) *Github {
 		ClientID:     clientID,
 		ClientSecret: secret,
 		Scopes:       []string{"user,repo"},
-		Endpoint: oauth2.Endpoint{
-			AuthURL:  "https://github.com/login/oauth/authorize",
-			TokenURL: "https://github.com/login/oauth/access_token",
-		},
+		Endpoint:     gh.Endpoint,
 	}
 
 	return &Github{
-		clientID,
-		secret,
 		callbackURL,
 		conf,
 	}
@@ -55,7 +52,7 @@ func GithubProvider(clientID, secret, callbackURL string) *Github {
 
 // Name of the provider
 func (g *Github) Name() string {
-	return name
+	return GithubProviderName
 }
 
 // Authorize ...
@@ -79,7 +76,14 @@ func (g *Github) Authorized(code string) (VCS, error) {
 	fmt.Println("Extracted token = ", tok)
 	u := VCS{}
 	u.AccessCode = code
+	u.RefreshToken = tok.RefreshToken
 	u.AccessToken = tok.AccessToken
+	if !tok.Expiry.IsZero() { // zero never expires
+		u.TokenExpiry = tok.Expiry
+	} else {
+		u.TokenExpiry = time.Now()
+	}
+	u.TokenType = tok.TokenType
 	u.Type = GithubType
 
 	us := struct {
@@ -89,7 +93,7 @@ func (g *Github) Authorized(code string) (VCS, error) {
 		Picture string `json:"avatar_url"`
 	}{}
 
-	err = chttp.NewGetRequestMaker(ProfileURL).QueryParam("access_token", tok.AccessToken).Scan(&us).Dispatch()
+	err = chttp.NewGetRequestMaker(GithubProfileURL).Header("Accept", "application/json").QueryParam("access_token", tok.AccessToken).Scan(&us).Dispatch()
 	if err != nil {
 		return u, err
 	}
@@ -99,6 +103,73 @@ func (g *Github) Authorized(code string) (VCS, error) {
 	return u, err
 }
 
-// func (g *Github) ListRepos(accessToken, repoType string) {
+// RefreshToken ..
+func (g *Github) RefreshToken(token string) (*oauth2.Token, error) {
 
-// }
+	r := chttp.NewGetRequestMaker(gh.Endpoint.TokenURL)
+
+	r.Header("Accept", "application/json")
+	r.Header("Content-Type", "application/x-www-form-urlencoded")
+
+	r.QueryParam("client_id", g.Config.ClientID)
+	r.QueryParam("client_secret", g.Config.ClientSecret)
+	r.QueryParam("grant_type", "refresh_token")
+	r.QueryParam("refresh_token", token)
+
+	var tok oauth2.Token
+	err := r.Scan(&tok).Dispatch()
+
+	if err != nil {
+		return nil, err
+	}
+	return &tok, nil
+}
+
+// GetRepos ..
+// returns the list of repositories
+func (g *Github) GetRepos(token string, ownerType int) ([]Repo, error) {
+
+	var url string
+	if OwnerTypeUser == ownerType {
+		url = GithubGetUserRepoURL
+	} else if OwnerTypeOrg == ownerType {
+		url = GithubGetUserRepoURL
+	}
+
+	r := chttp.NewGetRequestMaker(url)
+
+	r.Header("Accept", "application/json")
+	r.Header("Content-Type", "application/x-www-form-urlencoded")
+
+	var rpo []struct {
+		RepoID        string
+		Name          string
+		Private       string
+		Link          string `json:"html_url"`
+		Description   string
+		Fork          string
+		DefaultBranch string
+		Language      string
+	}
+	err := r.Scan(&rpo).Dispatch()
+	if err != nil {
+
+	}
+
+	var repos []Repo
+	for _, repo := range rpo {
+
+		rp := &Repo{
+			RepoID:        repo.RepoID,
+			Name:          repo.Name,
+			Private:       repo.Private,
+			Link:          repo.Link,
+			Description:   repo.Description,
+			Fork:          repo.Fork,
+			DefaultBranch: repo.DefaultBranch,
+			Language:      repo.Language,
+		}
+		repos = append(repos, *rp)
+	}
+	return repos, err
+}

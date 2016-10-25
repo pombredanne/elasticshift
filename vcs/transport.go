@@ -35,7 +35,16 @@ func MakeRequestHandler(ctx context.Context, s Service, r *mux.Router, signer in
 		verifier,
 	)
 
+	syncVCSHandler := chttp.NewPrivateRequestHandler(
+		ctx,
+		decodeSyncVCSRequest,
+		encodeSyncVCSResponse,
+		makeSyncVCSEdge(s),
+		signer,
+		verifier,
+	)
 	r.Handle("/api/auth/{provider}", authorizeHandler).Methods("GET")
 	r.Handle("/api/auth/{provider}/callback/{team}", authorizedHandler).Methods("GET")
+	r.Handle("/api/vcs/sync/{id}", syncVCSHandler).Methods("GET")
 	r.Handle("/api/vcs", getVCSHandler).Methods("GET")
 }

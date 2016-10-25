@@ -187,6 +187,7 @@ func (r *RequestMaker) Dispatch() error {
 		return err
 	}
 
+	fmt.Println("Response = ", string(bits[:]))
 	// decode to response type
 	err = json.NewDecoder(bytes.NewReader(bits)).Decode(r.response)
 	if err != nil {
