@@ -106,7 +106,7 @@ func (s service) SyncVCS(teamID, providerID string) (bool, error) {
 func (s service) sync(acc VCS) error {
 
 	// Get the token
-	/*t, err := s.getToken(acc)
+	t, err := s.getToken(acc)
 	if err != nil {
 		return fmt.Errorf(errGetUpdatedFokenFailed, err)
 	}
@@ -118,7 +118,21 @@ func (s service) sync(acc VCS) error {
 	}
 
 	// repository received from provider
-	repos, err := p.GetRepos(t, acc.OwnerType) */
+	repos, err := p.GetRepos(t, acc.OwnerType)
+	if err != nil {
+		return err
+	}
+	fmt.Println(repos)
+
+	// Fetch the repositories from VCS
+	/*lrpo, err := s.repoDS.GetReposByVCSID(acc.ID)
+	if err != nil {
+		return err
+	}
+	rpo := make(map[string]repo.Repo)
+	for _, l := range lrpo {
+		rpo[l.RepoID] = l
+	}*/
 
 	// combine the result set
 
@@ -152,7 +166,7 @@ func (s service) getToken(a VCS) (string, error) {
 	tok, err := p.RefreshToken(a.RefreshToken)
 
 	// persist the updated token information
-	err = s.vcsDS.Update(&a, VCS{
+	err = s.vcsDS.UpdateVCS(&a, VCS{
 		AccessToken:  tok.AccessToken,
 		TokenExpiry:  tok.Expiry,
 		RefreshToken: tok.RefreshToken,

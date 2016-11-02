@@ -57,7 +57,7 @@ func (r *vcsDatastore) GetByID(id string) (vcs.VCS, error) {
 	return result, err
 }
 
-func (r *vcsDatastore) Update(old *vcs.VCS, updated vcs.VCS) error {
+func (r *vcsDatastore) UpdateVCS(old *vcs.VCS, updated vcs.VCS) error {
 
 	r.mtx.Lock()
 	defer r.mtx.Unlock()

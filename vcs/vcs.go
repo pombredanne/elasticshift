@@ -23,12 +23,14 @@ const (
 	OwnerTypeOrg  = 2
 )
 
-// Repository provides access a user.
+// Datastore provides access a user.
 type Datastore interface {
+
+	// VCS account related operations
 	Save(user *VCS) error
 	GetVCS(teamID string) ([]VCS, error)
 	GetByID(id string) (VCS, error)
-	Update(old *VCS, updated VCS) error
+	UpdateVCS(old *VCS, updated VCS) error
 }
 
 // VCS contains the information common amongst most OAuth and OAuth2 providers.

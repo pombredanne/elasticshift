@@ -70,6 +70,7 @@ func main() {
 		teamDS = datastore.NewTeam(db)
 		userDS = datastore.NewUser(db)
 		vcsDS  = datastore.NewVCS(db)
+		//repoDS = datastore.NewRepo(db)
 	)
 
 	// load keys
