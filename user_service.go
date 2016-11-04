@@ -1,35 +1,43 @@
-package user
+package esh
 
 import (
 	"strings"
 	"time"
 
-	"github.com/spf13/viper"
 	"gitlab.com/conspico/esh/core/auth"
 	"gitlab.com/conspico/esh/core/util"
-	"gitlab.com/conspico/esh/team"
 	"golang.org/x/crypto/bcrypt"
 )
 
-// Service ..
-type Service interface {
-	Create(teamName, domain, fullName, email, password string) (string, error)
-	SignIn(teamName, domain, email, password string) (string, error)
-	SignOut() (bool, error)
-	Verify(code string) (bool, error)
-}
+const (
 
-type service struct {
-	userDS Datastore
-	teamDS team.Datastore
-	config *viper.Viper
+	// Separator used to delimit user info sent for activation
+	Separator = ";"
+
+	// Inactive ..
+	Inactive = 0
+
+	// Active ..
+	Active = 1
+
+	// Unlocked ..
+	Unlocked = 0
+
+	// Locked ..
+	Locked = 1
+)
+
+type userService struct {
+	userDS UserDatastore
+	teamDS TeamDatastore
+	config Config
 	signer interface{}
 }
 
-// NewService ..
-func NewService(u Datastore, t team.Datastore, conf *viper.Viper, signer interface{}) Service {
+// NewUserService ..
+func NewUserService(u UserDatastore, t TeamDatastore, conf Config, signer interface{}) UserService {
 
-	return &service{
+	return &userService{
 		userDS: u,
 		teamDS: t,
 		config: conf,
@@ -44,7 +52,7 @@ type verification struct {
 }
 
 // Create a new user for a team
-func (s service) Create(teamName, domain, fullname, email, password string) (string, error) {
+func (s userService) Create(teamName, domain, fullname, email, password string) (string, error) {
 
 	teamID, err := s.getTeamID(teamName, domain)
 	if err != nil {
@@ -92,7 +100,7 @@ func (s service) Create(teamName, domain, fullname, email, password string) (str
 }
 
 // SignIn ..
-func (s service) SignIn(teamName, domain, email, password string) (string, error) {
+func (s userService) SignIn(teamName, domain, email, password string) (string, error) {
 
 	teamID, err := s.getTeamID(teamName, domain)
 	if err != nil {
@@ -111,12 +119,12 @@ func (s service) SignIn(teamName, domain, email, password string) (string, error
 }
 
 // SignOut ..
-func (s service) SignOut() (bool, error) {
+func (s userService) SignOut() (bool, error) {
 	return true, nil
 }
 
 // Generates the auth token
-func (s service) generateAuthToken(teamID, userID string) (string, error) {
+func (s userService) generateAuthToken(teamID, userID string) (string, error) {
 
 	t := auth.Token{
 		TeamID: teamID,
@@ -131,10 +139,10 @@ func (s service) generateAuthToken(teamID, userID string) (string, error) {
 }
 
 // Verify .. the user code sent via email
-func (s service) Verify(code string) (bool, error) {
+func (s userService) Verify(code string) (bool, error) {
 
 	//teamID, err := s.teamRepository.GetTeamID(teamName)
-	decrypted, err := util.XORDecrypt(s.config.GetString("key.verifycode"), code)
+	decrypted, err := util.XORDecrypt(s.config.Key.VerifyCode, code)
 	if err != nil {
 		return false, errVerificationCodeFailed
 	}
@@ -151,7 +159,7 @@ func (s service) Verify(code string) (bool, error) {
 	return true, nil
 }
 
-func (s service) getTeamID(teamName, domain string) (string, error) {
+func (s userService) getTeamID(teamName, domain string) (string, error) {
 
 	// checks the team from subdomain
 	teamID, err := s.teamDS.GetTeamID(domain)

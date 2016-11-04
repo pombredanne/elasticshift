@@ -1,9 +1,7 @@
-package datastore
+package esh
 
 import (
 	"sync"
-
-	"gitlab.com/conspico/esh/team"
 
 	"github.com/jinzhu/gorm"
 )
@@ -13,7 +11,7 @@ type teamDatastore struct {
 	db  *gorm.DB
 }
 
-func (r *teamDatastore) Save(team *team.Team) error {
+func (r *teamDatastore) Save(team *Team) error {
 
 	r.mtx.Lock()
 	defer r.mtx.Unlock()
@@ -49,17 +47,17 @@ func (r *teamDatastore) GetTeamID(name string) (string, error) {
 	return result.ID, err
 }
 
-func (r *teamDatastore) FindByName(name string) (team.Team, error) {
+func (r *teamDatastore) FindByName(name string) (Team, error) {
 
 	r.mtx.Lock()
 	defer r.mtx.Unlock()
 
-	var result team.Team
+	var result Team
 	err := r.db.Where("name = ?", name).First(&result).Error
 	return result, err
 }
 
-// NewTeam ..
-func NewTeam(db *gorm.DB) team.Datastore {
+// NewTeamDatastore ..
+func NewTeamDatastore(db *gorm.DB) TeamDatastore {
 	return &teamDatastore{db: db}
 }

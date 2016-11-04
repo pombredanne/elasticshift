@@ -1,9 +1,7 @@
-package datastore
+package esh
 
 import (
 	"sync"
-
-	"gitlab.com/conspico/esh/user"
 
 	"github.com/jinzhu/gorm"
 )
@@ -13,7 +11,7 @@ type userDatastore struct {
 	db  *gorm.DB
 }
 
-func (r *userDatastore) Save(user *user.User) error {
+func (r *userDatastore) Save(user *User) error {
 
 	r.mtx.Lock()
 	defer r.mtx.Unlock()
@@ -37,12 +35,12 @@ func (r *userDatastore) CheckExists(email, teamID string) (bool, error) {
 	return result.Exist == 1, err
 }
 
-func (r *userDatastore) GetUser(email, teamID string) (user.User, error) {
+func (r *userDatastore) GetUser(email, teamID string) (User, error) {
 
 	r.mtx.Lock()
 	defer r.mtx.Unlock()
 
-	var result user.User
+	var result User
 	err := r.db.Raw(`SELECT id, 
 							team_id, 
 							fullname, 
@@ -56,17 +54,17 @@ func (r *userDatastore) GetUser(email, teamID string) (user.User, error) {
 	return result, err
 }
 
-func (r *userDatastore) FindByName(name string) (user.User, error) {
+func (r *userDatastore) FindByName(name string) (User, error) {
 
 	r.mtx.Lock()
 	defer r.mtx.Unlock()
 
-	var result user.User
+	var result User
 	err := r.db.Where("username = ?", name).First(&result).Error
 	return result, err
 }
 
-// NewUser ..
-func NewUser(db *gorm.DB) user.Datastore {
+// NewUserDatastore ..
+func NewUserDatastore(db *gorm.DB) UserDatastore {
 	return &userDatastore{db: db}
 }

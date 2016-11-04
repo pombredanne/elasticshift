@@ -18,8 +18,8 @@ db:
 
 key:
     verifycode: $h1n1ngF1@tC@r4r$h@hBr0$p01l@ch1
-    signer: keys/esh.rsa
-    verifier: keys/esh.rsa.pub
+    signer: config/esh.rsa
+    verifier: config/esh.rsa.pub
 
 
 

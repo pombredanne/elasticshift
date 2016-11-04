@@ -1,4 +1,4 @@
-package team
+package esh
 
 import (
 	"time"
@@ -6,16 +6,11 @@ import (
 	"gitlab.com/conspico/esh/core/util"
 )
 
-// Service ..
-type Service interface {
-	Create(name string) (bool, error)
+type teamservice struct {
+	teamDS TeamDatastore
 }
 
-type service struct {
-	teamDS Datastore
-}
-
-func (s service) Create(name string) (bool, error) {
+func (s teamservice) Create(name string) (bool, error) {
 
 	result, err := s.teamDS.CheckExists(name)
 	if result {
@@ -42,9 +37,9 @@ func (s service) Create(name string) (bool, error) {
 	return err == nil, err
 }
 
-// NewService ..
-func NewService(t Datastore) Service {
-	return &service{
+// NewTeamService ..
+func NewTeamService(t TeamDatastore) TeamService {
+	return &teamservice{
 		teamDS: t,
 	}
 }

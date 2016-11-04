@@ -1,4 +1,4 @@
-package vcs
+package esh
 
 import (
 	"fmt"
@@ -6,38 +6,33 @@ import (
 	"time"
 
 	"gitlab.com/conspico/esh/core/util"
-	"gitlab.com/conspico/esh/team"
-
-	"github.com/spf13/viper"
 )
 
 // expiryDelta determines how earlier a token should be considered
 const expiryDelta = 10 * time.Second
 
-// Service ..
-type Service interface {
-	Authorize(subdomain, provider string, r *http.Request) (AuthorizeResponse, error)
-	Authorized(subdomain, provider, code string, r *http.Request) (AuthorizeResponse, error)
-	GetVCS(teamID string) (GetVCSResponse, error)
-	SyncVCS(teamID, provider string) (bool, error)
-}
+// VCS account owner type
+const (
+	OwnerTypeUser = 1
+	OwnerTypeOrg  = 2
+)
 
-type service struct {
-	vcsDS        Datastore
-	teamDS       team.Datastore
+type vcsService struct {
+	vcsDS        VCSDatastore
+	teamDS       TeamDatastore
 	vcsProviders *Providers
-	config       *viper.Viper
+	config       Config
 }
 
-// NewService ..
-func NewService(v Datastore, t team.Datastore, conf *viper.Viper) Service {
+// NewVCSService ..
+func NewVCSService(v VCSDatastore, t TeamDatastore, conf Config) VCSService {
 
 	providers := NewProviders(
-		GithubProvider(conf.GetString("github.key"), conf.GetString("github.secret"), conf.GetString("github.callback")),
-		BitbucketProvider(conf.GetString("bitbucket.key"), conf.GetString("bitbucket.secret"), conf.GetString("bitbucket.callback")),
+		GithubProvider(conf.Github.Key, conf.Github.Secret, conf.Github.Callback),
+		BitbucketProvider(conf.Bitbucket.Key, conf.Bitbucket.Secret, conf.Bitbucket.Callback),
 	)
 
-	return &service{
+	return &vcsService{
 		vcsProviders: providers,
 		vcsDS:        v,
 		teamDS:       t,
@@ -45,7 +40,7 @@ func NewService(v Datastore, t team.Datastore, conf *viper.Viper) Service {
 	}
 }
 
-func (s service) Authorize(teamID, provider string, r *http.Request) (AuthorizeResponse, error) {
+func (s vcsService) Authorize(teamID, provider string, r *http.Request) (AuthorizeResponse, error) {
 
 	p, err := s.vcsProviders.Get(provider)
 	if err != nil {
@@ -59,7 +54,7 @@ func (s service) Authorize(teamID, provider string, r *http.Request) (AuthorizeR
 
 // Authorized ..
 // Invoked when authorization finished by oauth app
-func (s service) Authorized(teamID, provider, code string, r *http.Request) (AuthorizeResponse, error) {
+func (s vcsService) Authorized(teamID, provider, code string, r *http.Request) (AuthorizeResponse, error) {
 
 	p, err := s.vcsProviders.Get(provider)
 	if err != nil {
@@ -83,13 +78,13 @@ func (s service) Authorized(teamID, provider, code string, r *http.Request) (Aut
 	return AuthorizeResponse{Err: nil, URL: url, Request: r}, err
 }
 
-func (s service) GetVCS(teamID string) (GetVCSResponse, error) {
+func (s vcsService) GetVCS(teamID string) (GetVCSResponse, error) {
 
 	result, err := s.vcsDS.GetVCS(teamID)
 	return GetVCSResponse{Result: result}, err
 }
 
-func (s service) SyncVCS(teamID, providerID string) (bool, error) {
+func (s vcsService) SyncVCS(teamID, providerID string) (bool, error) {
 
 	acc, err := s.vcsDS.GetByID(providerID)
 	if err != nil {
@@ -103,7 +98,7 @@ func (s service) SyncVCS(teamID, providerID string) (bool, error) {
 	return true, nil
 }
 
-func (s service) sync(acc VCS) error {
+func (s vcsService) sync(acc VCS) error {
 
 	// Get the token
 	t, err := s.getToken(acc)
@@ -144,7 +139,7 @@ func (s service) sync(acc VCS) error {
 // Gets the valid token
 // Checks whether the token is expired.
 // Expired token will get refreshed.
-func (s service) getToken(a VCS) (string, error) {
+func (s vcsService) getToken(a VCS) (string, error) {
 
 	// Never expire type token
 	if a.RefreshToken == "" {
@@ -180,7 +175,7 @@ func (s service) getToken(a VCS) (string, error) {
 }
 
 // Gets the provider by type
-func (s service) getProvider(vcsType int) (Provider, error) {
+func (s vcsService) getProvider(vcsType int) (Provider, error) {
 
 	var name string
 	switch vcsType {

@@ -1,23 +1,16 @@
-package team
+package esh
 
 import (
 	"context"
 	"encoding/json"
 	"net/http"
 
-	"gitlab.com/conspico/esh/core/edge"
 	"gitlab.com/conspico/esh/core/util"
 )
 
 // create team
 type createTeamRequest struct {
 	Name string `json:"name"`
-}
-
-type createTeamResponse struct {
-	Created bool
-	Code    string
-	Err     error
 }
 
 func decodeCreateTeamRequest(ctx context.Context, r *http.Request) (interface{}, error) {
@@ -46,23 +39,4 @@ func decodeCreateTeamRequest(ctx context.Context, r *http.Request) (interface{},
 		return false, errDomainNameMaxLength
 	}
 	return team, nil
-}
-
-func encodeCreateTeamResponse(ctx context.Context, w http.ResponseWriter, response interface{}) error {
-
-	resp := response.(createTeamResponse)
-	if resp.Created {
-		w.WriteHeader(http.StatusCreated)
-		return nil
-	}
-	return resp.Err
-}
-
-func makeCreateTeamEdge(s Service) edge.Edge {
-
-	return func(ctx context.Context, request interface{}) (interface{}, error) {
-		req := request.(createTeamRequest)
-		created, err := s.Create(req.Name)
-		return createTeamResponse{Created: created, Err: err}, nil
-	}
 }

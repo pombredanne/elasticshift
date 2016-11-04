@@ -1,10 +1,8 @@
-package vcs_test
+package esh_test
 
 import (
 	"fmt"
 	"testing"
-
-	"gitlab.com/conspico/esh/vcs"
 )
 
 func TestAuthorized(t *testing.T) {

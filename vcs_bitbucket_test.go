@@ -1,4 +1,4 @@
-package vcs_test
+package esh_test
 
 import (
 	"encoding/json"

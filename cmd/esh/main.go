@@ -12,12 +12,9 @@ import (
 	"fmt"
 
 	"github.com/spf13/viper"
-	"gitlab.com/conspico/esh/team"
-	"gitlab.com/conspico/esh/user"
-	"gitlab.com/conspico/esh/vcs"
+	"gitlab.com/conspico/esh"
 
 	"github.com/gorilla/mux"
-	"gitlab.com/conspico/esh/datastore"
 
 	"github.com/jinzhu/gorm"
 	_ "github.com/jinzhu/gorm/dialects/mysql"
@@ -31,16 +28,19 @@ func main() {
 	// Logger
 
 	// App configuration
-	conf := viper.New()
-	conf.SetConfigType("yml")
-	conf.SetConfigFile("esh.yml")
-	conf.ReadInConfig()
+	vip := viper.New()
+	vip.SetConfigType("yml")
+	vip.SetConfigFile("esh.yml")
+	vip.ReadInConfig()
+
+	config := esh.Config{}
+	vip.Unmarshal(&config)
 
 	// Unwrap DEK - data encryption key
 	ctx := context.Background()
 
 	// DB Initialization
-	db, err := gorm.Open(conf.GetString("db.dialect"), conf.GetString("db.datasource"))
+	db, err := gorm.Open(config.DB.Dialect, config.DB.Datasource)
 	if err != nil {
 		fmt.Println("Cannot initialize database.", err)
 		panic("Cannot connect DB")
@@ -54,10 +54,10 @@ func main() {
 
 	// set the configurations
 	db.SingularTable(true)
-	db.DB().SetMaxOpenConns(conf.GetInt("db.max_connections"))
-	db.DB().SetMaxIdleConns(conf.GetInt("db.idle_connections"))
+	db.DB().SetMaxOpenConns(config.DB.MaxConnection)
+	db.DB().SetMaxIdleConns(config.DB.IdleConnection)
 
-	db.LogMode(conf.GetBool("db.log"))
+	db.LogMode(config.DB.Log)
 	defer db.Close()
 
 	// TLS
@@ -67,39 +67,34 @@ func main() {
 
 	// Init datastore
 	var (
-		teamDS = datastore.NewTeam(db)
-		userDS = datastore.NewUser(db)
-		vcsDS  = datastore.NewVCS(db)
+		teamDS = esh.NewTeamDatastore(db)
+		userDS = esh.NewUserDatastore(db)
+		vcsDS  = esh.NewVCSDatastore(db)
 		//repoDS = datastore.NewRepo(db)
 	)
 
 	// load keys
-	signer, err := loadKey(conf.GetString("key.signer"))
+	signer, err := loadKey(config.Key.Signer)
 	if err != nil {
 		panic(err)
 	}
 
-	verifier, err := loadKey(conf.GetString("key.verifier"))
+	verifier, err := loadKey(config.Key.Verifier)
 	if err != nil {
 		panic(err)
 	}
 
 	// Initialize services
-	var ts team.Service
-	ts = team.NewService(teamDS)
-
-	var us user.Service
-	us = user.NewService(userDS, teamDS, conf, signer)
-
-	var vs vcs.Service
-	vs = vcs.NewService(vcsDS, teamDS, conf)
+	ts := esh.NewTeamService(teamDS)
+	us := esh.NewUserService(userDS, teamDS, config, signer)
+	vs := esh.NewVCSService(vcsDS, teamDS, config)
 
 	router := mux.NewRouter()
 
 	// Router (includes subdomain)
-	team.MakeRequestHandler(ctx, ts, router)
-	user.MakeRequestHandler(ctx, us, router, signer, verifier)
-	vcs.MakeRequestHandler(ctx, vs, router, signer, verifier)
+	esh.MakeTeamHandler(ctx, ts, router)
+	esh.MakeUserHandler(ctx, us, router, signer, verifier)
+	esh.MakeVCSHandler(ctx, vs, router, signer, verifier)
 
 	// pprof
 	router.HandleFunc("/debug/pprof", pprof.Index)

@@ -1,9 +1,7 @@
-package datastore
+package esh
 
 import (
 	"sync"
-
-	"gitlab.com/conspico/esh/vcs"
 
 	"github.com/jinzhu/gorm"
 )
@@ -13,7 +11,7 @@ type vcsDatastore struct {
 	db  *gorm.DB
 }
 
-func (r *vcsDatastore) Save(v *vcs.VCS) error {
+func (r *vcsDatastore) Save(v *VCS) error {
 
 	r.mtx.Lock()
 	defer r.mtx.Unlock()
@@ -24,12 +22,12 @@ func (r *vcsDatastore) Save(v *vcs.VCS) error {
 	return err
 }
 
-func (r *vcsDatastore) GetVCS(teamID string) ([]vcs.VCS, error) {
+func (r *vcsDatastore) GetVCS(teamID string) ([]VCS, error) {
 
 	r.mtx.Lock()
 	defer r.mtx.Unlock()
 
-	var result []vcs.VCS
+	var result []VCS
 	err := r.db.Raw(`SELECT id, 
 							name, 
 							type, 
@@ -39,12 +37,12 @@ func (r *vcsDatastore) GetVCS(teamID string) ([]vcs.VCS, error) {
 	return result, err
 }
 
-func (r *vcsDatastore) GetByID(id string) (vcs.VCS, error) {
+func (r *vcsDatastore) GetByID(id string) (VCS, error) {
 
 	r.mtx.Lock()
 	defer r.mtx.Unlock()
 
-	var result vcs.VCS
+	var result VCS
 	err := r.db.Raw(`SELECT id, 
 							name, 
 							type, 
@@ -57,7 +55,7 @@ func (r *vcsDatastore) GetByID(id string) (vcs.VCS, error) {
 	return result, err
 }
 
-func (r *vcsDatastore) UpdateVCS(old *vcs.VCS, updated vcs.VCS) error {
+func (r *vcsDatastore) UpdateVCS(old *VCS, updated VCS) error {
 
 	r.mtx.Lock()
 	defer r.mtx.Unlock()
@@ -66,7 +64,7 @@ func (r *vcsDatastore) UpdateVCS(old *vcs.VCS, updated vcs.VCS) error {
 	return err
 }
 
-// NewVCS ..
-func NewVCS(db *gorm.DB) vcs.Datastore {
+// NewVCSDatastore ..
+func NewVCSDatastore(db *gorm.DB) VCSDatastore {
 	return &vcsDatastore{db: db}
 }

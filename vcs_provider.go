@@ -1,9 +1,18 @@
-package vcs
+package esh
 
 import (
 	"fmt"
 
 	"golang.org/x/oauth2"
+)
+
+// VCS user type
+const (
+	GithubType    = 1
+	GitlabType    = 2
+	BitBucketType = 3
+	SvnType       = 4
+	TfsType       = 5
 )
 
 // Provider ..
