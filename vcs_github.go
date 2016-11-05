@@ -3,6 +3,7 @@ package esh
 import (
 	"fmt"
 	"log"
+	"strconv"
 	"time"
 
 	chttp "gitlab.com/conspico/esh/core/http"
@@ -154,7 +155,7 @@ func (g *Github) GetRepos(token, accountName string, ownerType int) ([]Repo, err
 	r.QueryParam("access_token", token)
 
 	result := []struct {
-		RepoID        string `json:"id"`
+		RepoID        int `json:"id"`
 		Name          string
 		Private       bool
 		Link          string `json:"html_url"`
@@ -174,7 +175,7 @@ func (g *Github) GetRepos(token, accountName string, ownerType int) ([]Repo, err
 	for _, repo := range result {
 
 		rp := &Repo{
-			RepoID:        repo.RepoID,
+			RepoID:        strconv.Itoa(repo.RepoID),
 			Name:          repo.Name,
 			Link:          repo.Link,
 			Description:   repo.Description,
