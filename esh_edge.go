@@ -82,6 +82,6 @@ func makeSyncVCSEdge(s VCSService) edge.Edge {
 
 	return func(ctx context.Context, request interface{}) (interface{}, error) {
 		req := request.(SyncVCSRequest)
-		return s.SyncVCS(req.TeamID, req.ProviderID)
+		return s.SyncVCS(req.TeamID, req.Username, req.ProviderID)
 	}
 }

@@ -1,7 +1,7 @@
 version: v1.0
 projects:
 - app_name: esh
-  app_path: /
+  app_path: /cmd/esh
   app_run: true
   app_bin: true
   app_fmt: true

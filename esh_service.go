@@ -20,5 +20,5 @@ type VCSService interface {
 	Authorize(subdomain, provider string, r *http.Request) (AuthorizeResponse, error)
 	Authorized(subdomain, provider, code string, r *http.Request) (AuthorizeResponse, error)
 	GetVCS(teamID string) (GetVCSResponse, error)
-	SyncVCS(teamID, provider string) (bool, error)
+	SyncVCS(teamID, userName, provider string) (bool, error)
 }

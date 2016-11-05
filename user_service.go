@@ -96,7 +96,7 @@ func (s userService) Create(teamName, domain, fullname, email, password string) 
 		return "", errUserCreationFailed
 	}
 
-	return s.generateAuthToken(teamID, email)
+	return s.generateAuthToken(teamID, email, userName)
 }
 
 // SignIn ..
@@ -115,7 +115,7 @@ func (s userService) SignIn(teamName, domain, email, password string) (string, e
 	if err != nil {
 		return errInvalidEmailOrPassword.Error(), nil
 	}
-	return s.generateAuthToken(teamID, user.ID)
+	return s.generateAuthToken(teamID, user.ID, user.Username)
 }
 
 // SignOut ..
@@ -124,11 +124,12 @@ func (s userService) SignOut() (bool, error) {
 }
 
 // Generates the auth token
-func (s userService) generateAuthToken(teamID, userID string) (string, error) {
+func (s userService) generateAuthToken(teamID, userID, userName string) (string, error) {
 
 	t := auth.Token{
-		TeamID: teamID,
-		UserID: userID,
+		TeamID:   teamID,
+		UserID:   userID,
+		Username: userName,
 	}
 
 	signedStr, err := auth.GenerateToken(s.signer, t)

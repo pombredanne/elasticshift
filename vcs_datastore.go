@@ -44,13 +44,15 @@ func (r *vcsDatastore) GetByID(id string) (VCS, error) {
 
 	var result VCS
 	err := r.db.Raw(`SELECT id, 
+			                team_id,
 							name, 
 							type, 
 							avatar_url,
 							access_token,
 							refresh_token,
 							token_expiry,
-							token_type
+							token_type,
+							owner_type
 				     FROM VCS WHERE ID = ? LIMIT 1`, id).Scan(&result).Error
 	return result, err
 }
@@ -60,7 +62,7 @@ func (r *vcsDatastore) UpdateVCS(old *VCS, updated VCS) error {
 	r.mtx.Lock()
 	defer r.mtx.Unlock()
 
-	err := r.db.Model(old).Updates(updated).Error
+	err := r.db.Model(&old).Updates(updated).Error
 	return err
 }
 

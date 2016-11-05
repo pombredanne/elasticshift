@@ -114,10 +114,10 @@ type Repo struct {
 	VcsID         string `json:"-"`
 	RepoID        string
 	Name          string
-	Private       string
+	Private       int
 	Link          string
 	Description   string
-	Fork          string
+	Fork          int
 	DefaultBranch string
 	Language      string
 	CreatedDt     time.Time `json:"-"`

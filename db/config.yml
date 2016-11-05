@@ -5,5 +5,5 @@ develop:
 
 qa:
     dialect: mysql
-    datasource: eshqa:eshpazz@/esh?parseTime=true
+    datasource: eshqa:eshpazz@/esh?parseTime=true&useUnicode=true
     dir: mysql

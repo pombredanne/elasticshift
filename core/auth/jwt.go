@@ -17,8 +17,9 @@ var (
 
 // Token ..
 type Token struct {
-	TeamID string
-	UserID string
+	TeamID   string
+	UserID   string
+	Username string
 }
 
 // GenerateToken ..
@@ -87,7 +88,8 @@ func GetToken(token *jwt.Token) Token {
 	tok := claims["tok"].(map[string]interface{})
 
 	return Token{
-		TeamID: tok["TeamID"].(string),
-		UserID: tok["UserID"].(string),
+		TeamID:   tok["TeamID"].(string),
+		UserID:   tok["UserID"].(string),
+		Username: tok["Username"].(string),
 	}
 }

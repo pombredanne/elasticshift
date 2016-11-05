@@ -96,10 +96,10 @@ func MakeVCSHandler(ctx context.Context, s VCSService, r *mux.Router, signer int
 		signer,
 		verifier,
 	)
-	r.Handle("/api/auth/{provider}", authorizeHandler).Methods("GET")
-	r.Handle("/api/auth/{provider}/callback/{team}", authorizedHandler).Methods("GET")
-	r.Handle("/api/vcs/sync/{id}", syncVCSHandler).Methods("GET")
-	r.Handle("/api/vcs", getVCSHandler).Methods("GET")
+	r.Handle("/api/auth/{provider}", accessControl(authorizeHandler)).Methods("GET")
+	r.Handle("/api/auth/{provider}/callback/{team}", accessControl(authorizedHandler)).Methods("GET")
+	r.Handle("/api/vcs/sync/{id}", accessControl(syncVCSHandler)).Methods("GET")
+	r.Handle("/api/vcs", accessControl(getVCSHandler)).Methods("GET")
 }
 
 func accessControl(h http.Handler) http.Handler {

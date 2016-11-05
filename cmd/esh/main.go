@@ -70,7 +70,7 @@ func main() {
 		teamDS = esh.NewTeamDatastore(db)
 		userDS = esh.NewUserDatastore(db)
 		vcsDS  = esh.NewVCSDatastore(db)
-		//repoDS = datastore.NewRepo(db)
+		repoDS = esh.NewRepoDatastore(db)
 	)
 
 	// load keys
@@ -87,7 +87,7 @@ func main() {
 	// Initialize services
 	ts := esh.NewTeamService(teamDS)
 	us := esh.NewUserService(userDS, teamDS, config, signer)
-	vs := esh.NewVCSService(vcsDS, teamDS, config)
+	vs := esh.NewVCSService(vcsDS, teamDS, repoDS, config)
 
 	router := mux.NewRouter()
 

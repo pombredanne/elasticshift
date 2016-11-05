@@ -2,10 +2,10 @@ package http
 
 import (
 	"bytes"
+	"encoding/base64"
 	"encoding/json"
 	"errors"
 	"fmt"
-	"io/ioutil"
 	"net/http"
 	"strings"
 )
@@ -14,15 +14,16 @@ import (
 const (
 	GET  = "GET"
 	POST = "POST"
+	PUT  = "PUT"
 )
 
 var (
 	pathParamIndicator = ":"
 	urlSeparator       = "/"
 
-	errPathParamConflift          = errors.New("Path parameter placeholder and actual vaues doesn't match")
-	errMethodUnknown              = errors.New("Unknown request METHOD")
-	errCannotSetBodyOnPostRequest = errors.New("Body can only be set for GET request type")
+	errPathParamConflift = errors.New("Path parameter placeholder and actual vaues doesn't match")
+	errMethodUnknown     = errors.New("Unknown request METHOD")
+	errCannotSetBody     = "Cannot set body for %s request"
 )
 
 // RequestMaker ...
@@ -34,6 +35,8 @@ type RequestMaker struct {
 	queryParams map[string]string
 	body        interface{}
 	response    interface{}
+	username    string
+	password    string
 }
 
 // NewGetRequestMaker ..
@@ -96,6 +99,14 @@ func (r *RequestMaker) Scan(response interface{}) *RequestMaker {
 	return r
 }
 
+// SetBasicAuth ..
+// Set the base64 auth token in header
+func (r *RequestMaker) SetBasicAuth(username, password string) *RequestMaker {
+	r.username = username
+	r.password = password
+	return r
+}
+
 // Dispatch ..
 // This is where actuall request made to destination
 func (r *RequestMaker) Dispatch() error {
@@ -123,10 +134,37 @@ func (r *RequestMaker) Dispatch() error {
 		return errMethodUnknown
 	}
 
-	// create a request
-	req, err := http.NewRequest(r.method, r.url, nil)
+	var req *http.Request
+	var err error
+	// Set the body
+	if r.body != nil {
+
+		if r.method != POST {
+			return fmt.Errorf(errCannotSetBody, r.method)
+		}
+
+		bits, err := json.Marshal(r.body)
+		if err != nil {
+			return err
+		}
+
+		// create a request
+		req, err = http.NewRequest(r.method, r.url, bytes.NewBuffer(bits))
+
+	} else {
+
+		// create a request
+		req, err = http.NewRequest(r.method, r.url, nil)
+	}
+
+	// checks for http request creation errors if any
 	if err != nil {
 		return err
+	}
+
+	// Sets the basic auth header
+	if r.username != "" || r.password != "" {
+		req.Header.Add("Authorization", "Basic "+basicAuth(r.username, r.password))
 	}
 
 	// Sets the header
@@ -147,23 +185,6 @@ func (r *RequestMaker) Dispatch() error {
 		req.URL.RawQuery = q.Encode()
 	}
 
-	// Set the body
-	if r.body != nil {
-
-		if r.method != GET {
-			return errCannotSetBodyOnPostRequest
-		}
-
-		bits, err := json.Marshal(r.body)
-		if err != nil {
-			return err
-		}
-		_, err = req.Body.Read(bits)
-		if err != nil {
-			return err
-		}
-	}
-
 	fmt.Println("Making request to = ", req.URL.String())
 
 	// dispatch the request
@@ -182,16 +203,21 @@ func (r *RequestMaker) Dispatch() error {
 	defer res.Body.Close()
 
 	// read the response body
-	bits, err := ioutil.ReadAll(res.Body)
+	/*bits, err := ioutil.ReadAll(res.Body)
 	if err != nil {
 		return err
 	}
 
-	fmt.Println("Response = ", string(bits[:]))
+	fmt.Println("Response = ", string(bits[:]))*/
 	// decode to response type
-	err = json.NewDecoder(bytes.NewReader(bits)).Decode(r.response)
+	err = json.NewDecoder(res.Body).Decode(r.response)
 	if err != nil {
 		return err
 	}
 	return nil
+}
+
+func basicAuth(username, password string) string {
+	auth := username + ":" + password
+	return base64.StdEncoding.EncodeToString([]byte(auth))
 }

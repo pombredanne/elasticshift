@@ -28,4 +28,6 @@ type VCSDatastore interface {
 type RepoDatastore interface {
 	Save(repo *Repo) error
 	GetReposByVCSID(id string) ([]Repo, error)
+	Update(old Repo, repo Repo) error
+	Delete(repo Repo) error
 }

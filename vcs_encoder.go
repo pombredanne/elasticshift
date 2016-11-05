@@ -43,10 +43,5 @@ func encodeGetVCSResponse(ctx context.Context, w http.ResponseWriter, r interfac
 }
 
 func encodeSyncVCSResponse(ctx context.Context, w http.ResponseWriter, r interface{}) error {
-
-	resp := r.(GenericResponse)
-	if resp.Success {
-		return nil
-	}
-	return resp.Err
+	return nil
 }

@@ -5,8 +5,9 @@ import (
 	"fmt"
 	"net/http"
 
-	"github.com/gorilla/mux"
 	"gitlab.com/conspico/esh/core/auth"
+
+	"github.com/gorilla/mux"
 )
 
 // AuthorizeRequest ..
@@ -20,6 +21,7 @@ type AuthorizeRequest struct {
 // SyncVCSRequest ..
 type SyncVCSRequest struct {
 	TeamID     string
+	Username   string
 	ProviderID string
 }
 
@@ -58,9 +60,9 @@ func decodeGetVCSRequest(ctx context.Context, r *http.Request) (interface{}, err
 
 func decodeSyncVCSRequest(ctx context.Context, r *http.Request) (interface{}, error) {
 
-	teamID := ctx.Value("token").(auth.Token).TeamID
 	params := mux.Vars(r)
 	providerID := params["id"]
+	token := ctx.Value("token").(auth.Token)
 
-	return SyncVCSRequest{TeamID: teamID, ProviderID: providerID}, nil
+	return SyncVCSRequest{TeamID: token.TeamID, Username: token.Username, ProviderID: providerID}, nil
 }

@@ -91,6 +91,9 @@ func (g *Github) Authorized(code string) (VCS, error) {
 		Name    string `json:"name"`
 		Login   string `json:"login"`
 		Picture string `json:"avatar_url"`
+		Owner   struct {
+			Type string
+		}
 	}{}
 
 	err = chttp.NewGetRequestMaker(GithubProfileURL).Header("Accept", "application/json").QueryParam("access_token", tok.AccessToken).Scan(&us).Dispatch()
@@ -100,13 +103,18 @@ func (g *Github) Authorized(code string) (VCS, error) {
 
 	u.AvatarURL = us.Picture
 	u.Name = us.Login
+	if "User" == us.Owner.Type {
+		u.OwnerType = OwnerTypeUser
+	} else {
+		u.OwnerType = OwnerTypeOrg
+	}
 	return u, err
 }
 
 // RefreshToken ..
 func (g *Github) RefreshToken(token string) (*oauth2.Token, error) {
 
-	r := chttp.NewGetRequestMaker(gh.Endpoint.TokenURL)
+	r := chttp.NewGetRequestMaker(g.Config.Endpoint.TokenURL)
 
 	r.Header("Accept", "application/json")
 	r.Header("Content-Type", "application/x-www-form-urlencoded")
@@ -127,7 +135,7 @@ func (g *Github) RefreshToken(token string) (*oauth2.Token, error) {
 
 // GetRepos ..
 // returns the list of repositories
-func (g *Github) GetRepos(token string, ownerType int) ([]Repo, error) {
+func (g *Github) GetRepos(token, accountName string, ownerType int) ([]Repo, error) {
 
 	var url string
 	if OwnerTypeUser == ownerType {
@@ -141,33 +149,45 @@ func (g *Github) GetRepos(token string, ownerType int) ([]Repo, error) {
 	r.Header("Accept", "application/json")
 	r.Header("Content-Type", "application/x-www-form-urlencoded")
 
-	var rpo []struct {
-		RepoID        string
+	r.PathParams(accountName)
+
+	r.QueryParam("access_token", token)
+
+	result := []struct {
+		RepoID        string `json:"id"`
 		Name          string
-		Private       string
+		Private       bool
 		Link          string `json:"html_url"`
 		Description   string
-		Fork          string
-		DefaultBranch string
+		Fork          bool
+		DefaultBranch string `json:"default_branch"`
 		Language      string
-	}
-	err := r.Scan(&rpo).Dispatch()
-	if err != nil {
+	}{}
 
+	err := r.Scan(&result).Dispatch()
+	if err != nil {
+		fmt.Print(err)
+		return nil, err
 	}
 
 	var repos []Repo
-	for _, repo := range rpo {
+	for _, repo := range result {
 
 		rp := &Repo{
 			RepoID:        repo.RepoID,
 			Name:          repo.Name,
-			Private:       repo.Private,
 			Link:          repo.Link,
 			Description:   repo.Description,
-			Fork:          repo.Fork,
 			DefaultBranch: repo.DefaultBranch,
 			Language:      repo.Language,
+		}
+
+		if repo.Private {
+			rp.Private = True
+		}
+
+		if repo.Fork {
+			rp.Fork = True
 		}
 		repos = append(repos, *rp)
 	}

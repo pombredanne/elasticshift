@@ -25,7 +25,7 @@ type Provider interface {
 
 	RefreshToken(token string) (*oauth2.Token, error)
 
-	GetRepos(token string, owner int) ([]Repo, error)
+	GetRepos(token, accountName string, owner int) ([]Repo, error)
 }
 
 // Providers type

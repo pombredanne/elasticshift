@@ -96,36 +96,84 @@ func (b *Bitbucket) Authorized(code string) (VCS, error) {
 // RefreshToken ..
 func (b *Bitbucket) RefreshToken(token string) (*oauth2.Token, error) {
 
-	r := chttp.NewGetRequestMaker(bb.Endpoint.TokenURL)
+	r := chttp.NewPostRequestMaker(b.Config.Endpoint.TokenURL)
+
+	r.SetBasicAuth(b.Config.ClientID, b.Config.ClientSecret)
 
 	r.Header("Accept", "application/json")
-	r.Header("Content-Type", "application/x-www-form-urlencoded")
+	r.Header("Content-Type", "application/json")
 
-	r.QueryParam("client_id", b.Config.ClientID)
-	r.QueryParam("client_secret", b.Config.ClientSecret)
-	r.QueryParam("grant_type", "refresh_token")
-	r.QueryParam("refresh_token", token)
+	body := struct {
+		GrantType    string `json:"grant_type"`
+		RefreshToken string `json:"refresh_token"`
+	}{}
+
+	body.GrantType = "refresh_token"
+	body.RefreshToken = token
+
+	r.Body(&body)
 
 	var tok oauth2.Token
 	err := r.Scan(&tok).Dispatch()
 
 	if err != nil {
+		fmt.Print(err)
 		return nil, err
 	}
+	fmt.Println(tok)
 	return &tok, nil
 }
 
 // GetRepos ..
 // returns the list of repositories
-func (b *Bitbucket) GetRepos(token string, ownerType int) ([]Repo, error) {
+func (b *Bitbucket) GetRepos(token, accountName string, ownerType int) ([]Repo, error) {
 
-	var url string
-	r := chttp.NewGetRequestMaker(url)
+	r := chttp.NewGetRequestMaker(BitbucketGetUserRepoURL)
 
 	r.Header("Accept", "application/json")
 	r.Header("Content-Type", "application/x-www-form-urlencoded")
 
-	var repos []Repo
-	err := r.Scan(&repos).Dispatch()
+	r.PathParams(accountName)
+
+	r.QueryParam("access_token", token)
+
+	rp := struct {
+		Values []struct {
+			Name     string
+			UUID     string
+			Language string
+			Links    struct {
+				HTML struct {
+					Href string
+				}
+				Avatar struct {
+					Href string
+				}
+			}
+			Owner struct {
+				Type string
+			}
+			Description string
+			Private     bool `json:"is_private"`
+		}
+	}{}
+	err := r.Scan(&rp).Dispatch()
+
+	repos := []Repo{}
+	for _, rpo := range rp.Values {
+
+		repo := &Repo{
+			RepoID:      rpo.UUID,
+			Name:        rpo.Name,
+			Language:    rpo.Language,
+			Link:        rpo.Links.HTML.Href,
+			Description: rpo.Description,
+		}
+		if rpo.Private {
+			repo.Private = True
+		}
+
+		repos = append(repos, *repo)
+	}
 	return repos, err
 }
