@@ -7,6 +7,7 @@ import (
 	"errors"
 	"fmt"
 	"net/http"
+	"net/url"
 	"strings"
 )
 
@@ -15,6 +16,12 @@ const (
 	GET  = "GET"
 	POST = "POST"
 	PUT  = "PUT"
+)
+
+// Content type
+const (
+	JSON       = "application/json"
+	URLENCODED = "application/x-www-form-urlencoded"
 )
 
 var (
@@ -37,6 +44,7 @@ type RequestMaker struct {
 	response    interface{}
 	username    string
 	password    string
+	contentType string
 }
 
 // NewGetRequestMaker ..
@@ -107,6 +115,13 @@ func (r *RequestMaker) SetBasicAuth(username, password string) *RequestMaker {
 	return r
 }
 
+// SetContentType ..
+// Set the content type of the request
+func (r *RequestMaker) SetContentType(contentType string) *RequestMaker {
+	r.contentType = contentType
+	return r
+}
+
 // Dispatch ..
 // This is where actuall request made to destination
 func (r *RequestMaker) Dispatch() error {
@@ -143,13 +158,21 @@ func (r *RequestMaker) Dispatch() error {
 			return fmt.Errorf(errCannotSetBody, r.method)
 		}
 
-		bits, err := json.Marshal(r.body)
-		if err != nil {
-			return err
-		}
+		if URLENCODED == r.contentType {
 
-		// create a request
-		req, err = http.NewRequest(r.method, r.url, bytes.NewBuffer(bits))
+			// create a request
+			req, err = http.NewRequest(r.method, r.url, bytes.NewBufferString(r.body.(url.Values).Encode()))
+
+		} else if JSON == r.contentType {
+
+			bits, err := json.Marshal(r.body)
+			if err != nil {
+				return err
+			}
+
+			// create a request
+			req, err = http.NewRequest(r.method, r.url, bytes.NewBuffer(bits))
+		}
 
 	} else {
 
@@ -165,6 +188,11 @@ func (r *RequestMaker) Dispatch() error {
 	// Sets the basic auth header
 	if r.username != "" || r.password != "" {
 		req.Header.Add("Authorization", "Basic "+basicAuth(r.username, r.password))
+	}
+
+	// Sets the content type
+	if r.contentType != "" {
+		req.Header.Add("Content-Type", r.contentType)
 	}
 
 	// Sets the header
@@ -206,9 +234,9 @@ func (r *RequestMaker) Dispatch() error {
 	/*bits, err := ioutil.ReadAll(res.Body)
 	if err != nil {
 		return err
-	}
+	}*/
 
-	fmt.Println("Response = ", string(bits[:]))*/
+	//fmt.Println("Response = ", string(bits[:]))
 	// decode to response type
 	err = json.NewDecoder(res.Body).Decode(r.response)
 	if err != nil {
