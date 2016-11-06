@@ -3,6 +3,8 @@ package esh_test
 import (
 	"fmt"
 	"testing"
+
+	"gitlab.com/conspico/esh"
 )
 
 func TestAuthorized(t *testing.T) {
@@ -11,8 +13,8 @@ func TestAuthorized(t *testing.T) {
 	secret := "ffd145f08ec0ba1261762f29754ab2a9d12544b7"
 	callback := "http://eshift:5050/api/auth/github/callback"
 
-	providers := vcs.NewProviders(
-		vcs.GithubProvider(key, secret, callback),
+	providers := esh.NewProviders(
+		esh.GithubProvider(key, secret, callback),
 	)
 
 	// p := vcs.GithubProvider(key, secret, callback)
