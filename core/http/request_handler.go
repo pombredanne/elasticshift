@@ -145,6 +145,7 @@ func (h *RequestHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 // HandleError handles the error by setting up the right message and status code
 func handleError(ctx context.Context, err error, phase int, w http.ResponseWriter) {
 
+	fmt.Println(err)
 	switch phase {
 	case AUTH:
 		http.Error(w, err.Error(), http.StatusUnauthorized)
