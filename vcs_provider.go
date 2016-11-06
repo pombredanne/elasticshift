@@ -15,6 +15,23 @@ const (
 	TfsType       = 5
 )
 
+// Token ..
+type Token struct {
+	AccessToken string `json:"access_token"`
+
+	// (bearer, mac, etc)
+	TokenType string `json:"token_type"`
+
+	// The refresh token, which can be used to obtain new
+	// access tokens using the same authorization grant
+	RefreshToken string `json:"refresh_token"`
+
+	// The lifetime in seconds of the access token.
+	ExpiresIn int64 `json:"expires_in"`
+
+	Scope string
+}
+
 // Provider ..
 type Provider interface {
 	Name() string

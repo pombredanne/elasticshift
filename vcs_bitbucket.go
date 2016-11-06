@@ -4,8 +4,14 @@ import (
 	"fmt"
 	"log"
 
+	"net/url"
+
+	"time"
+
 	chttp "gitlab.com/conspico/esh/core/http"
+
 	"golang.org/x/oauth2"
+
 	bb "golang.org/x/oauth2/bitbucket"
 )
 
@@ -101,27 +107,37 @@ func (b *Bitbucket) RefreshToken(token string) (*oauth2.Token, error) {
 	r.SetBasicAuth(b.Config.ClientID, b.Config.ClientSecret)
 
 	r.Header("Accept", "application/json")
-	r.Header("Content-Type", "application/json")
+	r.SetContentType(chttp.URLENCODED)
 
-	body := struct {
-		GrantType    string `json:"grant_type"`
-		RefreshToken string `json:"refresh_token"`
-	}{}
+	// body := struct {
+	// 	GrantType    string `json:"grant_type"`
+	// 	RefreshToken string `json:"refresh_token"`
+	// }{}
 
-	body.GrantType = "refresh_token"
-	body.RefreshToken = token
+	// body.GrantType = "refresh_token"
+	// body.RefreshToken = token
 
-	r.Body(&body)
+	params := make(url.Values)
+	params.Set("grant_type", "refresh_token")
+	params.Set("refresh_token", token)
 
-	var tok oauth2.Token
+	r.Body(params)
+
+	var tok Token
 	err := r.Scan(&tok).Dispatch()
 
 	if err != nil {
-		fmt.Print(err)
 		return nil, err
 	}
-	fmt.Println(tok)
-	return &tok, nil
+
+	otok := &oauth2.Token{
+		AccessToken:  tok.AccessToken,
+		Expiry:       time.Now().Add(time.Duration(tok.ExpiresIn) * time.Second),
+		RefreshToken: tok.RefreshToken,
+		TokenType:    tok.TokenType,
+	}
+
+	return otok, nil
 }
 
 // GetRepos ..
