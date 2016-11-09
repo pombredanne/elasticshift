@@ -33,7 +33,7 @@ func (r *vcsDatastore) GetVCS(teamID string) ([]VCS, error) {
 							type, 
 							avatar_url,
 							updated_dt
-				     FROM VCS WHERE TEAM_ID = ? LIMIT 1`, teamID).Scan(&result).Error
+				     FROM VCS WHERE TEAM_ID = ?`, teamID).Scan(&result).Error
 	return result, err
 }
 
