@@ -127,7 +127,7 @@ func (s vcsService) sync(acc VCS, userName string) error {
 	}
 
 	// Fetch the repositories from esh repo store
-	lrpo, err := s.repoDS.GetReposByVCSID(acc.ID)
+	lrpo, err := s.repoDS.GetReposByVCSID(acc.TeamID, acc.ID)
 	if err != nil {
 		return err
 	}

@@ -85,3 +85,15 @@ func makeSyncVCSEdge(s VCSService) edge.Edge {
 		return s.SyncVCS(req.TeamID, req.Username, req.ProviderID)
 	}
 }
+
+/**** REPO ****/
+func makeGetRepoEdge(s RepoService) edge.Edge {
+
+	return func(ctx context.Context, request interface{}) (interface{}, error) {
+		req := request.(GetRepoRequest)
+		if req.VCSID == "" {
+			return s.GetRepos(req.TeamID)
+		}
+		return s.GetReposByVCSID(req.TeamID, req.VCSID)
+	}
+}

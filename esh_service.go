@@ -22,3 +22,9 @@ type VCSService interface {
 	GetVCS(teamID string) (GetVCSResponse, error)
 	SyncVCS(teamID, userName, provider string) (bool, error)
 }
+
+// RepoService ..
+type RepoService interface {
+	GetRepos(teamID string) (GetRepoResponse, error)
+	GetReposByVCSID(teamID, vcsID string) (GetRepoResponse, error)
+}

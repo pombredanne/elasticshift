@@ -22,24 +22,24 @@ func (r *repoDatastore) Save(repo *Repo) error {
 	return err
 }
 
-func (r *repoDatastore) GetReposByVCSID(id string) ([]Repo, error) {
+func (r *repoDatastore) GetReposByVCSID(teamID, vcsID string) ([]Repo, error) {
 
 	r.mtx.Lock()
 	defer r.mtx.Unlock()
 
 	result := []Repo{}
 	err := r.db.Raw(`SELECT id,
-								team_id,
-								vcs_id,
-								repo_id,
-								name,
-								private,
-								link,
-								description,
-	                            fork,
-	                            default_branch,
-								language
-					     FROM REPO WHERE vcs_id = ?`, id).Scan(&result).Error
+							team_id,
+							vcs_id,
+							repo_id,
+							name,
+							private,
+							link,
+							description,
+							fork,
+							default_branch,
+							language
+						FROM REPO WHERE team_id = ? and vcs_id = ?`, teamID, vcsID).Scan(&result).Error
 	return result, err
 }
 
@@ -65,6 +65,27 @@ func (r *repoDatastore) DeleteIds(ids []string) error {
 	defer r.mtx.Unlock()
 
 	return r.db.Delete(Repo{}, "ID IN (?)", ids).Error
+}
+
+func (r *repoDatastore) GetRepos(teamID string) ([]Repo, error) {
+
+	r.mtx.Lock()
+	defer r.mtx.Unlock()
+
+	var result []Repo
+	err := r.db.Raw(`SELECT id,
+							team_id,
+							vcs_id,
+							repo_id,
+							name,
+							private,
+							link,
+							description,
+							fork,
+							default_branch,
+							language
+					FROM REPO WHERE team_id = ?`, teamID).Scan(&result).Error
+	return result, err
 }
 
 // NewRepoDatastore ..

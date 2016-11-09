@@ -27,8 +27,9 @@ type VCSDatastore interface {
 // RepoDatastore provides the repository related datastore func.
 type RepoDatastore interface {
 	Save(repo *Repo) error
-	GetReposByVCSID(id string) ([]Repo, error)
 	Update(old Repo, repo Repo) error
 	Delete(repo Repo) error
 	DeleteIds(ids []string) error
+	GetRepos(teamID string) ([]Repo, error)
+	GetReposByVCSID(teamID, vcsID string) ([]Repo, error)
 }

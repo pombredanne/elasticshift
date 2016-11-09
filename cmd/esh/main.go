@@ -88,6 +88,7 @@ func main() {
 	ts := esh.NewTeamService(teamDS)
 	us := esh.NewUserService(userDS, teamDS, config, signer)
 	vs := esh.NewVCSService(vcsDS, teamDS, repoDS, config)
+	rs := esh.NewRepoService(repoDS, config)
 
 	router := mux.NewRouter()
 
@@ -95,6 +96,7 @@ func main() {
 	esh.MakeTeamHandler(ctx, ts, router)
 	esh.MakeUserHandler(ctx, us, router, signer, verifier)
 	esh.MakeVCSHandler(ctx, vs, router, signer, verifier)
+	esh.MakeRepoHandler(ctx, rs, router, signer, verifier)
 
 	// pprof
 	router.HandleFunc("/debug/pprof", pprof.Index)

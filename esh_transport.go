@@ -100,6 +100,23 @@ func MakeVCSHandler(ctx context.Context, s VCSService, r *mux.Router, signer int
 	r.Handle("/api/auth/{provider}/callback/{team}", accessControl(authorizedHandler)).Methods("GET")
 	r.Handle("/api/vcs/sync/{id}", accessControl(syncVCSHandler)).Methods("GET")
 	r.Handle("/api/vcs", accessControl(getVCSHandler)).Methods("GET")
+
+}
+
+// MakeRepoHandler ..
+func MakeRepoHandler(ctx context.Context, s RepoService, r *mux.Router, signer interface{}, verifier interface{}) {
+
+	getRepoHandler := chttp.NewPrivateRequestHandler(
+		ctx,
+		decodeGetRepoRequest,
+		encodeGetRepoResponse,
+		makeGetRepoEdge(s),
+		signer,
+		verifier,
+	)
+
+	r.Handle("/api/repos", accessControl(getRepoHandler)).Methods("GET")
+	r.Handle("/api/vcs/{id}/repos", accessControl(getRepoHandler)).Methods("GET")
 }
 
 func accessControl(h http.Handler) http.Handler {
