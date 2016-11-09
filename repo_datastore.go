@@ -40,7 +40,6 @@ func (r *repoDatastore) GetReposByVCSID(id string) ([]Repo, error) {
 	                            default_branch,
 								language
 					     FROM REPO WHERE vcs_id = ?`, id).Scan(&result).Error
-	//err := r.db.Find(&result, "vcs_id = ?", id).Error
 	return result, err
 }
 
@@ -49,8 +48,7 @@ func (r *repoDatastore) Update(old Repo, repo Repo) error {
 	r.mtx.Lock()
 	defer r.mtx.Unlock()
 
-	err := r.db.Model(&old).Updates(repo).Error
-	return err
+	return r.db.Model(&old).Updates(repo).Error
 }
 
 func (r *repoDatastore) Delete(repo Repo) error {
@@ -58,8 +56,15 @@ func (r *repoDatastore) Delete(repo Repo) error {
 	r.mtx.Lock()
 	defer r.mtx.Unlock()
 
-	err := r.db.Delete(&repo).Error
-	return err
+	return r.db.Delete(&repo).Error
+}
+
+func (r *repoDatastore) DeleteIds(ids []string) error {
+
+	r.mtx.Lock()
+	defer r.mtx.Unlock()
+
+	return r.db.Delete(Repo{}, "ID IN (?)", ids).Error
 }
 
 // NewRepoDatastore ..

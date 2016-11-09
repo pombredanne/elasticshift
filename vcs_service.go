@@ -131,7 +131,7 @@ func (s vcsService) sync(acc VCS, userName string) error {
 	if err != nil {
 		return err
 	}
-	fmt.Println("Local repo count = ", len(lrpo))
+
 	rpo := make(map[string]Repo)
 	for _, l := range lrpo {
 		rpo[l.RepoID] = l
@@ -203,10 +203,12 @@ func (s vcsService) sync(acc VCS, userName string) error {
 		}
 	}
 
+	var ids []string
 	// Now iterate thru deleted repositories.
-	/*for _, rp := range rpo {
-		s.repoDS.Delete(rp)
-	}*/
+	for _, rp := range rpo {
+		ids = append(ids, rp.ID)
+	}
+	s.repoDS.DeleteIds(ids)
 
 	return nil
 }

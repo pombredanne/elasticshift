@@ -30,4 +30,5 @@ type RepoDatastore interface {
 	GetReposByVCSID(id string) ([]Repo, error)
 	Update(old Repo, repo Repo) error
 	Delete(repo Repo) error
+	DeleteIds(ids []string) error
 }
