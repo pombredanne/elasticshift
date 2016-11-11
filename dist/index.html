@@ -67,6 +67,25 @@
 
 			xhr.send(data);
 		}
+		function syncvcs() {
+
+			var data = JSON.stringify(false);
+
+			var xhr = new XMLHttpRequest();
+			xhr.withCredentials = true;
+
+			xhr.addEventListener("readystatechange", function () {
+			if (this.readyState === 4) {
+			console.log(this.responseText);
+			}
+			});
+
+			xhr.open("GET", "/api/vcs");
+			xhr.setRequestHeader("content-type", "application/json");
+			xhr.setRequestHeader("cache-control", "no-cache");
+
+			xhr.send(data);
+		}
 	</script>
 	</head>
 	<body>
@@ -80,6 +99,8 @@
 	<input type="button" onclick="submit()" value="Signin">
 	<br>
 	<input type="button" onclick="vcs()" value="Get VCS">
+	<br>
+	<input type="button" onclick="syncrepo()" value="Sync repo">
 	<br>
 	<input type="button" onclick="signout()" value="Signout">
 	<br>

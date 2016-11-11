@@ -66,7 +66,7 @@ func makeAuthorizedEdge(s VCSService) edge.Edge {
 
 	return func(ctx context.Context, request interface{}) (interface{}, error) {
 		req := request.(AuthorizeRequest)
-		return s.Authorized(req.TeamID, req.Provider, req.Code, req.Request)
+		return s.Authorized(req.ID, req.Provider, req.Code, req.Request)
 	}
 }
 

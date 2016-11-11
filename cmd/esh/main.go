@@ -16,8 +16,10 @@ import (
 
 	"github.com/gorilla/mux"
 
+	"github.com/gorilla/handlers"
 	"github.com/jinzhu/gorm"
 	_ "github.com/jinzhu/gorm/dialects/mysql"
+	"github.com/justinas/alice"
 )
 
 func main() {
@@ -108,8 +110,13 @@ func main() {
 	router.Handle("/debug/block", pprof.Handler("block"))
 
 	// ESH UI pages
-	router.PathPrefix("/").Handler(http.FileServer(http.Dir("./dist/")))
-	router.Handle("/", accessControl(router))
+	corsOpts := handlers.AllowedOrigins([]string{"*"})
+	corsHandler := handlers.CORS(corsOpts)
+	recoveryHandler := handlers.RecoveryHandler()
+	chain := alice.New(recoveryHandler, corsHandler)
+
+	router.PathPrefix("/").Handler(chain.Then(http.FileServer(http.Dir("./dist/"))))
+	router.Handle("/", chain.Then(router))
 
 	// Start the server
 	fmt.Println("ESH Server listening on port 5050")

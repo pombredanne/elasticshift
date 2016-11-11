@@ -14,6 +14,7 @@ import (
 type AuthorizeRequest struct {
 	Provider string
 	TeamID   string
+	ID       string
 	Request  *http.Request
 	Code     string
 }
@@ -44,11 +45,11 @@ func decodeAuthorizedRequest(ctx context.Context, r *http.Request) (interface{},
 
 	params := mux.Vars(r)
 	prov := params["provider"]
-	teamID := params["team"]
+	id := params["id"]
 	code := r.FormValue("code")
 
-	fmt.Println("Subdomain from callback =", teamID)
-	return AuthorizeRequest{TeamID: teamID, Provider: prov, Request: r, Code: code}, nil
+	fmt.Println("Subdomain from callback =", id)
+	return AuthorizeRequest{ID: id, Provider: prov, Request: r, Code: code}, nil
 }
 
 func decodeGetVCSRequest(ctx context.Context, r *http.Request) (interface{}, error) {

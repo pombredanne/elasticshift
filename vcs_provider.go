@@ -36,7 +36,7 @@ type Token struct {
 type Provider interface {
 	Name() string
 
-	Authorize(team string) string
+	Authorize(baseURL string) string
 
 	Authorized(code string) (VCS, error)
 

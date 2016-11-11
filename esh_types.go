@@ -30,6 +30,12 @@ var (
 	errGettingRepositories   = "Failed to get repositories for %s"
 )
 
+// Common constants
+const (
+	SLASH     = "/"
+	SEMICOLON = ";"
+)
+
 // Config ..
 type Config struct {
 	Github struct {

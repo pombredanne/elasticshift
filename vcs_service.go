@@ -3,7 +3,12 @@ package esh
 import (
 	"fmt"
 	"net/http"
+	"strings"
 	"time"
+
+	"bytes"
+
+	"encoding/base64"
 
 	"gitlab.com/conspico/esh/core/util"
 )
@@ -21,6 +26,15 @@ const (
 const (
 	True  = 1
 	False = 0
+)
+
+// Constants for performing encode decode
+const (
+	EQUAL        = "="
+	DOUBLEEQUALS = "=="
+	DOT0         = ".0"
+	DOT1         = ".1"
+	DOT2         = ".2"
 )
 
 type vcsService struct {
@@ -55,14 +69,22 @@ func (s vcsService) Authorize(teamID, provider string, r *http.Request) (Authori
 		return AuthorizeResponse{}, err
 	}
 
-	url := p.Authorize(teamID)
+	// Get the base URL
+	var buf bytes.Buffer
+	buf.WriteString(teamID)
+	buf.WriteString(SEMICOLON)
+	buf.WriteString(SLASH)
+	buf.WriteString(SLASH)
+	buf.WriteString(r.Host)
+
+	url := p.Authorize(s.encode(buf.String()))
 
 	return AuthorizeResponse{Err: nil, URL: url, Request: r}, nil
 }
 
 // Authorized ..
 // Invoked when authorization finished by oauth app
-func (s vcsService) Authorized(teamID, provider, code string, r *http.Request) (AuthorizeResponse, error) {
+func (s vcsService) Authorized(id, provider, code string, r *http.Request) (AuthorizeResponse, error) {
 
 	p, err := s.vcsProviders.Get(provider)
 	if err != nil {
@@ -75,14 +97,18 @@ func (s vcsService) Authorized(teamID, provider, code string, r *http.Request) (
 		return AuthorizeResponse{}, err
 	}
 
+	unescID := s.decode(id)
+	escID := strings.Split(unescID, SEMICOLON)
+
 	// persist user
 	u.ID, _ = util.NewUUID()
-	u.TeamID = teamID
+	u.TeamID = escID[0]
 	u.CreatedDt = time.Now()
 	u.UpdatedDt = time.Now()
 	err = s.vcsDS.Save(&u)
 
-	url := "/api/vcs"
+	fmt.Println("URL to append = ", escID[1])
+	url := escID[1] + "/api/vcs"
 	return AuthorizeResponse{Err: nil, URL: url, Request: r}, err
 }
 
@@ -264,4 +290,30 @@ func (s vcsService) getProvider(vcsType int) (Provider, error) {
 	}
 
 	return s.vcsProviders.Get(name)
+}
+
+func (s vcsService) encode(id string) string {
+
+	eid := base64.URLEncoding.EncodeToString([]byte(id))
+	if strings.Contains(eid, DOUBLEEQUALS) {
+		eid = strings.TrimRight(eid, DOUBLEEQUALS) + DOT2
+	} else if strings.Contains(eid, EQUAL) {
+		eid = strings.TrimRight(eid, EQUAL) + DOT1
+	} else {
+		eid = eid + DOT0
+	}
+	return eid
+}
+
+func (s vcsService) decode(id string) string {
+
+	if strings.Contains(id, DOT2) {
+		id = strings.TrimRight(id, DOT2) + DOUBLEEQUALS
+	} else if strings.Contains(id, DOT1) {
+		id = strings.TrimRight(id, DOT1) + EQUAL
+	} else {
+		id = strings.TrimRight(id, DOT0)
+	}
+	did, _ := base64.URLEncoding.DecodeString(id)
+	return string(did[:])
 }

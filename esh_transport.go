@@ -18,7 +18,7 @@ func MakeTeamHandler(ctx context.Context, s TeamService, r *mux.Router) {
 		makeCreateTeamEdge(s),
 	)
 
-	r.Handle("/api/teams", accessControl(createTeamHandler)).Methods("POST")
+	r.Handle("/api/teams", createTeamHandler).Methods("POST")
 }
 
 // MakeUserHandler ..
@@ -54,9 +54,9 @@ func MakeUserHandler(ctx context.Context, s UserService, r *mux.Router, signer i
 		makeVerifyCodeEdge(s),
 	)
 
-	r.Handle("/api/users/signup", accessControl(signUpHandler)).Methods("POST")
-	r.Handle("/api/users/signin", accessControl(signInHandler)).Methods("POST")
-	r.Handle("/api/users/signout", accessControl(signOutHandler)).Methods("POST")
+	r.Handle("/api/users/signup", signUpHandler).Methods("POST")
+	r.Handle("/api/users/signin", signInHandler).Methods("POST")
+	r.Handle("/api/users/signout", signOutHandler).Methods("POST")
 	r.Handle("/api/users/verify/{code}", verifyCodeHandler).Methods("POST")
 }
 
@@ -96,10 +96,10 @@ func MakeVCSHandler(ctx context.Context, s VCSService, r *mux.Router, signer int
 		signer,
 		verifier,
 	)
-	r.Handle("/api/auth/{provider}", accessControl(authorizeHandler)).Methods("GET")
-	r.Handle("/api/auth/{provider}/callback/{team}", accessControl(authorizedHandler)).Methods("GET")
-	r.Handle("/api/vcs/sync/{id}", accessControl(syncVCSHandler)).Methods("GET")
-	r.Handle("/api/vcs", accessControl(getVCSHandler)).Methods("GET")
+	r.Handle("/api/auth/{provider}", authorizeHandler).Methods("GET")
+	r.Handle("/api/auth/{provider}/callback/{id}", authorizedHandler).Methods("GET")
+	r.Handle("/api/vcs/sync/{id}", syncVCSHandler).Methods("GET")
+	r.Handle("/api/vcs", getVCSHandler).Methods("GET")
 
 }
 
@@ -115,8 +115,8 @@ func MakeRepoHandler(ctx context.Context, s RepoService, r *mux.Router, signer i
 		verifier,
 	)
 
-	r.Handle("/api/repos", accessControl(getRepoHandler)).Methods("GET")
-	r.Handle("/api/vcs/{id}/repos", accessControl(getRepoHandler)).Methods("GET")
+	r.Handle("/api/repos", getRepoHandler).Methods("GET")
+	r.Handle("/api/vcs/{id}/repos", getRepoHandler).Methods("GET")
 }
 
 func accessControl(h http.Handler) http.Handler {
