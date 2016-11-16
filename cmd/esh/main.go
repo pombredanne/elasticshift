@@ -1,8 +1,6 @@
 package main
 
 import (
-	"net/http/pprof"
-
 	"crypto/x509"
 	"encoding/pem"
 	"io/ioutil"
@@ -16,10 +14,8 @@ import (
 
 	"github.com/gorilla/mux"
 
-	"github.com/gorilla/handlers"
 	"github.com/jinzhu/gorm"
 	_ "github.com/jinzhu/gorm/dialects/mysql"
-	"github.com/justinas/alice"
 )
 
 func main() {
@@ -38,8 +34,11 @@ func main() {
 	config := esh.Config{}
 	vip.Unmarshal(&config)
 
+	ctx := esh.AppContext{}
+	ctx.Config = config
+
 	// Unwrap DEK - data encryption key
-	ctx := context.Background()
+	ctx.Context = context.Background()
 
 	// DB Initialization
 	db, err := gorm.Open(config.DB.Dialect, config.DB.Datasource)
@@ -68,55 +67,39 @@ func main() {
 	fmt.Println("Register the VCS providers..")
 
 	// Init datastore
-	var (
-		teamDS = esh.NewTeamDatastore(db)
-		userDS = esh.NewUserDatastore(db)
-		vcsDS  = esh.NewVCSDatastore(db)
-		repoDS = esh.NewRepoDatastore(db)
-	)
+	ctx.TeamDatastore = esh.NewTeamDatastore(db)
+	ctx.UserDatastore = esh.NewUserDatastore(db)
+	ctx.VCSDatastore = esh.NewVCSDatastore(db)
+	ctx.RepoDatastore = esh.NewRepoDatastore(db)
 
 	// load keys
 	signer, err := loadKey(config.Key.Signer)
 	if err != nil {
 		panic(err)
 	}
+	ctx.Signer = signer
 
 	verifier, err := loadKey(config.Key.Verifier)
 	if err != nil {
 		panic(err)
 	}
+	ctx.Verifier = verifier
 
 	// Initialize services
-	ts := esh.NewTeamService(teamDS)
-	us := esh.NewUserService(userDS, teamDS, config, signer)
-	vs := esh.NewVCSService(vcsDS, teamDS, repoDS, config)
-	rs := esh.NewRepoService(repoDS, config)
+	ctx.TeamService = esh.NewTeamService(ctx)
+	ctx.UserService = esh.NewUserService(ctx)
+	ctx.VCSService = esh.NewVCSService(ctx)
+	ctx.RepoService = esh.NewRepoService(ctx)
 
 	router := mux.NewRouter()
+	ctx.Router = router
 
 	// Router (includes subdomain)
-	esh.MakeTeamHandler(ctx, ts, router)
-	esh.MakeUserHandler(ctx, us, router, signer, verifier)
-	esh.MakeVCSHandler(ctx, vs, router, signer, verifier)
-	esh.MakeRepoHandler(ctx, rs, router, signer, verifier)
-
-	// pprof
-	router.HandleFunc("/debug/pprof", pprof.Index)
-	router.HandleFunc("/debug/symbol", pprof.Symbol)
-	router.HandleFunc("/debug/profile", pprof.Profile)
-	router.Handle("/debug/heap", pprof.Handler("heap"))
-	router.Handle("/debug/goroutine", pprof.Handler("goroutine"))
-	router.Handle("/debug/threadcreate", pprof.Handler("threadcreate"))
-	router.Handle("/debug/block", pprof.Handler("block"))
+	esh.MakeHandlers(ctx)
 
 	// ESH UI pages
-	corsOpts := handlers.AllowedOrigins([]string{"*"})
-	corsHandler := handlers.CORS(corsOpts)
-	recoveryHandler := handlers.RecoveryHandler()
-	chain := alice.New(recoveryHandler, corsHandler)
-
-	router.PathPrefix("/").Handler(chain.Then(http.FileServer(http.Dir("./dist/"))))
-	router.Handle("/", chain.Then(router))
+	router.PathPrefix("/").Handler(ctx.PublicChain.Then(http.FileServer(http.Dir("./dist/"))))
+	router.Handle("/", ctx.PublicChain.Then(router))
 
 	// Start the server
 	fmt.Println("ESH Server listening on port 5050")

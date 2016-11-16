@@ -6,11 +6,11 @@ type repoService struct {
 }
 
 // NewRepoService ..
-func NewRepoService(r RepoDatastore, conf Config) RepoService {
+func NewRepoService(appCtx AppContext) RepoService {
 
 	return &repoService{
-		repoDS: r,
-		config: conf,
+		repoDS: appCtx.RepoDatastore,
+		config: appCtx.Config,
 	}
 }
 

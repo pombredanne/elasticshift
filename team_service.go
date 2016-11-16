@@ -38,8 +38,8 @@ func (s teamservice) Create(name string) (bool, error) {
 }
 
 // NewTeamService ..
-func NewTeamService(t TeamDatastore) TeamService {
+func NewTeamService(appCtx AppContext) TeamService {
 	return &teamservice{
-		teamDS: t,
+		teamDS: appCtx.TeamDatastore,
 	}
 }

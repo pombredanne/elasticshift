@@ -1,8 +1,12 @@
 package esh
 
 import (
+	"context"
 	"errors"
 	"time"
+
+	"github.com/gorilla/mux"
+	"github.com/justinas/alice"
 )
 
 var (
@@ -62,6 +66,28 @@ type Config struct {
 		Signer     string
 		Verifier   string
 	}
+}
+
+// AppContext ..
+type AppContext struct {
+	Context  context.Context
+	Router   *mux.Router
+	Signer   interface{}
+	Verifier interface{}
+	Config   Config
+
+	SecureChain alice.Chain
+	PublicChain alice.Chain
+
+	TeamService TeamService
+	UserService UserService
+	VCSService  VCSService
+	RepoService RepoService
+
+	TeamDatastore TeamDatastore
+	UserDatastore UserDatastore
+	VCSDatastore  VCSDatastore
+	RepoDatastore RepoDatastore
 }
 
 // Team ..

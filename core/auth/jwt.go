@@ -20,6 +20,7 @@ type Token struct {
 	TeamID   string
 	UserID   string
 	Username string
+	Teamname string
 }
 
 // GenerateToken ..
@@ -91,5 +92,6 @@ func GetToken(token *jwt.Token) Token {
 		TeamID:   tok["TeamID"].(string),
 		UserID:   tok["UserID"].(string),
 		Username: tok["Username"].(string),
+		Teamname: tok["Teamname"].(string),
 	}
 }

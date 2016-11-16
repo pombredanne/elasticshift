@@ -1,134 +1,129 @@
 package esh
 
 import (
-	"context"
-	"net/http"
+	"net/http/pprof"
 
-	"github.com/gorilla/mux"
-	chttp "gitlab.com/conspico/esh/core/http"
+	ghandlers "github.com/gorilla/handlers"
+	"github.com/justinas/alice"
+	"gitlab.com/conspico/esh/core/handlers"
 )
 
+// MakeHandlers ..
+// Create application specific handlers
+func MakeHandlers(ctx AppContext) {
+
+	corsOpts := ghandlers.AllowedOrigins([]string{"*"})
+	corsHandler := ghandlers.CORS(corsOpts)
+	recoveryHandler := ghandlers.RecoveryHandler()
+
+	ctx.PublicChain = alice.New(recoveryHandler, corsHandler)
+
+	secureHandler := handlers.SecurityHandler(ctx.Signer, ctx.Verifier)
+	ctx.SecureChain = alice.New(recoveryHandler, corsHandler, secureHandler)
+
+	MakeTeamHandler(ctx)
+	MakeUserHandler(ctx)
+	MakeVCSHandler(ctx)
+	MakeRepoHandler(ctx)
+
+	// pprof
+	ctx.Router.HandleFunc("/debug/pprof", pprof.Index)
+	ctx.Router.HandleFunc("/debug/symbol", pprof.Symbol)
+	ctx.Router.HandleFunc("/debug/profile", pprof.Profile)
+	ctx.Router.Handle("/debug/heap", pprof.Handler("heap"))
+	ctx.Router.Handle("/debug/goroutine", pprof.Handler("goroutine"))
+	ctx.Router.Handle("/debug/threadcreate", pprof.Handler("threadcreate"))
+	ctx.Router.Handle("/debug/block", pprof.Handler("block"))
+}
+
 // MakeTeamHandler ..
-func MakeTeamHandler(ctx context.Context, s TeamService, r *mux.Router) {
+func MakeTeamHandler(ctx AppContext) {
 
-	createTeamHandler := chttp.NewPublicRequestHandler(
-		ctx,
-		decodeCreateTeamRequest,
-		encodeCreateTeamResponse,
-		makeCreateTeamEdge(s),
-	)
-
-	r.Handle("/api/teams", createTeamHandler).Methods("POST")
+	/** Team **/
+	createTeamHandler := &handlers.RequestHandler{
+		DecodeFunc:  decodeCreateTeamRequest,
+		ProcessFunc: makeCreateTeamEdge(ctx.TeamService),
+		EncodeFunc:  encodeCreateTeamResponse,
+	}
+	ctx.Router.Handle("/api/teams", ctx.PublicChain.Then(createTeamHandler)).Methods("POST")
 }
 
 // MakeUserHandler ..
-func MakeUserHandler(ctx context.Context, s UserService, r *mux.Router, signer interface{}, verifier interface{}) {
+func MakeUserHandler(ctx AppContext) {
 
-	signUpHandler := chttp.NewPublicRequestHandler(
-		ctx,
-		decodeSignUpRequest,
-		encodeSignInResponse,
-		makeSignupEdge(s),
-	)
+	r := ctx.Router
 
-	signInHandler := chttp.NewPublicRequestHandler(
-		ctx,
-		decodeSignInRequest,
-		encodeSignInResponse,
-		makeSignInEdge(s),
-	)
+	/** User **/
+	signUpHandler := &handlers.RequestHandler{
+		DecodeFunc:  decodeSignUpRequest,
+		EncodeFunc:  encodeSignInResponse,
+		ProcessFunc: makeSignupEdge(ctx.UserService),
+	}
+	r.Handle("/api/users/signup", ctx.PublicChain.Then(signUpHandler)).Methods("POST")
 
-	signOutHandler := chttp.NewPrivateRequestHandler(
-		ctx,
-		decodeSignOutRequest,
-		encodeSignOutResponse,
-		makeSignOutEdge(s),
-		signer,
-		verifier,
-	)
+	signInHandler := &handlers.RequestHandler{
+		DecodeFunc:  decodeSignInRequest,
+		EncodeFunc:  encodeSignInResponse,
+		ProcessFunc: makeSignInEdge(ctx.UserService),
+	}
+	r.Handle("/api/users/signin", ctx.PublicChain.Then(signInHandler)).Methods("POST")
 
-	verifyCodeHandler := chttp.NewPublicRequestHandler(
-		ctx,
-		decodeVerifyCodeRequest,
-		encodeVerifyCodeRequest,
-		makeVerifyCodeEdge(s),
-	)
-
-	r.Handle("/api/users/signup", signUpHandler).Methods("POST")
-	r.Handle("/api/users/signin", signInHandler).Methods("POST")
+	signOutHandler := &handlers.RequestHandler{
+		DecodeFunc:  decodeSignOutRequest,
+		EncodeFunc:  encodeSignOutResponse,
+		ProcessFunc: makeSignOutEdge(ctx.UserService),
+	}
 	r.Handle("/api/users/signout", signOutHandler).Methods("POST")
-	r.Handle("/api/users/verify/{code}", verifyCodeHandler).Methods("POST")
+
 }
 
 // MakeVCSHandler ..
-func MakeVCSHandler(ctx context.Context, s VCSService, r *mux.Router, signer interface{}, verifier interface{}) {
+func MakeVCSHandler(ctx AppContext) {
 
-	authorizeHandler := chttp.NewPrivateRequestHandler(
-		ctx,
-		decodeAuthorizeRequest,
-		encodeAuthorizeResponse,
-		makeAuthorizeEdge(s),
-		signer,
-		verifier,
-	)
+	r := ctx.Router
 
-	authorizedHandler := chttp.NewPublicRequestHandler(
-		ctx,
-		decodeAuthorizedRequest,
-		encodeAuthorizeResponse,
-		makeAuthorizedEdge(s),
-	)
+	/** VCS **/
+	authorizeHandler := &handlers.RequestHandler{
+		DecodeFunc:  decodeAuthorizeRequest,
+		EncodeFunc:  encodeAuthorizeResponse,
+		ProcessFunc: makeAuthorizeEdge(ctx.VCSService),
+	}
+	r.Handle("/api/auth/{provider}", ctx.SecureChain.Then(authorizeHandler)).Methods("GET")
 
-	getVCSHandler := chttp.NewPrivateRequestHandler(
-		ctx,
-		decodeGetVCSRequest,
-		encodeGetVCSResponse,
-		makeGetVCSEdge(s),
-		signer,
-		verifier,
-	)
+	authorizedHandler := &handlers.RequestHandler{
+		DecodeFunc:  decodeAuthorizedRequest,
+		EncodeFunc:  encodeAuthorizeResponse,
+		ProcessFunc: makeAuthorizedEdge(ctx.VCSService),
+	}
+	r.Handle("/api/auth/{provider}/callback/{id}", ctx.PublicChain.Then(authorizedHandler)).Methods("GET")
 
-	syncVCSHandler := chttp.NewPrivateRequestHandler(
-		ctx,
-		decodeSyncVCSRequest,
-		encodeSyncVCSResponse,
-		makeSyncVCSEdge(s),
-		signer,
-		verifier,
-	)
-	r.Handle("/api/auth/{provider}", authorizeHandler).Methods("GET")
-	r.Handle("/api/auth/{provider}/callback/{id}", authorizedHandler).Methods("GET")
-	r.Handle("/api/vcs/sync/{id}", syncVCSHandler).Methods("GET")
-	r.Handle("/api/vcs", getVCSHandler).Methods("GET")
+	getVCSHandler := &handlers.RequestHandler{
+		DecodeFunc:  decodeGetVCSRequest,
+		EncodeFunc:  encodeGetVCSResponse,
+		ProcessFunc: makeGetVCSEdge(ctx.VCSService),
+	}
+	r.Handle("/api/vcs", ctx.SecureChain.Then(getVCSHandler)).Methods("GET")
 
+	syncVCSHandler := &handlers.RequestHandler{
+		DecodeFunc:  decodeSyncVCSRequest,
+		EncodeFunc:  encodeSyncVCSResponse,
+		ProcessFunc: makeSyncVCSEdge(ctx.VCSService),
+	}
+	r.Handle("/api/vcs/sync/{id}", ctx.SecureChain.Then(syncVCSHandler)).Methods("GET")
 }
 
 // MakeRepoHandler ..
-func MakeRepoHandler(ctx context.Context, s RepoService, r *mux.Router, signer interface{}, verifier interface{}) {
+func MakeRepoHandler(ctx AppContext) {
 
-	getRepoHandler := chttp.NewPrivateRequestHandler(
-		ctx,
-		decodeGetRepoRequest,
-		encodeGetRepoResponse,
-		makeGetRepoEdge(s),
-		signer,
-		verifier,
-	)
+	r := ctx.Router
 
-	r.Handle("/api/repos", getRepoHandler).Methods("GET")
-	r.Handle("/api/vcs/{id}/repos", getRepoHandler).Methods("GET")
-}
+	/** Repo **/
+	getRepoHandler := &handlers.RequestHandler{
+		DecodeFunc:  decodeGetRepoRequest,
+		EncodeFunc:  encodeGetRepoResponse,
+		ProcessFunc: makeGetRepoEdge(ctx.RepoService),
+	}
 
-func accessControl(h http.Handler) http.Handler {
-	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		w.Header().Set("Access-Control-Allow-Origin", "*")
-		w.Header().Set("Access-Control-Allow-Methods", "GET, POST, OPTIONS")
-		w.Header().Set("Access-Control-Allow-Headers", "Origin, Content-Type")
-
-		if r.Method == "OPTIONS" {
-			return
-		}
-
-		h.ServeHTTP(w, r)
-	})
+	r.Handle("/api/repos", ctx.SecureChain.Then(getRepoHandler)).Methods("GET")
+	r.Handle("/api/vcs/{id}/repos", ctx.SecureChain.Then(getRepoHandler)).Methods("GET")
 }

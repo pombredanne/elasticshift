@@ -46,8 +46,9 @@ type vcsService struct {
 }
 
 // NewVCSService ..
-func NewVCSService(v VCSDatastore, t TeamDatastore, r RepoDatastore, conf Config) VCSService {
+func NewVCSService(appCtx AppContext) VCSService {
 
+	conf := appCtx.Config
 	providers := NewProviders(
 		GithubProvider(conf.Github.Key, conf.Github.Secret, conf.Github.Callback),
 		BitbucketProvider(conf.Bitbucket.Key, conf.Bitbucket.Secret, conf.Bitbucket.Callback),
@@ -55,9 +56,9 @@ func NewVCSService(v VCSDatastore, t TeamDatastore, r RepoDatastore, conf Config
 
 	return &vcsService{
 		vcsProviders: providers,
-		vcsDS:        v,
-		teamDS:       t,
-		repoDS:       r,
+		vcsDS:        appCtx.VCSDatastore,
+		teamDS:       appCtx.TeamDatastore,
+		repoDS:       appCtx.RepoDatastore,
 		config:       conf,
 	}
 }

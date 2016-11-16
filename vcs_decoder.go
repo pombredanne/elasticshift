@@ -54,6 +54,8 @@ func decodeAuthorizedRequest(ctx context.Context, r *http.Request) (interface{},
 
 func decodeGetVCSRequest(ctx context.Context, r *http.Request) (interface{}, error) {
 
+	t := ctx.Value("token")
+	fmt.Println("from decode ", t)
 	teamID := ctx.Value("token").(auth.Token).TeamID
 	fmt.Println("TeamID = ", teamID)
 	return teamID, nil

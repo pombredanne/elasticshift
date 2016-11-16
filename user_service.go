@@ -35,13 +35,13 @@ type userService struct {
 }
 
 // NewUserService ..
-func NewUserService(u UserDatastore, t TeamDatastore, conf Config, signer interface{}) UserService {
+func NewUserService(appCtx AppContext) UserService {
 
 	return &userService{
-		userDS: u,
-		teamDS: t,
-		config: conf,
-		signer: signer,
+		userDS: appCtx.UserDatastore,
+		teamDS: appCtx.TeamDatastore,
+		config: appCtx.Config,
+		signer: appCtx.Signer,
 	}
 }
 
@@ -96,7 +96,11 @@ func (s userService) Create(teamName, domain, fullname, email, password string) 
 		return "", errUserCreationFailed
 	}
 
-	return s.generateAuthToken(teamID, email, userName)
+	tname := teamName
+	if tname == "" {
+		tname = domain
+	}
+	return s.generateAuthToken(teamID, email, userName, tname)
 }
 
 // SignIn ..
@@ -115,7 +119,11 @@ func (s userService) SignIn(teamName, domain, email, password string) (string, e
 	if err != nil {
 		return errInvalidEmailOrPassword.Error(), nil
 	}
-	return s.generateAuthToken(teamID, user.ID, user.Username)
+	tname := teamName
+	if tname == "" {
+		tname = domain
+	}
+	return s.generateAuthToken(teamID, user.ID, user.Username, tname)
 }
 
 // SignOut ..
@@ -124,12 +132,13 @@ func (s userService) SignOut() (bool, error) {
 }
 
 // Generates the auth token
-func (s userService) generateAuthToken(teamID, userID, userName string) (string, error) {
+func (s userService) generateAuthToken(teamID, userID, userName, teamName string) (string, error) {
 
 	t := auth.Token{
 		TeamID:   teamID,
 		UserID:   userID,
 		Username: userName,
+		Teamname: teamName,
 	}
 
 	signedStr, err := auth.GenerateToken(s.signer, t)
