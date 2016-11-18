@@ -4,8 +4,6 @@ import (
 	"context"
 	"net/http"
 
-	"github.com/gorilla/mux"
-
 	"gitlab.com/conspico/esh/core/auth"
 )
 
@@ -20,7 +18,7 @@ func decodeGetRepoRequest(ctx context.Context, r *http.Request) (interface{}, er
 	teamID := ctx.Value("token").(auth.Token).TeamID
 
 	req := GetRepoRequest{TeamID: teamID}
-	params := mux.Vars(r)
+	params := ctx.Value("params").(map[string]string)
 	if params != nil {
 		vcsID := params["id"]
 		req.VCSID = vcsID

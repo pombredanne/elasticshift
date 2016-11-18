@@ -16,10 +16,13 @@ func MakeHandlers(ctx AppContext) {
 	corsHandler := ghandlers.CORS(corsOpts)
 	recoveryHandler := ghandlers.RecoveryHandler()
 
-	ctx.PublicChain = alice.New(recoveryHandler, corsHandler)
+	commonChain := alice.New(recoveryHandler, corsHandler)
 
-	secureHandler := handlers.SecurityHandler(ctx.Signer, ctx.Verifier)
-	ctx.SecureChain = alice.New(recoveryHandler, corsHandler, secureHandler)
+	extractHandler := handlers.ExtractHandler(ctx.Context, ctx.Router)
+	ctx.PublicChain = commonChain.Extend(alice.New(extractHandler))
+
+	secureHandler := handlers.SecurityHandler(ctx.Context, ctx.Signer, ctx.Verifier)
+	ctx.SecureChain = commonChain.Extend(alice.New(secureHandler, extractHandler))
 
 	MakeTeamHandler(ctx)
 	MakeUserHandler(ctx)

@@ -4,8 +4,6 @@ import (
 	"context"
 	"encoding/json"
 	"net/http"
-
-	"github.com/gorilla/mux"
 )
 
 // user registration
@@ -75,7 +73,8 @@ type verifyCodeRequest struct {
 
 func decodeVerifyCodeRequest(ctx context.Context, r *http.Request) (interface{}, error) {
 
-	code := mux.Vars(r)["code"]
+	params := ctx.Value("params").(map[string]string)
+	code := params["code"]
 	if len(code) == 0 {
 		return false, errVerificationCodeIsEmpty
 	}

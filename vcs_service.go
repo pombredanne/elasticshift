@@ -108,7 +108,6 @@ func (s vcsService) Authorized(id, provider, code string, r *http.Request) (Auth
 	u.UpdatedDt = time.Now()
 	err = s.vcsDS.Save(&u)
 
-	fmt.Println("URL to append = ", escID[1])
 	url := escID[1] + "/api/vcs"
 	return AuthorizeResponse{Err: nil, URL: url, Request: r}, err
 }

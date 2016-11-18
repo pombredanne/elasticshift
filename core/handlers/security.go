@@ -13,13 +13,15 @@ import (
 )
 
 var (
-	errUnauthorized = errors.New("Unauthorized")
+	unAuthorized    = "Unauthorized"
+	errUnauthorized = errors.New(unAuthorized)
 
 	// AuthTokenCookieName ..
 	AuthTokenCookieName = "__at"
 )
 
 type security struct {
+	ctx      context.Context
 	h        http.Handler
 	signer   interface{}
 	verifier interface{}
@@ -31,19 +33,21 @@ func (sh *security) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 
 	cookie, err := r.Cookie(AuthTokenCookieName)
 	if err != nil {
-		http.Error(w, err.Error(), http.StatusUnauthorized)
+		fmt.Println(err)
+		http.Error(w, unAuthorized, http.StatusUnauthorized)
 		return
 	}
 
 	if "" == cookie.Value {
-		http.Error(w, err.Error(), http.StatusUnauthorized)
+		fmt.Println(err)
+		http.Error(w, unAuthorized, http.StatusUnauthorized)
 		return
 	}
 
 	token, err := auth.VefifyToken(sh.verifier, cookie.Value)
 	if err != nil || !token.Valid {
 		fmt.Println(err)
-		http.Error(w, err.Error(), http.StatusUnauthorized)
+		http.Error(w, unAuthorized, http.StatusUnauthorized)
 		return
 	}
 
@@ -74,11 +78,12 @@ func refreshtoken(token *jwt.Token, signer interface{}, w http.ResponseWriter) {
 }
 
 // SecurityHandler ..
-func SecurityHandler(signer interface{}, verifier interface{}) func(http.Handler) http.Handler {
+func SecurityHandler(ctx context.Context, signer interface{}, verifier interface{}) func(http.Handler) http.Handler {
 
 	return func(h http.Handler) http.Handler {
 
 		return &security{
+			ctx:      ctx,
 			signer:   signer,
 			verifier: verifier,
 			h:        h,

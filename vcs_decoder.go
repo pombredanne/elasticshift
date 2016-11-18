@@ -6,8 +6,6 @@ import (
 	"net/http"
 
 	"gitlab.com/conspico/esh/core/auth"
-
-	"github.com/gorilla/mux"
 )
 
 // AuthorizeRequest ..
@@ -34,8 +32,7 @@ type GetVCSRequest struct {
 func decodeAuthorizeRequest(ctx context.Context, r *http.Request) (interface{}, error) {
 
 	teamID := ctx.Value("token").(auth.Token).TeamID
-
-	params := mux.Vars(r)
+	params := ctx.Value("params").(map[string]string)
 	prov := params["provider"]
 
 	return AuthorizeRequest{TeamID: teamID, Provider: prov, Request: r}, nil
@@ -43,7 +40,7 @@ func decodeAuthorizeRequest(ctx context.Context, r *http.Request) (interface{}, 
 
 func decodeAuthorizedRequest(ctx context.Context, r *http.Request) (interface{}, error) {
 
-	params := mux.Vars(r)
+	params := ctx.Value("params").(map[string]string)
 	prov := params["provider"]
 	id := params["id"]
 	code := r.FormValue("code")
@@ -54,16 +51,13 @@ func decodeAuthorizedRequest(ctx context.Context, r *http.Request) (interface{},
 
 func decodeGetVCSRequest(ctx context.Context, r *http.Request) (interface{}, error) {
 
-	t := ctx.Value("token")
-	fmt.Println("from decode ", t)
 	teamID := ctx.Value("token").(auth.Token).TeamID
-	fmt.Println("TeamID = ", teamID)
 	return teamID, nil
 }
 
 func decodeSyncVCSRequest(ctx context.Context, r *http.Request) (interface{}, error) {
 
-	params := mux.Vars(r)
+	params := ctx.Value("params").(map[string]string)
 	providerID := params["id"]
 	token := ctx.Value("token").(auth.Token)
 
