@@ -3,10 +3,10 @@ package handlers
 import (
 	"context"
 	"errors"
-	"fmt"
 	"net/http"
 	"strings"
 
+	"github.com/Sirupsen/logrus"
 	"gitlab.com/conspico/esh/core/edge"
 )
 
@@ -27,6 +27,7 @@ type RequestHandler struct {
 	DecodeFunc  RequestDecoderFunc
 	ProcessFunc edge.Edge
 	EncodeFunc  ResponseEncoderFunc
+	Logger      *logrus.Logger
 }
 
 // ServeHTTP ..
@@ -47,7 +48,7 @@ func (h *RequestHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 
 		req, err = h.DecodeFunc(ctx, r)
 		if err != nil {
-			handleError(ctx, err, DECODE, w)
+			handleError(ctx, h.Logger, err, DECODE, w)
 			return
 		}
 	}
@@ -55,21 +56,22 @@ func (h *RequestHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	// process the request
 	res, err := h.ProcessFunc(ctx, req)
 	if err != nil {
-		handleError(ctx, err, PROCESS, w)
+		handleError(ctx, h.Logger, err, PROCESS, w)
 		return
 	}
 
 	err = h.EncodeFunc(ctx, w, res)
 	if err != nil {
-		handleError(ctx, err, ENCODE, w)
+		handleError(ctx, h.Logger, err, ENCODE, w)
 		return
 	}
 }
 
 // HandleError handles the error by setting up the right message and status code
-func handleError(ctx context.Context, err error, phase int, w http.ResponseWriter) {
+func handleError(ctx context.Context, logger *logrus.Logger, err error, phase int, w http.ResponseWriter) {
 
-	fmt.Println(err)
+	logger.Errorln(err)
+
 	switch phase {
 	case DECODE:
 		http.Error(w, err.Error(), http.StatusBadRequest)

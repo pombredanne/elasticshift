@@ -9,6 +9,8 @@ import (
 	"net/http"
 	"net/url"
 	"strings"
+
+	"github.com/Sirupsen/logrus"
 )
 
 // Methods
@@ -45,6 +47,7 @@ type RequestMaker struct {
 	username    string
 	password    string
 	contentType string
+	logger      *logrus.Logger
 }
 
 // NewGetRequestMaker ..
@@ -119,6 +122,13 @@ func (r *RequestMaker) SetBasicAuth(username, password string) *RequestMaker {
 // Set the content type of the request
 func (r *RequestMaker) SetContentType(contentType string) *RequestMaker {
 	r.contentType = contentType
+	return r
+}
+
+// SetLogger ..
+// Set the logger
+func (r *RequestMaker) SetLogger(logger *logrus.Logger) *RequestMaker {
+	r.logger = logger
 	return r
 }
 
@@ -213,7 +223,7 @@ func (r *RequestMaker) Dispatch() error {
 		req.URL.RawQuery = q.Encode()
 	}
 
-	fmt.Println("Making request to = ", req.URL.String())
+	r.logger.Infoln("Making request to = ", req.URL.String())
 
 	// dispatch the request
 	res, err := http.DefaultClient.Do(req)
@@ -236,7 +246,7 @@ func (r *RequestMaker) Dispatch() error {
 		return err
 	}*/
 
-	//fmt.Println("Response = ", string(bits[:]))
+	//logger.Infoln("Response = ", string(bits[:]))
 	// decode to response type
 	err = json.NewDecoder(res.Body).Decode(r.response)
 	if err != nil {

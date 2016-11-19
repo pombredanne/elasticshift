@@ -5,6 +5,7 @@ import (
 	"errors"
 	"time"
 
+	"github.com/Sirupsen/logrus"
 	"github.com/gorilla/mux"
 	"github.com/justinas/alice"
 )
@@ -72,6 +73,7 @@ type Config struct {
 type AppContext struct {
 	Context  context.Context
 	Router   *mux.Router
+	Logger   *logrus.Logger
 	Signer   interface{}
 	Verifier interface{}
 	Config   Config

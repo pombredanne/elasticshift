@@ -1,8 +1,9 @@
 package esh
 
 import (
-	"fmt"
 	"log"
+
+	"github.com/Sirupsen/logrus"
 
 	"net/url"
 
@@ -27,11 +28,12 @@ const (
 type Bitbucket struct {
 	CallbackURL string
 	Config      *oauth2.Config
+	logger      *logrus.Logger
 }
 
 // BitbucketProvider ...
 // Creates a new Github provider
-func BitbucketProvider(clientID, secret, callbackURL string) *Bitbucket {
+func BitbucketProvider(logger *logrus.Logger, clientID, secret, callbackURL string) *Bitbucket {
 
 	conf := &oauth2.Config{
 		ClientID:     clientID,
@@ -43,6 +45,7 @@ func BitbucketProvider(clientID, secret, callbackURL string) *Bitbucket {
 	return &Bitbucket{
 		callbackURL,
 		conf,
+		logger,
 	}
 }
 
@@ -69,7 +72,6 @@ func (b *Bitbucket) Authorized(code string) (VCS, error) {
 		log.Fatal(err)
 	}
 
-	fmt.Println("Extracted token = ", tok)
 	u := VCS{}
 	u.AccessCode = code
 	u.RefreshToken = tok.RefreshToken
@@ -89,7 +91,13 @@ func (b *Bitbucket) Authorized(code string) (VCS, error) {
 		}
 	}{}
 
-	err = chttp.NewGetRequestMaker(BitbucketProfileURL).PathParams().QueryParam("access_token", tok.AccessToken).Scan(&us).Dispatch()
+	r := chttp.NewGetRequestMaker(BitbucketProfileURL)
+	r.SetLogger(b.logger)
+
+	r.PathParams()
+	r.QueryParam("access_token", tok.AccessToken)
+
+	err = r.Scan(&us).Dispatch()
 	if err != nil {
 		return u, err
 	}
@@ -145,6 +153,7 @@ func (b *Bitbucket) RefreshToken(token string) (*oauth2.Token, error) {
 func (b *Bitbucket) GetRepos(token, accountName string, ownerType int) ([]Repo, error) {
 
 	r := chttp.NewGetRequestMaker(BitbucketGetUserRepoURL)
+	r.SetLogger(b.logger)
 
 	r.Header("Accept", "application/json")
 	r.Header("Content-Type", "application/x-www-form-urlencoded")

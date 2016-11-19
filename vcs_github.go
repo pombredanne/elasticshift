@@ -6,6 +6,8 @@ import (
 	"strconv"
 	"time"
 
+	"github.com/Sirupsen/logrus"
+
 	chttp "gitlab.com/conspico/esh/core/http"
 	"golang.org/x/oauth2"
 	gh "golang.org/x/oauth2/github"
@@ -24,6 +26,7 @@ const (
 type Github struct {
 	CallbackURL string
 	Config      *oauth2.Config
+	logger      *logrus.Logger
 }
 
 // GithubUser ..
@@ -36,7 +39,7 @@ type githubUser struct {
 
 // GithubProvider ...
 // Creates a new Github provider
-func GithubProvider(clientID, secret, callbackURL string) *Github {
+func GithubProvider(logger *logrus.Logger, clientID, secret, callbackURL string) *Github {
 
 	conf := &oauth2.Config{
 		ClientID:     clientID,
@@ -48,6 +51,7 @@ func GithubProvider(clientID, secret, callbackURL string) *Github {
 	return &Github{
 		callbackURL,
 		conf,
+		logger,
 	}
 }
 
@@ -74,7 +78,7 @@ func (g *Github) Authorized(code string) (VCS, error) {
 		log.Fatal(err)
 	}
 
-	fmt.Println("Extracted token = ", tok)
+	g.logger.Println("Extracted token = ", tok)
 	u := VCS{}
 	u.AccessCode = code
 	u.RefreshToken = tok.RefreshToken
@@ -97,7 +101,12 @@ func (g *Github) Authorized(code string) (VCS, error) {
 		}
 	}{}
 
-	err = chttp.NewGetRequestMaker(GithubProfileURL).Header("Accept", "application/json").QueryParam("access_token", tok.AccessToken).Scan(&us).Dispatch()
+	r := chttp.NewGetRequestMaker(GithubProfileURL)
+	r.SetLogger(g.logger)
+
+	r.Header("Accept", "application/json")
+	r.QueryParam("access_token", tok.AccessToken)
+	err = r.Scan(&us).Dispatch()
 	if err != nil {
 		return u, err
 	}
@@ -116,6 +125,7 @@ func (g *Github) Authorized(code string) (VCS, error) {
 func (g *Github) RefreshToken(token string) (*oauth2.Token, error) {
 
 	r := chttp.NewGetRequestMaker(g.Config.Endpoint.TokenURL)
+	r.SetLogger(g.logger)
 
 	r.Header("Accept", "application/json")
 	r.Header("Content-Type", "application/x-www-form-urlencoded")
@@ -146,6 +156,7 @@ func (g *Github) GetRepos(token, accountName string, ownerType int) ([]Repo, err
 	}
 
 	r := chttp.NewGetRequestMaker(url)
+	r.SetLogger(g.logger)
 
 	r.Header("Accept", "application/json")
 	r.Header("Content-Type", "application/x-www-form-urlencoded")

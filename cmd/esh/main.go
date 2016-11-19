@@ -14,18 +14,29 @@ import (
 
 	"github.com/gorilla/mux"
 
+	"os"
+
+	"github.com/Sirupsen/logrus"
 	"github.com/jinzhu/gorm"
 	_ "github.com/jinzhu/gorm/dialects/mysql"
 )
 
 func main() {
 
-	fmt.Println("Starting ESH Server...")
-	// CLI args
+	ctx := esh.AppContext{}
+
+	// Unwrap DEK - data encryption key
+	ctx.Context = context.Background()
 
 	// Logger
+	logger := logrus.New()
+	ctx.Logger = logger
+
+	logger.Infoln("Starting ESH Server...")
+	// CLI args
 
 	// App configuration
+	logger.Infoln("Reading properties...")
 	vip := viper.New()
 	vip.SetConfigType("yml")
 	vip.SetConfigFile("esh.yml")
@@ -34,23 +45,21 @@ func main() {
 	config := esh.Config{}
 	vip.Unmarshal(&config)
 
-	ctx := esh.AppContext{}
 	ctx.Config = config
 
-	// Unwrap DEK - data encryption key
-	ctx.Context = context.Background()
-
 	// DB Initialization
+	logger.Infoln("Opening DB Connection...")
 	db, err := gorm.Open(config.DB.Dialect, config.DB.Datasource)
 	if err != nil {
-		fmt.Println("Cannot initialize database.", err)
-		panic("Cannot connect DB")
+		logger.Fatalln("Cannot initialize database.", err)
+		os.Exit(-1)
 	}
 
 	// Ping function checks the database connectivity
 	dberr := db.DB().Ping()
 	if dberr != nil {
-		panic(err)
+		logger.Fatalln("Cannot initialize database.", err)
+		os.Exit(-1)
 	}
 
 	// set the configurations
@@ -62,9 +71,6 @@ func main() {
 	defer db.Close()
 
 	// TLS
-
-	// register vcs providers
-	fmt.Println("Register the VCS providers..")
 
 	// Init datastore
 	ctx.TeamDatastore = esh.NewTeamDatastore(db)
@@ -102,8 +108,8 @@ func main() {
 	router.Handle("/", ctx.PublicChain.Then(router))
 
 	// Start the server
-	fmt.Println("ESH Server listening on port 5050")
-	fmt.Println(http.ListenAndServe(":5050", router))
+	logger.Info("ESH Server listening on port 5050")
+	logger.Info(http.ListenAndServe(":5050", router))
 }
 
 func loadKey(path string) (interface{}, error) {

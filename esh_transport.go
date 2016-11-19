@@ -21,7 +21,7 @@ func MakeHandlers(ctx AppContext) {
 	extractHandler := handlers.ExtractHandler(ctx.Context, ctx.Router)
 	ctx.PublicChain = commonChain.Extend(alice.New(extractHandler))
 
-	secureHandler := handlers.SecurityHandler(ctx.Context, ctx.Signer, ctx.Verifier)
+	secureHandler := handlers.SecurityHandler(ctx.Context, ctx.Logger, ctx.Signer, ctx.Verifier)
 	ctx.SecureChain = commonChain.Extend(alice.New(secureHandler, extractHandler))
 
 	MakeTeamHandler(ctx)
@@ -47,6 +47,7 @@ func MakeTeamHandler(ctx AppContext) {
 		DecodeFunc:  decodeCreateTeamRequest,
 		ProcessFunc: makeCreateTeamEdge(ctx.TeamService),
 		EncodeFunc:  encodeCreateTeamResponse,
+		Logger:      ctx.Logger,
 	}
 	ctx.Router.Handle("/api/teams", ctx.PublicChain.Then(createTeamHandler)).Methods("POST")
 }
@@ -61,6 +62,7 @@ func MakeUserHandler(ctx AppContext) {
 		DecodeFunc:  decodeSignUpRequest,
 		EncodeFunc:  encodeSignInResponse,
 		ProcessFunc: makeSignupEdge(ctx.UserService),
+		Logger:      ctx.Logger,
 	}
 	r.Handle("/api/users/signup", ctx.PublicChain.Then(signUpHandler)).Methods("POST")
 
@@ -68,6 +70,7 @@ func MakeUserHandler(ctx AppContext) {
 		DecodeFunc:  decodeSignInRequest,
 		EncodeFunc:  encodeSignInResponse,
 		ProcessFunc: makeSignInEdge(ctx.UserService),
+		Logger:      ctx.Logger,
 	}
 	r.Handle("/api/users/signin", ctx.PublicChain.Then(signInHandler)).Methods("POST")
 
@@ -75,6 +78,7 @@ func MakeUserHandler(ctx AppContext) {
 		DecodeFunc:  decodeSignOutRequest,
 		EncodeFunc:  encodeSignOutResponse,
 		ProcessFunc: makeSignOutEdge(ctx.UserService),
+		Logger:      ctx.Logger,
 	}
 	r.Handle("/api/users/signout", signOutHandler).Methods("POST")
 
@@ -90,6 +94,7 @@ func MakeVCSHandler(ctx AppContext) {
 		DecodeFunc:  decodeAuthorizeRequest,
 		EncodeFunc:  encodeAuthorizeResponse,
 		ProcessFunc: makeAuthorizeEdge(ctx.VCSService),
+		Logger:      ctx.Logger,
 	}
 	r.Handle("/api/auth/{provider}", ctx.SecureChain.Then(authorizeHandler)).Methods("GET")
 
@@ -97,6 +102,7 @@ func MakeVCSHandler(ctx AppContext) {
 		DecodeFunc:  decodeAuthorizedRequest,
 		EncodeFunc:  encodeAuthorizeResponse,
 		ProcessFunc: makeAuthorizedEdge(ctx.VCSService),
+		Logger:      ctx.Logger,
 	}
 	r.Handle("/api/auth/{provider}/callback/{id}", ctx.PublicChain.Then(authorizedHandler)).Methods("GET")
 
@@ -104,6 +110,7 @@ func MakeVCSHandler(ctx AppContext) {
 		DecodeFunc:  decodeGetVCSRequest,
 		EncodeFunc:  encodeGetVCSResponse,
 		ProcessFunc: makeGetVCSEdge(ctx.VCSService),
+		Logger:      ctx.Logger,
 	}
 	r.Handle("/api/vcs", ctx.SecureChain.Then(getVCSHandler)).Methods("GET")
 
@@ -111,6 +118,7 @@ func MakeVCSHandler(ctx AppContext) {
 		DecodeFunc:  decodeSyncVCSRequest,
 		EncodeFunc:  encodeSyncVCSResponse,
 		ProcessFunc: makeSyncVCSEdge(ctx.VCSService),
+		Logger:      ctx.Logger,
 	}
 	r.Handle("/api/vcs/sync/{id}", ctx.SecureChain.Then(syncVCSHandler)).Methods("GET")
 }
@@ -125,6 +133,7 @@ func MakeRepoHandler(ctx AppContext) {
 		DecodeFunc:  decodeGetRepoRequest,
 		EncodeFunc:  encodeGetRepoResponse,
 		ProcessFunc: makeGetRepoEdge(ctx.RepoService),
+		Logger:      ctx.Logger,
 	}
 
 	r.Handle("/api/repos", ctx.SecureChain.Then(getRepoHandler)).Methods("GET")

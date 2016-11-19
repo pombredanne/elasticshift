@@ -10,6 +10,7 @@ import (
 
 	"encoding/base64"
 
+	"github.com/Sirupsen/logrus"
 	"gitlab.com/conspico/esh/core/util"
 )
 
@@ -43,23 +44,25 @@ type vcsService struct {
 	repoDS       RepoDatastore
 	vcsProviders *Providers
 	config       Config
+	logger       *logrus.Logger
 }
 
 // NewVCSService ..
-func NewVCSService(appCtx AppContext) VCSService {
+func NewVCSService(ctx AppContext) VCSService {
 
-	conf := appCtx.Config
+	conf := ctx.Config
 	providers := NewProviders(
-		GithubProvider(conf.Github.Key, conf.Github.Secret, conf.Github.Callback),
-		BitbucketProvider(conf.Bitbucket.Key, conf.Bitbucket.Secret, conf.Bitbucket.Callback),
+		GithubProvider(ctx.Logger, conf.Github.Key, conf.Github.Secret, conf.Github.Callback),
+		BitbucketProvider(ctx.Logger, conf.Bitbucket.Key, conf.Bitbucket.Secret, conf.Bitbucket.Callback),
 	)
 
 	return &vcsService{
 		vcsProviders: providers,
-		vcsDS:        appCtx.VCSDatastore,
-		teamDS:       appCtx.TeamDatastore,
-		repoDS:       appCtx.RepoDatastore,
+		vcsDS:        ctx.VCSDatastore,
+		teamDS:       ctx.TeamDatastore,
+		repoDS:       ctx.RepoDatastore,
 		config:       conf,
+		logger:       ctx.Logger,
 	}
 }
 
@@ -94,7 +97,6 @@ func (s vcsService) Authorized(id, provider, code string, r *http.Request) (Auth
 
 	u, err := p.Authorized(code)
 	if err != nil {
-		fmt.Println(err)
 		return AuthorizeResponse{}, err
 	}
 
@@ -272,7 +274,6 @@ func (s vcsService) getToken(a VCS) (string, error) {
 	})
 
 	if err != nil {
-		fmt.Println(err)
 		return "", err
 	}
 	return tok.AccessToken, nil

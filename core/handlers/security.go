@@ -3,12 +3,12 @@ package handlers
 import (
 	"context"
 	"errors"
-	"fmt"
 	"net/http"
 	"time"
 
 	jwt "github.com/dgrijalva/jwt-go"
 
+	"github.com/Sirupsen/logrus"
 	"gitlab.com/conspico/esh/core/auth"
 )
 
@@ -23,6 +23,7 @@ var (
 type security struct {
 	ctx      context.Context
 	h        http.Handler
+	logger   *logrus.Logger
 	signer   interface{}
 	verifier interface{}
 }
@@ -33,37 +34,35 @@ func (sh *security) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 
 	cookie, err := r.Cookie(AuthTokenCookieName)
 	if err != nil {
-		fmt.Println(err)
-		http.Error(w, unAuthorized, http.StatusUnauthorized)
+
+		logError(sh.logger, err, w)
 		return
 	}
 
 	if "" == cookie.Value {
-		fmt.Println(err)
-		http.Error(w, unAuthorized, http.StatusUnauthorized)
+		logError(sh.logger, err, w)
 		return
 	}
 
 	token, err := auth.VefifyToken(sh.verifier, cookie.Value)
 	if err != nil || !token.Valid {
-		fmt.Println(err)
-		http.Error(w, unAuthorized, http.StatusUnauthorized)
+		logError(sh.logger, err, w)
 		return
 	}
 
 	c := context.WithValue(ctx, "token", auth.GetToken(token))
 
 	// Refresh the token
-	refreshtoken(token, sh.signer, w)
+	refreshtoken(sh.logger, token, sh.signer, w)
 
 	sh.h.ServeHTTP(w, r.WithContext(c))
 }
 
-func refreshtoken(token *jwt.Token, signer interface{}, w http.ResponseWriter) {
+func refreshtoken(logger *logrus.Logger, token *jwt.Token, signer interface{}, w http.ResponseWriter) {
 
 	signedTok, err := auth.RefreshToken(signer, token)
 	if err != nil {
-		fmt.Println("Failed to refresh the token.", err)
+		logger.Errorln("Failed to refresh the token.", err)
 	}
 
 	cookie := &http.Cookie{
@@ -77,8 +76,14 @@ func refreshtoken(token *jwt.Token, signer interface{}, w http.ResponseWriter) {
 	http.SetCookie(w, cookie)
 }
 
+func logError(logger *logrus.Logger, err error, w http.ResponseWriter) {
+
+	logger.Errorln(err)
+	http.Error(w, unAuthorized, http.StatusUnauthorized)
+}
+
 // SecurityHandler ..
-func SecurityHandler(ctx context.Context, signer interface{}, verifier interface{}) func(http.Handler) http.Handler {
+func SecurityHandler(ctx context.Context, logger *logrus.Logger, signer interface{}, verifier interface{}) func(http.Handler) http.Handler {
 
 	return func(h http.Handler) http.Handler {
 
@@ -87,6 +92,7 @@ func SecurityHandler(ctx context.Context, signer interface{}, verifier interface
 			signer:   signer,
 			verifier: verifier,
 			h:        h,
+			logger:   logger,
 		}
 	}
 }

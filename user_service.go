@@ -4,6 +4,8 @@ import (
 	"strings"
 	"time"
 
+	"github.com/Sirupsen/logrus"
+
 	"gitlab.com/conspico/esh/core/auth"
 	"gitlab.com/conspico/esh/core/util"
 	"golang.org/x/crypto/bcrypt"
@@ -31,17 +33,19 @@ type userService struct {
 	userDS UserDatastore
 	teamDS TeamDatastore
 	config Config
+	logger *logrus.Logger
 	signer interface{}
 }
 
 // NewUserService ..
-func NewUserService(appCtx AppContext) UserService {
+func NewUserService(ctx AppContext) UserService {
 
 	return &userService{
-		userDS: appCtx.UserDatastore,
-		teamDS: appCtx.TeamDatastore,
-		config: appCtx.Config,
-		signer: appCtx.Signer,
+		userDS: ctx.UserDatastore,
+		teamDS: ctx.TeamDatastore,
+		config: ctx.Config,
+		signer: ctx.Signer,
+		logger: ctx.Logger,
 	}
 }
 

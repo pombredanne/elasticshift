@@ -3,11 +3,13 @@ package esh
 import (
 	"time"
 
+	"github.com/Sirupsen/logrus"
 	"gitlab.com/conspico/esh/core/util"
 )
 
 type teamservice struct {
 	teamDS TeamDatastore
+	logger *logrus.Logger
 }
 
 func (s teamservice) Create(name string) (bool, error) {
@@ -38,8 +40,9 @@ func (s teamservice) Create(name string) (bool, error) {
 }
 
 // NewTeamService ..
-func NewTeamService(appCtx AppContext) TeamService {
+func NewTeamService(ctx AppContext) TeamService {
 	return &teamservice{
-		teamDS: appCtx.TeamDatastore,
+		teamDS: ctx.TeamDatastore,
+		logger: ctx.Logger,
 	}
 }

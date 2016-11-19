@@ -2,7 +2,6 @@ package esh
 
 import (
 	"context"
-	"fmt"
 	"net/http"
 
 	"gitlab.com/conspico/esh/core/auth"
@@ -45,7 +44,6 @@ func decodeAuthorizedRequest(ctx context.Context, r *http.Request) (interface{},
 	id := params["id"]
 	code := r.FormValue("code")
 
-	fmt.Println("Subdomain from callback =", id)
 	return AuthorizeRequest{ID: id, Provider: prov, Request: r, Code: code}, nil
 }
 
