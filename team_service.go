@@ -4,6 +4,7 @@ import (
 	"time"
 
 	"github.com/Sirupsen/logrus"
+	"github.com/palantir/stacktrace"
 	"gitlab.com/conspico/esh/core/util"
 )
 
@@ -19,9 +20,9 @@ func (s teamservice) Create(name string) (bool, error) {
 		return false, errTeamAlreadyExists
 	}
 
-	id, err := util.NewUUID()
+	id, _ := util.NewUUID()
 	if err != nil {
-
+		return false, stacktrace.Propagate(err, "Unable to create team"+name)
 	}
 
 	team := &Team{
@@ -36,7 +37,7 @@ func (s teamservice) Create(name string) (bool, error) {
 
 	err = s.teamDS.Save(team)
 
-	return err == nil, err
+	return err == nil, stacktrace.Propagate(err, "Unable to create team")
 }
 
 // NewTeamService ..

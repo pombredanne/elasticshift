@@ -9,6 +9,8 @@ import (
 	"encoding/hex"
 	"encoding/json"
 	"io"
+
+	"github.com/palantir/stacktrace"
 )
 
 // Encrypt - plain text to encoded string
@@ -17,7 +19,7 @@ func Encrypt(key string, text []byte) (string, error) {
 	// creates a cipher block with key bytes
 	block, err := aes.NewCipher([]byte(key))
 	if err != nil {
-		return "", err
+		return "", stacktrace.Propagate(err, "Can't encrypt")
 	}
 
 	// creates a random iv and have it first part of cipher text
@@ -43,13 +45,13 @@ func Decrypt(key, cipherText string) ([]byte, error) {
 	cipherBytes, err := base64.StdEncoding.DecodeString(cipherText)
 	//cipherBytes, err := hex.DecodeString(cipherText)
 	if err != nil {
-		return nil, err
+		return nil, stacktrace.Propagate(err, "Can't decrypt")
 	}
 
 	// creates a cipher block with key bytes
 	block, err := aes.NewCipher([]byte(key))
 	if err != nil {
-		return nil, err
+		return nil, stacktrace.Propagate(err, "Can't decrypt")
 	}
 
 	//cipherBytes := []byte(cipherText)
@@ -71,7 +73,7 @@ func EncryptStruct(key string, value interface{}) (string, error) {
 
 	b, err := json.Marshal(value)
 	if err != nil {
-		return "", err
+		return "", stacktrace.Propagate(err, "Can't encrypt")
 	}
 	return Encrypt(key, b)
 }
@@ -81,7 +83,7 @@ func DecryptStruct(key string, cipherText string, value interface{}) error {
 
 	b, err := Decrypt(key, cipherText)
 	if err != nil {
-		return err
+		return stacktrace.Propagate(err, "Can't decrypt")
 	}
 
 	return json.Unmarshal(b, &value)
@@ -101,6 +103,7 @@ func CompareSha512Hash(plain, hashed string) bool {
 	return hashed == Sha512Hash(plain)
 }
 
+// XOREncrypt ..
 func XOREncrypt(key, input string) string {
 
 	enc := xorEncrypeDecrypt(key, input)
@@ -108,6 +111,7 @@ func XOREncrypt(key, input string) string {
 	//return enc
 }
 
+// XORDecrypt ..
 func XORDecrypt(key, input string) (string, error) {
 
 	decoded, err := hex.DecodeString(input)

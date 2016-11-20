@@ -4,6 +4,8 @@ import (
 	"context"
 	"encoding/json"
 	"net/http"
+
+	"github.com/palantir/stacktrace"
 )
 
 // user registration
@@ -31,7 +33,7 @@ func decodeSignUpRequest(ctx context.Context, r *http.Request) (interface{}, err
 	var req signupRequest
 
 	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
-		return false, err
+		return false, stacktrace.Propagate(err, "Unable to decode signup request")
 	}
 
 	subdomain := ctx.Value("subdomain").(string)
@@ -50,7 +52,7 @@ func decodeSignInRequest(ctx context.Context, r *http.Request) (interface{}, err
 	var req signInRequest
 
 	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
-		return false, err
+		return false, stacktrace.Propagate(err, "Unable to decode signin request")
 	}
 
 	subdomain := ctx.Value("subdomain").(string)

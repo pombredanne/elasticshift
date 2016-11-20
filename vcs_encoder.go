@@ -32,6 +32,7 @@ func encodeAuthorizeResponse(ctx context.Context, w http.ResponseWriter, r inter
 		return resp.Err
 	}
 
+	w.Header().Add("Access-Control-Allow-Origin", "*")
 	http.Redirect(w, resp.Request, resp.URL, http.StatusTemporaryRedirect)
 	return nil
 }

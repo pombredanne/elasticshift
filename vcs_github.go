@@ -2,11 +2,11 @@ package esh
 
 import (
 	"fmt"
-	"log"
 	"strconv"
 	"time"
 
 	"github.com/Sirupsen/logrus"
+	"github.com/palantir/stacktrace"
 
 	chttp "gitlab.com/conspico/esh/core/http"
 	"golang.org/x/oauth2"
@@ -74,12 +74,13 @@ func (g *Github) Authorize(baseURL string) string {
 func (g *Github) Authorized(code string) (VCS, error) {
 
 	tok, err := g.Config.Exchange(oauth2.NoContext, code)
+	u := VCS{}
 	if err != nil {
-		log.Fatal(err)
+		return u, stacktrace.Propagate(err, "Exchange token after bitbucket auth failed")
 	}
 
 	g.logger.Println("Extracted token = ", tok)
-	u := VCS{}
+
 	u.AccessCode = code
 	u.RefreshToken = tok.RefreshToken
 	u.AccessToken = tok.AccessToken

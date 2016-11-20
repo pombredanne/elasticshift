@@ -9,6 +9,7 @@ import (
 	jwt "github.com/dgrijalva/jwt-go"
 
 	"github.com/Sirupsen/logrus"
+	"github.com/palantir/stacktrace"
 	"gitlab.com/conspico/esh/core/auth"
 )
 
@@ -78,7 +79,7 @@ func refreshtoken(logger *logrus.Logger, token *jwt.Token, signer interface{}, w
 
 func logError(logger *logrus.Logger, err error, w http.ResponseWriter) {
 
-	logger.Errorln(err)
+	logger.Errorln(stacktrace.RootCause(err))
 	http.Error(w, unAuthorized, http.StatusUnauthorized)
 }
 

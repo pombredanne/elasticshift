@@ -1,5 +1,5 @@
-hash: e821cb67c420abd2238a2000eae79aed645b8f498281fecec19f04a2e8aaf21a
-updated: 2016-11-18T22:03:14.175263964-05:00
+hash: 4c4db3b5364f46d155a40b421bc42ced2ec307ea8c4f39e7f15bb452db40d6dd
+updated: 2016-11-19T17:33:34.609739057-05:00
 imports:
 - name: github.com/dgrijalva/jwt-go
   version: d2709f9f1f31ebcda9651b03077758c1f3a0018c
@@ -42,6 +42,8 @@ imports:
   version: f3009df150dadf309fdee4a54ed65c124afad715
 - name: github.com/nu7hatch/gouuid
   version: 179d4d0c4d8d407a32af483c2354df1d2c91e6c3
+- name: github.com/palantir/stacktrace
+  version: 78658fd2d1772b755720ed8c44367d11ee5380d6
 - name: github.com/pelletier/go-buffruneio
   version: df1e16fde7fc330a0ca68167c23bf7ed6ac31d6d
 - name: github.com/pelletier/go-toml

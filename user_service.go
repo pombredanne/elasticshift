@@ -6,6 +6,7 @@ import (
 
 	"github.com/Sirupsen/logrus"
 
+	"github.com/palantir/stacktrace"
 	"gitlab.com/conspico/esh/core/auth"
 	"gitlab.com/conspico/esh/core/util"
 	"golang.org/x/crypto/bcrypt"
@@ -60,7 +61,7 @@ func (s userService) Create(teamName, domain, fullname, email, password string) 
 
 	teamID, err := s.getTeamID(teamName, domain)
 	if err != nil {
-		return "", err
+		return "", stacktrace.Propagate(err, "Get team id failed")
 	}
 
 	result, err := s.userDS.CheckExists(email, teamID)
@@ -76,7 +77,7 @@ func (s userService) Create(teamName, domain, fullname, email, password string) 
 	// generate hashed password
 	hashedPwd, err := bcrypt.GenerateFromPassword([]byte(password), bcrypt.DefaultCost)
 	if err != nil {
-		return "", errUserCreationFailed
+		return "", stacktrace.Propagate(err, errUserCreationFailed.Error())
 	}
 
 	user := &User{
@@ -97,7 +98,7 @@ func (s userService) Create(teamName, domain, fullname, email, password string) 
 
 	err = s.userDS.Save(user)
 	if err != nil {
-		return "", errUserCreationFailed
+		return "", stacktrace.Propagate(err, errUserCreationFailed.Error())
 	}
 
 	tname := teamName
@@ -147,7 +148,7 @@ func (s userService) generateAuthToken(teamID, userID, userName, teamName string
 
 	signedStr, err := auth.GenerateToken(s.signer, t)
 	if err != nil {
-		return "", err
+		return "", stacktrace.Propagate(err, "Failed to geenrate auth token")
 	}
 	return signedStr, nil
 }

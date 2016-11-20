@@ -7,6 +7,7 @@ import (
 	"time"
 
 	"github.com/dgrijalva/jwt-go"
+	"github.com/palantir/stacktrace"
 )
 
 var (
@@ -35,7 +36,7 @@ func GenerateToken(key interface{}, t Token) (string, error) {
 	claims["tok"] = t
 	signedString, err := tok.SignedString(key.(*rsa.PrivateKey))
 	if err != nil {
-		return "", err
+		return "", stacktrace.Propagate(err, "Generate token failed.")
 	}
 
 	return signedString, err
@@ -52,7 +53,7 @@ func VefifyToken(key interface{}, signedToken string) (*jwt.Token, error) {
 		}
 
 		if claims["iss"] != "elasticshift.com" {
-			return false, errInvalidIssuer
+			return false, stacktrace.Propagate(errInvalidIssuer, "Verify token failed.")
 		}
 
 		// if time.Now().Sub(claims["exp"].(time.Time)) > 0 {
@@ -75,7 +76,7 @@ func RefreshToken(key interface{}, token *jwt.Token) (string, error) {
 	signedString, err := token.SignedString(key.(*rsa.PrivateKey))
 
 	if err != nil {
-		return "", err
+		return "", stacktrace.Propagate(err, "Refresh token failed")
 	}
 
 	return signedString, err

@@ -81,13 +81,15 @@ func main() {
 	// load keys
 	signer, err := loadKey(config.Key.Signer)
 	if err != nil {
-		panic(err)
+		logger.Fatalln("Cannot load signer key", err)
+		os.Exit(-1)
 	}
 	ctx.Signer = signer
 
 	verifier, err := loadKey(config.Key.Verifier)
 	if err != nil {
-		panic(err)
+		logger.Fatalln("Cannot load verifier key", err)
+		os.Exit(-1)
 	}
 	ctx.Verifier = verifier
 

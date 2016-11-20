@@ -1,8 +1,6 @@
 package esh
 
 import (
-	"log"
-
 	"github.com/Sirupsen/logrus"
 
 	"net/url"
@@ -13,6 +11,7 @@ import (
 
 	"golang.org/x/oauth2"
 
+	"github.com/palantir/stacktrace"
 	bb "golang.org/x/oauth2/bitbucket"
 )
 
@@ -68,11 +67,11 @@ func (b *Bitbucket) Authorize(baseURL string) string {
 func (b *Bitbucket) Authorized(code string) (VCS, error) {
 
 	tok, err := b.Config.Exchange(oauth2.NoContext, code)
+	u := VCS{}
 	if err != nil {
-		log.Fatal(err)
+		return u, stacktrace.Propagate(err, "Exchange token after bitbucket auth failed")
 	}
 
-	u := VCS{}
 	u.AccessCode = code
 	u.RefreshToken = tok.RefreshToken
 	u.AccessToken = tok.AccessToken

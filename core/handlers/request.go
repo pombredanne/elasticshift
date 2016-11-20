@@ -7,6 +7,7 @@ import (
 	"strings"
 
 	"github.com/Sirupsen/logrus"
+	"github.com/palantir/stacktrace"
 	"gitlab.com/conspico/esh/core/edge"
 )
 
@@ -48,6 +49,7 @@ func (h *RequestHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 
 		req, err = h.DecodeFunc(ctx, r)
 		if err != nil {
+			err = stacktrace.Propagate(err, "Error occured during DECODE request")
 			handleError(ctx, h.Logger, err, DECODE, w)
 			return
 		}
@@ -56,12 +58,14 @@ func (h *RequestHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	// process the request
 	res, err := h.ProcessFunc(ctx, req)
 	if err != nil {
+		err = stacktrace.Propagate(err, "Error occured during PROCESS request")
 		handleError(ctx, h.Logger, err, PROCESS, w)
 		return
 	}
 
 	err = h.EncodeFunc(ctx, w, res)
 	if err != nil {
+		err = stacktrace.Propagate(err, "Error occured during ENCODE response")
 		handleError(ctx, h.Logger, err, ENCODE, w)
 		return
 	}
@@ -70,7 +74,7 @@ func (h *RequestHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 // HandleError handles the error by setting up the right message and status code
 func handleError(ctx context.Context, logger *logrus.Logger, err error, phase int, w http.ResponseWriter) {
 
-	logger.Errorln(err)
+	logger.Errorln(stacktrace.RootCause(err))
 
 	switch phase {
 	case DECODE:

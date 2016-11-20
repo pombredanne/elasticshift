@@ -11,6 +11,7 @@ import (
 	"encoding/base64"
 
 	"github.com/Sirupsen/logrus"
+	"github.com/palantir/stacktrace"
 	"gitlab.com/conspico/esh/core/util"
 )
 
@@ -70,7 +71,7 @@ func (s vcsService) Authorize(teamID, provider string, r *http.Request) (Authori
 
 	p, err := s.vcsProviders.Get(provider)
 	if err != nil {
-		return AuthorizeResponse{}, err
+		return AuthorizeResponse{}, stacktrace.Propagate(err, "Getting provider %s failed", provider)
 	}
 
 	// Get the base URL
@@ -92,12 +93,12 @@ func (s vcsService) Authorized(id, provider, code string, r *http.Request) (Auth
 
 	p, err := s.vcsProviders.Get(provider)
 	if err != nil {
-		return AuthorizeResponse{}, err
+		return AuthorizeResponse{}, stacktrace.Propagate(err, "Getting provider %s failed", provider)
 	}
 
 	u, err := p.Authorized(code)
 	if err != nil {
-		return AuthorizeResponse{}, err
+		return AuthorizeResponse{}, stacktrace.Propagate(err, "Finalize the authorization failed.")
 	}
 
 	unescID := s.decode(id)
@@ -124,7 +125,7 @@ func (s vcsService) SyncVCS(teamID, userName, providerID string) (bool, error) {
 
 	acc, err := s.vcsDS.GetByID(providerID)
 	if err != nil {
-		return false, err
+		return false, stacktrace.Propagate(err, "Get by VCS ID failed during sync.")
 	}
 
 	err = s.sync(acc, userName)
@@ -139,25 +140,25 @@ func (s vcsService) sync(acc VCS, userName string) error {
 	// Get the token
 	t, err := s.getToken(acc)
 	if err != nil {
-		return fmt.Errorf(errGetUpdatedFokenFailed, err)
+		return stacktrace.Propagate(fmt.Errorf(errGetUpdatedFokenFailed, err), "Get token failed")
 	}
 
 	// fetch the existing repository
 	p, err := s.getProvider(acc.Type)
 	if err != nil {
-		return fmt.Errorf(errNoProviderFound, err)
+		return stacktrace.Propagate(fmt.Errorf(errNoProviderFound, err), errNoProviderFound)
 	}
 
 	// repository received from provider
 	repos, err := p.GetRepos(t, acc.Name, acc.OwnerType)
 	if err != nil {
-		return err
+		return stacktrace.Propagate(err, "Failed to get repos from provider %s", p.Name())
 	}
 
 	// Fetch the repositories from esh repo store
 	lrpo, err := s.repoDS.GetReposByVCSID(acc.TeamID, acc.ID)
 	if err != nil {
-		return err
+		return stacktrace.Propagate(err, "Getting repos by vcs id failed.")
 	}
 
 	rpo := make(map[string]Repo)
@@ -236,7 +237,11 @@ func (s vcsService) sync(acc VCS, userName string) error {
 	for _, rp := range rpo {
 		ids = append(ids, rp.ID)
 	}
-	s.repoDS.DeleteIds(ids)
+
+	err = s.repoDS.DeleteIds(ids)
+	if err != nil {
+		return stacktrace.Propagate(err, "Failed to delete the vcs that does not exist remotly")
+	}
 
 	return nil
 }
@@ -259,7 +264,7 @@ func (s vcsService) getToken(a VCS) (string, error) {
 
 	p, err := s.getProvider(a.Type)
 	if err != nil {
-		return "", err
+		return "", stacktrace.Propagate(fmt.Errorf(errNoProviderFound, err), errNoProviderFound)
 	}
 
 	// Refresh the token
@@ -274,7 +279,7 @@ func (s vcsService) getToken(a VCS) (string, error) {
 	})
 
 	if err != nil {
-		return "", err
+		return "", stacktrace.Propagate(err, "Failed to update VCS after token refreshed.")
 	}
 	return tok.AccessToken, nil
 }

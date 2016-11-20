@@ -11,6 +11,7 @@ import (
 	"strings"
 
 	"github.com/Sirupsen/logrus"
+	"github.com/palantir/stacktrace"
 )
 
 // Methods
@@ -177,7 +178,7 @@ func (r *RequestMaker) Dispatch() error {
 
 			bits, err := json.Marshal(r.body)
 			if err != nil {
-				return err
+				return stacktrace.Propagate(err, "Failed to marshall json request")
 			}
 
 			// create a request
@@ -192,7 +193,7 @@ func (r *RequestMaker) Dispatch() error {
 
 	// checks for http request creation errors if any
 	if err != nil {
-		return err
+		return stacktrace.Propagate(err, "Can't create request")
 	}
 
 	// Sets the basic auth header
@@ -227,16 +228,13 @@ func (r *RequestMaker) Dispatch() error {
 
 	// dispatch the request
 	res, err := http.DefaultClient.Do(req)
-	if err != nil {
-		return err
-	}
 
 	// Scans the response
 	if err != nil {
 		if res != nil {
 			res.Body.Close()
 		}
-		return err
+		return stacktrace.Propagate(err, "Dispatching request failed.")
 	}
 	defer res.Body.Close()
 
@@ -250,7 +248,7 @@ func (r *RequestMaker) Dispatch() error {
 	// decode to response type
 	err = json.NewDecoder(res.Body).Decode(r.response)
 	if err != nil {
-		return err
+		return stacktrace.Propagate(err, "Failed to decode respose")
 	}
 	return nil
 }
