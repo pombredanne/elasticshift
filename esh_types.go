@@ -61,6 +61,8 @@ type Config struct {
 		IdleConnection int
 		MaxConnection  int
 		Log            bool
+		Retry          int
+		Reconnect      int
 	}
 	Key struct {
 		VerifyCode string

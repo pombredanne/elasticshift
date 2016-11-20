@@ -17,6 +17,10 @@ import (
 
 	"os"
 
+	"time"
+
+	"strconv"
+
 	"github.com/Sirupsen/logrus"
 	"github.com/jinzhu/gorm"
 	_ "github.com/jinzhu/gorm/dialects/mysql"
@@ -31,6 +35,11 @@ func main() {
 
 	// Logger
 	logger := logrus.New()
+	/*f, err := os.OpenFile("esh.log", os.O_WRONLY|os.O_CREATE, 777)
+	if err != nil {
+		logger.Fatalln("Unable to create log file.", err)
+	}
+	logrus.SetOutput(f) */
 	ctx.Logger = logger
 
 	logger.Infoln("Starting ESH Server...")
@@ -48,27 +57,42 @@ func main() {
 
 	ctx.Config = config
 
-	// DB Initialization
-	logger.Infoln("Opening DB Connection...")
-	db, err := gorm.Open(config.DB.Dialect, config.DB.Datasource)
-	if err != nil {
-		logger.Fatalln("Cannot initialize database.", err)
-		os.Exit(-1)
-	}
+	retryDuration, _ := time.ParseDuration(strconv.Itoa(config.DB.Retry) + "s")
 
-	// Ping function checks the database connectivity
-	dberr := db.DB().Ping()
-	if dberr != nil {
-		logger.Fatalln("Cannot initialize database.", err)
-		os.Exit(-1)
+	// DB Initialization
+	var db *gorm.DB
+	var err error
+	tryit := true
+	for tryit {
+
+		db, err = gorm.Open(config.DB.Dialect, config.DB.Datasource)
+		if err != nil {
+
+			logger.Errorln(fmt.Sprintf("Connecting database failed, retrying in %d seconds. [%x]", config.DB.Retry, err))
+			time.Sleep(retryDuration)
+
+		} else {
+
+			// Ping function checks the database connectivity
+			dberr := db.DB().Ping()
+			if dberr != nil {
+				logger.Errorln(fmt.Sprintf("Ping DB failed, retrying in %d seconds", config.DB.Retry), err)
+			} else {
+				logger.Infoln("Database connected successfully")
+				tryit = false
+			}
+		}
 	}
 
 	// set the configurations
 	db.SingularTable(true)
+	db.SetLogger(logger)
 	db.DB().SetMaxOpenConns(config.DB.MaxConnection)
 	db.DB().SetMaxIdleConns(config.DB.IdleConnection)
-
 	db.LogMode(config.DB.Log)
+
+	// starting a background process to reconeb;nct db in case failure.
+	go reconnectOnFailure(ctx, db)
 	defer db.Close()
 
 	// TLS
@@ -135,16 +159,24 @@ func loadKey(path string) (interface{}, error) {
 	}
 }
 
-func accessControl(h http.Handler) http.Handler {
-	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		w.Header().Set("Access-Control-Allow-Origin", "*")
-		w.Header().Set("Access-Control-Allow-Methods", "GET, POST, OPTIONS")
-		w.Header().Set("Access-Control-Allow-Headers", "Origin, Content-Type")
+func reconnectOnFailure(ctx esh.AppContext, db *gorm.DB) {
 
-		if r.Method == "OPTIONS" {
-			return
+	//ctx.Logger.Infoln("Starting background process to reconnect if db connection failed.")
+	reconnectDuration, _ := time.ParseDuration(strconv.Itoa(ctx.Config.DB.Retry) + "s")
+
+	disconnected := false
+	for {
+
+		time.Sleep(reconnectDuration)
+
+		// Ping function checks the database connectivity
+		err := db.DB().Ping()
+		if err != nil {
+			disconnected = true
+			ctx.Logger.Errorln(fmt.Sprintf("DB ping failed, something went wrong. Reconnecting in %d seconds", ctx.Config.DB.Reconnect))
+		} else if disconnected {
+			ctx.Logger.Infoln("Reconnected to database successfully.")
+			disconnected = false
 		}
-
-		h.ServeHTTP(w, r)
-	})
+	}
 }
