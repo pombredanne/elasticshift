@@ -12,6 +12,7 @@ import (
 	"github.com/spf13/viper"
 	"gitlab.com/conspico/esh"
 
+	"github.com/gorilla/csrf"
 	"github.com/gorilla/mux"
 
 	"os"
@@ -106,8 +107,10 @@ func main() {
 	esh.MakeHandlers(ctx)
 
 	// ESH UI pages
+	csrf.Secure(config.CSRF.Secure)
+	csrfHandler := csrf.Protect([]byte(config.CSRF.Key))
 	router.PathPrefix("/").Handler(ctx.PublicChain.Then(http.FileServer(http.Dir("./dist/"))))
-	router.Handle("/", ctx.PublicChain.Then(router))
+	router.Handle("/", ctx.PublicChain.Then(csrfHandler(router)))
 
 	// Start the server
 	logger.Info("ESH Server listening on port 5050")

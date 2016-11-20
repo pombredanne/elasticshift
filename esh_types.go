@@ -67,6 +67,10 @@ type Config struct {
 		Signer     string
 		Verifier   string
 	}
+	CSRF struct {
+		Key    string
+		Secure bool
+	}
 }
 
 // AppContext ..
