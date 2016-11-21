@@ -120,7 +120,6 @@ func (s vcsService) Authorized(id, provider, code string, r *http.Request) (Auth
 
 		s.vcsDS.Update(&acc, updvcs)
 
-		s.logger.Info("Conflict")
 		return AuthorizeResponse{Conflict: true, Err: errVCSAccountAlreadyLinked, Request: r}, nil
 	}
 
