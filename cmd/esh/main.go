@@ -68,7 +68,7 @@ func main() {
 		db, err = gorm.Open(config.DB.Dialect, config.DB.Datasource)
 		if err != nil {
 
-			logger.Errorln(fmt.Sprintf("Connecting database failed, retrying in %d seconds. [%x]", config.DB.Retry, err))
+			logger.Errorln(fmt.Sprintf("Connecting database failed, retrying in %d seconds.[", config.DB.Retry), err, "]")
 			time.Sleep(retryDuration)
 
 		} else {
@@ -161,8 +161,7 @@ func loadKey(path string) (interface{}, error) {
 
 func reconnectOnFailure(ctx esh.AppContext, db *gorm.DB) {
 
-	//ctx.Logger.Infoln("Starting background process to reconnect if db connection failed.")
-	reconnectDuration, _ := time.ParseDuration(strconv.Itoa(ctx.Config.DB.Retry) + "s")
+	reconnectDuration, _ := time.ParseDuration(strconv.Itoa(ctx.Config.DB.Reconnect) + "s")
 
 	disconnected := false
 	for {
