@@ -105,10 +105,29 @@ func (s vcsService) Authorized(id, provider, code string, r *http.Request) (Auth
 	escID := strings.Split(unescID, SEMICOLON)
 
 	// persist user
-	u.ID, _ = util.NewUUID()
 	u.TeamID = escID[0]
+
+	acc, err := s.vcsDS.GetByVCSID(u.TeamID, u.VcsID)
+	if strings.EqualFold(acc.VcsID, u.VcsID) {
+
+		updvcs := VCS{}
+		updvcs.UpdatedDt = time.Now()
+		updvcs.AccessToken = u.AccessToken
+		updvcs.AccessCode = u.AccessCode
+		updvcs.RefreshToken = u.RefreshToken
+		updvcs.OwnerType = u.OwnerType
+		updvcs.TokenExpiry = u.TokenExpiry
+
+		s.vcsDS.Update(&acc, updvcs)
+
+		s.logger.Info("Conflict")
+		return AuthorizeResponse{Conflict: true, Err: errVCSAccountAlreadyLinked, Request: r}, nil
+	}
+
+	u.ID, _ = util.NewUUID()
 	u.CreatedDt = time.Now()
 	u.UpdatedDt = time.Now()
+
 	err = s.vcsDS.Save(&u)
 
 	url := escID[1] + "/api/vcs"
@@ -271,7 +290,7 @@ func (s vcsService) getToken(a VCS) (string, error) {
 	tok, err := p.RefreshToken(a.RefreshToken)
 
 	// persist the updated token information
-	err = s.vcsDS.UpdateVCS(&a, VCS{
+	err = s.vcsDS.Update(&a, VCS{
 		AccessToken:  tok.AccessToken,
 		TokenExpiry:  tok.Expiry,
 		RefreshToken: tok.RefreshToken,

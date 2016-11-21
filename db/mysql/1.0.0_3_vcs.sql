@@ -5,6 +5,7 @@
 CREATE TABLE VCS (
     ID VARCHAR(32) PRIMARY KEY COMMENT 'UUID of vcs account',
     TEAM_ID VARCHAR(32) COMMENT 'UUID of TEAM',
+    VCS_ID VARCHAR(40) NOT NULL COMMENT 'Provider account id',
     NAME VARCHAR(100) NOT NULL COMMENT 'username of version control system',
     TYPE TINYINT DEFAULT 0 COMMENT '1-github, 2-gitlab, 3-bitbucket, 4-SVN, 5-TFS',
     OWNER_TYPE TINYINT DEFAULT 0 COMMENT '1-user, 2-org',

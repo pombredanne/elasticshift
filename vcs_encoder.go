@@ -8,9 +8,10 @@ import (
 
 // AuthorizeResponse ..
 type AuthorizeResponse struct {
-	Err     error
-	URL     string
-	Request *http.Request
+	Err      error
+	URL      string
+	Request  *http.Request
+	Conflict bool
 }
 
 // GetVCSResponse ..
@@ -28,12 +29,15 @@ type GenericResponse struct {
 func encodeAuthorizeResponse(ctx context.Context, w http.ResponseWriter, r interface{}) error {
 
 	resp := r.(AuthorizeResponse)
-	if resp.Err != nil {
+	if !resp.Conflict && resp.Err != nil {
 		return resp.Err
 	}
 
-	w.Header().Add("Access-Control-Allow-Origin", "*")
-	http.Redirect(w, resp.Request, resp.URL, http.StatusTemporaryRedirect)
+	if resp.Conflict {
+		http.Error(w, resp.Err.Error(), http.StatusConflict)
+	} else {
+		http.Redirect(w, resp.Request, resp.URL, http.StatusTemporaryRedirect)
+	}
 	return nil
 }
 

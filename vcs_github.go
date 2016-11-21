@@ -79,8 +79,6 @@ func (g *Github) Authorized(code string) (VCS, error) {
 		return u, stacktrace.Propagate(err, "Exchange token after bitbucket auth failed")
 	}
 
-	g.logger.Println("Extracted token = ", tok)
-
 	u.AccessCode = code
 	u.RefreshToken = tok.RefreshToken
 	u.AccessToken = tok.AccessToken
@@ -93,6 +91,7 @@ func (g *Github) Authorized(code string) (VCS, error) {
 	u.Type = GithubType
 
 	us := struct {
+		VcsID   int    `json:"id"`
 		Email   string `json:"email"`
 		Name    string `json:"name"`
 		Login   string `json:"login"`
@@ -119,6 +118,7 @@ func (g *Github) Authorized(code string) (VCS, error) {
 	} else {
 		u.OwnerType = OwnerTypeOrg
 	}
+	u.VcsID = strconv.Itoa(us.VcsID)
 	return u, err
 }
 

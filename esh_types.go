@@ -30,9 +30,10 @@ var (
 	errInvalidEmailOrPassword    = errors.New("Invalid email or password")
 
 	// VCS
-	errNoProviderFound       = "No provider found for %s"
-	errGetUpdatedFokenFailed = "Failed to get updated token %s"
-	errGettingRepositories   = "Failed to get repositories for %s"
+	errNoProviderFound         = "No provider found for %s"
+	errGetUpdatedFokenFailed   = "Failed to get updated token %s"
+	errGettingRepositories     = "Failed to get repositories for %s"
+	errVCSAccountAlreadyLinked = errors.New("VCS account already linked")
 )
 
 // Common constants
@@ -131,6 +132,7 @@ type User struct {
 type VCS struct {
 	ID           string `json:"ID"`
 	TeamID       string `json:"-"`
+	VcsID        string `json:"_"`
 	Name         string
 	Type         int
 	OwnerType    int

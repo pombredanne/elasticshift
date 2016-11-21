@@ -82,6 +82,7 @@ func (b *Bitbucket) Authorized(code string) (VCS, error) {
 	u.Type = BitBucketType
 
 	us := struct {
+		UUID  string
 		Name  string `json:"username"`
 		Links struct {
 			Avatar struct {
@@ -103,6 +104,7 @@ func (b *Bitbucket) Authorized(code string) (VCS, error) {
 
 	u.AvatarURL = us.Links.Avatar.Href
 	u.Name = us.Name
+	u.VcsID = us.UUID
 	return u, err
 }
 
@@ -115,14 +117,6 @@ func (b *Bitbucket) RefreshToken(token string) (*oauth2.Token, error) {
 
 	r.Header("Accept", "application/json")
 	r.SetContentType(chttp.URLENCODED)
-
-	// body := struct {
-	// 	GrantType    string `json:"grant_type"`
-	// 	RefreshToken string `json:"refresh_token"`
-	// }{}
-
-	// body.GrantType = "refresh_token"
-	// body.RefreshToken = token
 
 	params := make(url.Values)
 	params.Set("grant_type", "refresh_token")

@@ -21,7 +21,9 @@ type VCSDatastore interface {
 	Save(user *VCS) error
 	GetVCS(teamID string) ([]VCS, error)
 	GetByID(id string) (VCS, error)
-	UpdateVCS(old *VCS, updated VCS) error
+	Update(old *VCS, updated VCS) error
+	CheckIfExists(vcsID, teamID string) (bool, error)
+	GetByVCSID(teamID, vcsID string) (VCS, error)
 }
 
 // RepoDatastore provides the repository related datastore func.
