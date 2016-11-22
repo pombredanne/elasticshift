@@ -1,11 +1,20 @@
 package esh
 
+// Datastore ..
+// Abstract Datastore to interact with DB.
+type Datastore interface {
+	Create(model interface{}) error
+	Update(old interface{}, updated interface{}) error
+	Read(query string, value interface{}, params ...interface{}) error
+	Delete(model interface{}) error
+	DeleteMultiple(model interface{}, ids []string) error
+}
+
 // TeamDatastore provides access a team.
 type TeamDatastore interface {
 	Save(team *Team) error
 	CheckExists(name string) (bool, error)
 	GetTeamID(name string) (string, error)
-	FindByName(name string) (Team, error)
 }
 
 // UserDatastore provides access a user.
@@ -13,7 +22,6 @@ type UserDatastore interface {
 	Save(user *User) error
 	CheckExists(email, teamID string) (bool, error)
 	GetUser(email, teamID string) (User, error)
-	FindByName(username string) (User, error)
 }
 
 // VCSDatastore provides access a user.
@@ -23,7 +31,7 @@ type VCSDatastore interface {
 	GetByID(id string) (VCS, error)
 	Update(old *VCS, updated VCS) error
 	CheckIfExists(vcsID, teamID string) (bool, error)
-	GetByVCSID(teamID, vcsID string) (VCS, error)
+	GetByProviderVCSID(teamID, vcsID string) (VCS, error)
 }
 
 // RepoDatastore provides the repository related datastore func.

@@ -11,6 +11,7 @@ import (
 
 	"github.com/spf13/viper"
 	"gitlab.com/conspico/esh"
+	"gitlab.com/conspico/esh/core"
 
 	"github.com/gorilla/csrf"
 	"github.com/gorilla/mux"
@@ -98,10 +99,13 @@ func main() {
 	// TLS
 
 	// Init datastore
-	ctx.TeamDatastore = esh.NewTeamDatastore(db)
-	ctx.UserDatastore = esh.NewUserDatastore(db)
-	ctx.VCSDatastore = esh.NewVCSDatastore(db)
-	ctx.RepoDatastore = esh.NewRepoDatastore(db)
+	ds := core.NewDatasource(db)
+	ctx.Datasource = ds
+
+	ctx.TeamDatastore = esh.NewTeamDatastore(ds)
+	ctx.UserDatastore = esh.NewUserDatastore(ds)
+	ctx.VCSDatastore = esh.NewVCSDatastore(ds)
+	ctx.RepoDatastore = esh.NewRepoDatastore(ds)
 
 	// load keys
 	signer, err := loadKey(config.Key.Signer)

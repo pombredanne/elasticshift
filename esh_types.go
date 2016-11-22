@@ -93,6 +93,7 @@ type AppContext struct {
 	VCSService  VCSService
 	RepoService RepoService
 
+	Datasource    Datastore
 	TeamDatastore TeamDatastore
 	UserDatastore UserDatastore
 	VCSDatastore  VCSDatastore

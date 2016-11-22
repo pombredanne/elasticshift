@@ -107,7 +107,7 @@ func (s vcsService) Authorized(id, provider, code string, r *http.Request) (Auth
 	// persist user
 	u.TeamID = escID[0]
 
-	acc, err := s.vcsDS.GetByVCSID(u.TeamID, u.VcsID)
+	acc, err := s.vcsDS.GetByProviderVCSID(u.TeamID, u.VcsID)
 	if strings.EqualFold(acc.VcsID, u.VcsID) {
 
 		updvcs := VCS{}
