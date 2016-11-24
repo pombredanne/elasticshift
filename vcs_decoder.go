@@ -41,7 +41,7 @@ func decodeAuthorizedRequest(ctx context.Context, r *http.Request) (interface{},
 
 	params := ctx.Value("params").(map[string]string)
 	prov := params["provider"]
-	id := params["id"]
+	id := r.FormValue("id")
 	code := r.FormValue("code")
 
 	return AuthorizeRequest{ID: id, Provider: prov, Request: r, Code: code}, nil

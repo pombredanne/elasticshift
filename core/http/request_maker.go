@@ -6,6 +6,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"io/ioutil"
 	"net/http"
 	"net/url"
 	"strings"
@@ -33,6 +34,7 @@ var (
 
 	errPathParamConflift = errors.New("Path parameter placeholder and actual vaues doesn't match")
 	errMethodUnknown     = errors.New("Unknown request METHOD")
+	errNoLoggerSet       = errors.New("Ensure the logger is set.")
 	errCannotSetBody     = "Cannot set body for %s request"
 )
 
@@ -60,6 +62,7 @@ func NewGetRequestMaker(url string) *RequestMaker {
 		url:         url,
 		headers:     make(map[string]string),
 		queryParams: make(map[string]string),
+		pathParams:  make([]string, 0),
 	}
 }
 
@@ -72,6 +75,7 @@ func NewPostRequestMaker(url string) *RequestMaker {
 		url:         url,
 		headers:     make(map[string]string),
 		queryParams: make(map[string]string),
+		pathParams:  make([]string, 0),
 	}
 }
 
@@ -137,24 +141,27 @@ func (r *RequestMaker) SetLogger(logger *logrus.Logger) *RequestMaker {
 // This is where actuall request made to destination
 func (r *RequestMaker) Dispatch() error {
 
-	// Set the path params
-	splits := strings.Split(r.url, urlSeparator)
-	var idx int
-	for i, s := range splits {
+	if strings.Contains(r.url, "/:") {
 
-		if strings.HasPrefix(s, pathParamIndicator) {
-			splits[i] = r.pathParams[idx]
-			idx++
+		// Set the path params
+		splits := strings.Split(r.url, urlSeparator)
+		var idx int
+		for i, s := range splits {
+
+			if strings.HasPrefix(s, pathParamIndicator) {
+				splits[i] = r.pathParams[idx]
+				idx++
+			}
 		}
-	}
 
-	// Verify all the path params are set
-	if idx != len(r.pathParams) {
-		return errPathParamConflift
-	}
+		// Verify all the path params are set
+		if idx != len(r.pathParams) {
+			return errPathParamConflift
+		}
 
-	// sets the final url after injecting path params
-	r.url = strings.Join(splits, urlSeparator)
+		// sets the final url after injecting path params
+		r.url = strings.Join(splits, urlSeparator)
+	}
 
 	if r.method == "" {
 		return errMethodUnknown
@@ -239,14 +246,14 @@ func (r *RequestMaker) Dispatch() error {
 	defer res.Body.Close()
 
 	// read the response body
-	/*bits, err := ioutil.ReadAll(res.Body)
+	bits, err := ioutil.ReadAll(res.Body)
 	if err != nil {
 		return err
-	}*/
+	}
 
-	//logger.Infoln("Response = ", string(bits[:]))
+	//r.logger.Infoln("Response = ", string(bits[:]))
 	// decode to response type
-	err = json.NewDecoder(res.Body).Decode(r.response)
+	err = json.NewDecoder(bytes.NewBuffer(bits)).Decode(r.response)
 	if err != nil {
 		return stacktrace.Propagate(err, "Failed to decode respose")
 	}

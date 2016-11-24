@@ -57,7 +57,7 @@ func (b *Bitbucket) Name() string {
 // Provide access to esh app on accessing the github user and repos.
 // the elasticshift application to have access to github repo
 func (b *Bitbucket) Authorize(baseURL string) string {
-	b.Config.RedirectURL = b.CallbackURL + "/" + baseURL
+	b.Config.RedirectURL = b.CallbackURL + "?id=" + baseURL
 	url := b.Config.AuthCodeURL("state", oauth2.AccessTypeOffline)
 	return url
 }

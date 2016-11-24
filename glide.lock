@@ -1,5 +1,5 @@
 hash: 29adaa02ce802747ae168ccb8dcdcf767e407c4d1a286e2e627f9a453d39923d
-updated: 2016-11-19T21:44:59.5765028-05:00
+updated: 2016-11-23T19:20:40.860938668-05:00
 imports:
 - name: github.com/dgrijalva/jwt-go
   version: d2709f9f1f31ebcda9651b03077758c1f3a0018c
@@ -22,7 +22,7 @@ imports:
 - name: github.com/gorilla/securecookie
   version: 667fe4e3466a040b780561fe9b51a83a3753eefc
 - name: github.com/hashicorp/hcl
-  version: c3e054bfd4dcf77b9965ed2b79b22afa2f41d4eb
+  version: 7cb7455c285ca3bf3362aa4ba6a06a6d6f5c3ba0
   subpackages:
   - hcl/ast
   - hcl/parser
@@ -53,7 +53,7 @@ imports:
 - name: github.com/pelletier/go-buffruneio
   version: df1e16fde7fc330a0ca68167c23bf7ed6ac31d6d
 - name: github.com/pelletier/go-toml
-  version: 45932ad32dfdd20826f5671da37a5f3ce9f26a8d
+  version: 7cb988051d5045890cb91402a0b5fddc76c627bc
 - name: github.com/pkg/errors
   version: 248dadf4e9068a0b3e79f02ed0a610d935de5302
 - name: github.com/Sirupsen/logrus
@@ -71,7 +71,7 @@ imports:
 - name: github.com/spf13/viper
   version: 651d9d916abc3c3d6a91a12549495caba5edffd2
 - name: golang.org/x/crypto
-  version: 9477e0b78b9ac3d0b03822fd95422e2fe07627cd
+  version: ede567c8e044a5913dad1d1af3696d9da953104c
   subpackages:
   - bcrypt
   - blowfish
@@ -86,11 +86,11 @@ imports:
   - github
   - internal
 - name: golang.org/x/sys
-  version: b699b7032584f0953262cb2788a0ca19bb494703
+  version: 30237cf4eefd639b184d1f2cb77a581ea0be8947
   subpackages:
   - unix
 - name: golang.org/x/text
-  version: a263ba8db058568bb9beba166777d9c9dbe75d68
+  version: b01949dc0793a9af5e4cb3fce4d42999e76e8ca1
   subpackages:
   - transform
   - unicode/norm

@@ -50,6 +50,12 @@ type Config struct {
 		Callback string
 	}
 
+	Gitlab struct {
+		Key      string
+		Secret   string
+		Callback string
+	}
+
 	Bitbucket struct {
 		Key      string
 		Secret   string

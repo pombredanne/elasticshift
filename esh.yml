@@ -9,12 +9,17 @@ bitbucket:
     secret: dqHP8bc5qyzwTXuW2dduSSTBJqCa8jzj
     callback: http://eshift:5050/api/auth/bitbucket/callback
 
+gitlab:
+    key: 945b6667115e8bc89118209541ad9321109ca6b5dd5051a19125501425d2668c
+    secret: f9404b43d9e530f680559ea26d831e3c650101e9058e96372aa93bbc00c6330a
+    callback: http://eshift:5050/api/auth/gitlab/callback
+
 db:
     dialect: mysql
     datasource: esh:eshpazz@(127.0.0.1:3306)/esh?charset=utf8&parseTime=True&loc=Local
     idle_connections: 5
     max_connections: 100
-    log: true
+    log: false
     retry: 5 #seconds
     Reconnect: 10 #seconds
 

@@ -64,7 +64,7 @@ func (g *Github) Name() string {
 // Provide access to esh app on accessing the github user and repos.
 // the elasticshift application to have access to github repo
 func (g *Github) Authorize(baseURL string) string {
-	g.Config.RedirectURL = g.CallbackURL + "/" + baseURL
+	g.Config.RedirectURL = g.CallbackURL + "?id=" + baseURL
 	url := g.Config.AuthCodeURL("state", oauth2.AccessTypeOffline)
 	return url
 }

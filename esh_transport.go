@@ -104,7 +104,7 @@ func MakeVCSHandler(ctx AppContext) {
 		ProcessFunc: makeAuthorizedEdge(ctx.VCSService),
 		Logger:      ctx.Logger,
 	}
-	r.Handle("/api/auth/{provider}/callback/{id}", ctx.PublicChain.Then(authorizedHandler)).Methods("GET")
+	r.Handle("/api/auth/{provider}/callback", ctx.PublicChain.Then(authorizedHandler)).Methods("GET")
 
 	getVCSHandler := &handlers.RequestHandler{
 		DecodeFunc:  decodeGetVCSRequest,

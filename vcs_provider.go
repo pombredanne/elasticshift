@@ -2,6 +2,7 @@ package esh
 
 import (
 	"fmt"
+	"time"
 
 	"golang.org/x/oauth2"
 )
@@ -29,7 +30,10 @@ type Token struct {
 	// The lifetime in seconds of the access token.
 	ExpiresIn int64 `json:"expires_in"`
 
-	Scope string
+	Expiry time.Time `json:"expiry,omitempty"`
+
+	CreatedAt int64 `json:"created_at"`
+	Scope     string
 }
 
 // Provider ..

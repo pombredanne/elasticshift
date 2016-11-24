@@ -54,6 +54,7 @@ func NewVCSService(ctx AppContext) VCSService {
 	conf := ctx.Config
 	providers := NewProviders(
 		GithubProvider(ctx.Logger, conf.Github.Key, conf.Github.Secret, conf.Github.Callback),
+		GitlabProvider(ctx.Logger, conf.Gitlab.Key, conf.Gitlab.Secret, conf.Gitlab.Callback),
 		BitbucketProvider(ctx.Logger, conf.Bitbucket.Key, conf.Bitbucket.Secret, conf.Bitbucket.Callback),
 	)
 
@@ -311,6 +312,8 @@ func (s vcsService) getProvider(vcsType int) (Provider, error) {
 		name = GithubProviderName
 	case BitBucketType:
 		name = BitBucketProviderName
+	case GitlabType:
+		name = GitlabProviderName
 	}
 
 	return s.vcsProviders.Get(name)
