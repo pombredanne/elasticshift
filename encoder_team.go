@@ -1,3 +1,6 @@
+// Package esh ...
+// Author: Ghazni Nattarshah
+// Date: Nov 28, 2016
 package esh
 
 import (

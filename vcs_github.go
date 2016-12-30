@@ -1,3 +1,6 @@
+// Package esh ...
+// Author: Ghazni Nattarshah
+// Date: Dec 30, 2016
 package esh
 
 import (
@@ -88,7 +91,7 @@ func (g *Github) Authorized(code string) (VCS, error) {
 		u.TokenExpiry = time.Now()
 	}
 	u.TokenType = tok.TokenType
-	u.Type = GithubType
+	u.Type = GithubProviderName
 
 	us := struct {
 		VcsID   int    `json:"id"`
@@ -118,7 +121,7 @@ func (g *Github) Authorized(code string) (VCS, error) {
 	} else {
 		u.OwnerType = OwnerTypeOrg
 	}
-	u.VcsID = strconv.Itoa(us.VcsID)
+	u.ID = strconv.Itoa(us.VcsID)
 	return u, err
 }
 
@@ -147,7 +150,7 @@ func (g *Github) RefreshToken(token string) (*oauth2.Token, error) {
 
 // GetRepos ..
 // returns the list of repositories
-func (g *Github) GetRepos(token, accountName string, ownerType int) ([]Repo, error) {
+func (g *Github) GetRepos(token, accountName string, ownerType string) ([]Repo, error) {
 
 	var url string
 	if OwnerTypeUser == ownerType {
@@ -193,14 +196,8 @@ func (g *Github) GetRepos(token, accountName string, ownerType int) ([]Repo, err
 			Description:   repo.Description,
 			DefaultBranch: repo.DefaultBranch,
 			Language:      repo.Language,
-		}
-
-		if repo.Private {
-			rp.Private = True
-		}
-
-		if repo.Fork {
-			rp.Fork = True
+			Private:       repo.Private,
+			Fork:          repo.Fork,
 		}
 		repos = append(repos, *rp)
 	}

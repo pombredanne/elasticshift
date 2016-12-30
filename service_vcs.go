@@ -1,3 +1,6 @@
+// Package esh ...
+// Author: Ghazni Nattarshah
+// Date: Dec 30, 2016
 package esh
 
 import (
@@ -6,13 +9,14 @@ import (
 	"strings"
 	"time"
 
+	"gopkg.in/mgo.v2/bson"
+
 	"bytes"
 
 	"encoding/base64"
 
 	"github.com/Sirupsen/logrus"
 	"github.com/palantir/stacktrace"
-	"gitlab.com/conspico/esh/core/util"
 )
 
 // expiryDelta determines how earlier a token should be considered
@@ -20,8 +24,8 @@ const expiryDelta = 10 * time.Second
 
 // VCS account owner type
 const (
-	OwnerTypeUser = 1
-	OwnerTypeOrg  = 2
+	OwnerTypeUser = "user"
+	OwnerTypeOrg  = "org"
 )
 
 // True or False
@@ -40,9 +44,9 @@ const (
 )
 
 type vcsService struct {
-	vcsDS        VCSDatastore
 	teamDS       TeamDatastore
 	repoDS       RepoDatastore
+	sysconfDS    SysconfDatastore
 	vcsProviders *Providers
 	config       Config
 	logger       *logrus.Logger
@@ -52,32 +56,31 @@ type vcsService struct {
 func NewVCSService(ctx AppContext) VCSService {
 
 	conf := ctx.Config
-	providers := NewProviders(
+	/*providers := NewProviders(
 		GithubProvider(ctx.Logger, conf.Github.Key, conf.Github.Secret, conf.Github.Callback),
 		GitlabProvider(ctx.Logger, conf.Gitlab.Key, conf.Gitlab.Secret, conf.Gitlab.Callback),
 		BitbucketProvider(ctx.Logger, conf.Bitbucket.Key, conf.Bitbucket.Secret, conf.Bitbucket.Callback),
-	)
+	)*/
 
 	return &vcsService{
-		vcsProviders: providers,
-		vcsDS:        ctx.VCSDatastore,
-		teamDS:       ctx.TeamDatastore,
-		repoDS:       ctx.RepoDatastore,
-		config:       conf,
-		logger:       ctx.Logger,
+		teamDS:    ctx.TeamDatastore,
+		repoDS:    ctx.RepoDatastore,
+		sysconfDS: ctx.SysconfDatastore,
+		config:    conf,
+		logger:    ctx.Logger,
 	}
 }
 
-func (s vcsService) Authorize(teamID, provider string, r *http.Request) (AuthorizeResponse, error) {
+func (s vcsService) Authorize(teamname, provider string, r *http.Request) (AuthorizeResponse, error) {
 
-	p, err := s.vcsProviders.Get(provider)
+	p, err := s.getProvider(provider)
 	if err != nil {
 		return AuthorizeResponse{}, stacktrace.Propagate(err, "Getting provider %s failed", provider)
 	}
 
 	// Get the base URL
 	var buf bytes.Buffer
-	buf.WriteString(teamID)
+	buf.WriteString(teamname)
 	buf.WriteString(SEMICOLON)
 	buf.WriteString(SLASH)
 	buf.WriteString(SLASH)
@@ -92,72 +95,67 @@ func (s vcsService) Authorize(teamID, provider string, r *http.Request) (Authori
 // Invoked when authorization finished by oauth app
 func (s vcsService) Authorized(id, provider, code string, r *http.Request) (AuthorizeResponse, error) {
 
-	p, err := s.vcsProviders.Get(provider)
+	p, err := s.getProvider(provider)
 	if err != nil {
 		return AuthorizeResponse{}, stacktrace.Propagate(err, "Getting provider %s failed", provider)
 	}
 
-	u, err := p.Authorized(code)
+	v, err := p.Authorized(code)
 	if err != nil {
 		return AuthorizeResponse{}, stacktrace.Propagate(err, "Finalize the authorization failed.")
 	}
 
 	unescID := s.decode(id)
 	escID := strings.Split(unescID, SEMICOLON)
+	fmt.Println(escID)
 
 	// persist user
-	u.TeamID = escID[0]
+	tname := escID[0]
 
-	acc, err := s.vcsDS.GetByProviderVCSID(u.TeamID, u.VcsID)
-	if strings.EqualFold(acc.VcsID, u.VcsID) {
+	acc, err := s.teamDS.GetVCSByID(tname, v.ID)
+	if strings.EqualFold(acc.ID, v.ID) {
 
-		updvcs := VCS{}
-		updvcs.UpdatedDt = time.Now()
-		updvcs.AccessToken = u.AccessToken
-		updvcs.AccessCode = u.AccessCode
-		updvcs.RefreshToken = u.RefreshToken
-		updvcs.OwnerType = u.OwnerType
-		updvcs.TokenExpiry = u.TokenExpiry
+		acc.AccessToken = v.AccessToken
+		acc.AccessCode = v.AccessCode
+		acc.RefreshToken = v.RefreshToken
+		acc.OwnerType = v.OwnerType
+		acc.TokenExpiry = v.TokenExpiry
 
-		s.vcsDS.Update(&acc, updvcs)
+		s.teamDS.UpdateVCS(tname, acc)
 
 		return AuthorizeResponse{Conflict: true, Err: errVCSAccountAlreadyLinked, Request: r}, nil
 	}
 
-	u.ID, _ = util.NewUUID()
-	u.CreatedDt = time.Now()
-	u.UpdatedDt = time.Now()
-
-	err = s.vcsDS.Save(&u)
+	err = s.teamDS.SaveVCS(tname, &v)
 
 	url := escID[1] + "/api/vcs"
 	return AuthorizeResponse{Err: nil, URL: url, Request: r}, err
 }
 
-func (s vcsService) GetVCS(teamID string) (GetVCSResponse, error) {
+func (s vcsService) GetVCS(team string) (GetVCSResponse, error) {
 
-	result, err := s.vcsDS.GetVCS(teamID)
-	return GetVCSResponse{Result: result}, err
+	result, err := s.teamDS.GetTeam(team)
+	return GetVCSResponse{Result: result.Accounts}, err
 }
 
-func (s vcsService) SyncVCS(teamID, userName, providerID string) (bool, error) {
+func (s vcsService) SyncVCS(team, userName, id string) (bool, error) {
 
-	acc, err := s.vcsDS.GetByID(providerID)
+	acc, err := s.teamDS.GetVCSByID(team, id)
 	if err != nil {
 		return false, stacktrace.Propagate(err, "Get by VCS ID failed during sync.")
 	}
 
-	err = s.sync(acc, userName)
+	err = s.sync(acc, userName, team)
 	if err != nil {
 		return false, err
 	}
 	return true, nil
 }
 
-func (s vcsService) sync(acc VCS, userName string) error {
+func (s vcsService) sync(acc VCS, userName, team string) error {
 
 	// Get the token
-	t, err := s.getToken(acc)
+	t, err := s.getToken(team, acc)
 	if err != nil {
 		return stacktrace.Propagate(fmt.Errorf(errGetUpdatedFokenFailed, err), "Get token failed")
 	}
@@ -175,7 +173,7 @@ func (s vcsService) sync(acc VCS, userName string) error {
 	}
 
 	// Fetch the repositories from esh repo store
-	lrpo, err := s.repoDS.GetReposByVCSID(acc.TeamID, acc.ID)
+	lrpo, err := s.repoDS.GetReposByVCSID(team, acc.ID)
 	if err != nil {
 		return stacktrace.Propagate(err, "Getting repos by vcs id failed.")
 	}
@@ -191,58 +189,55 @@ func (s vcsService) sync(acc VCS, userName string) error {
 		r, exist := rpo[rp.RepoID]
 		if exist {
 
-			updrepo := Repo{}
 			updated := false
 			if r.Name != rp.Name {
-				updrepo.Name = rp.Name
+				r.Name = rp.Name
 				updated = true
 			}
 
 			if r.Private != rp.Private {
-				updrepo.Private = rp.Private
+				r.Private = rp.Private
 				updated = true
 			}
 
 			if r.Link != rp.Link {
-				updrepo.Link = rp.Link
+				r.Link = rp.Link
 				updated = true
 			}
 
 			if r.Description != rp.Description {
-				updrepo.Description = rp.Description
+				r.Description = rp.Description
 				updated = true
 			}
 
 			if r.Fork != rp.Fork {
-				updrepo.Fork = rp.Fork
+				r.Fork = rp.Fork
 				updated = true
 			}
 
 			if r.DefaultBranch != rp.DefaultBranch {
-				updrepo.DefaultBranch = rp.DefaultBranch
+				r.DefaultBranch = rp.DefaultBranch
 				updated = true
 			}
 
 			if r.Language != rp.Language {
-				updrepo.Language = rp.Language
+				r.Language = rp.Language
 				updated = true
 			}
 
 			if updated {
 				// perform update
-				updrepo.UpdatedBy = userName
-				s.repoDS.Update(r, updrepo)
+				s.repoDS.Update(r)
 			}
 		} else {
 
 			// perform insert
-			rp.ID, _ = util.NewUUID()
-			rp.CreatedDt = time.Now()
-			rp.UpdatedDt = time.Now()
-			rp.CreatedBy = userName
-			rp.TeamID = acc.TeamID
+			rp.Team = team
 			rp.VcsID = acc.ID
-			s.repoDS.Save(&rp)
+			err := s.repoDS.Save(&rp)
+			if err != nil {
+				s.logger.Errorln(err)
+			}
 		}
 
 		// removes from the map
@@ -251,15 +246,17 @@ func (s vcsService) sync(acc VCS, userName string) error {
 		}
 	}
 
-	var ids []string
+	var ids []bson.ObjectId
 	// Now iterate thru deleted repositories.
 	for _, rp := range rpo {
 		ids = append(ids, rp.ID)
 	}
 
-	err = s.repoDS.DeleteIds(ids)
-	if err != nil {
-		return stacktrace.Propagate(err, "Failed to delete the vcs that does not exist remotly")
+	if len(ids) > 0 {
+		err = s.repoDS.DeleteIds(ids)
+		if err != nil {
+			return stacktrace.Propagate(err, "Failed to delete the vcs that does not exist remotly")
+		}
 	}
 
 	return nil
@@ -268,7 +265,7 @@ func (s vcsService) sync(acc VCS, userName string) error {
 // Gets the valid token
 // Checks whether the token is expired.
 // Expired token will get refreshed.
-func (s vcsService) getToken(a VCS) (string, error) {
+func (s vcsService) getToken(team string, a VCS) (string, error) {
 
 	// Never expire type token
 	if a.RefreshToken == "" {
@@ -290,12 +287,11 @@ func (s vcsService) getToken(a VCS) (string, error) {
 	tok, err := p.RefreshToken(a.RefreshToken)
 
 	// persist the updated token information
-	err = s.vcsDS.Update(&a, VCS{
-		AccessToken:  tok.AccessToken,
-		TokenExpiry:  tok.Expiry,
-		RefreshToken: tok.RefreshToken,
-		TokenType:    tok.TokenType,
-	})
+	a.AccessToken = tok.AccessToken
+	a.TokenExpiry = tok.Expiry
+	a.RefreshToken = tok.RefreshToken
+	a.TokenType = tok.TokenType
+	err = s.teamDS.UpdateVCS(team, a)
 
 	if err != nil {
 		return "", stacktrace.Propagate(err, "Failed to update VCS after token refreshed.")
@@ -304,19 +300,32 @@ func (s vcsService) getToken(a VCS) (string, error) {
 }
 
 // Gets the provider by type
-func (s vcsService) getProvider(vcsType int) (Provider, error) {
+func (s vcsService) getProvider(providerName string) (Provider, error) {
 
-	var name string
-	switch vcsType {
-	case GithubType:
-		name = GithubProviderName
-	case BitBucketType:
-		name = BitBucketProviderName
-	case GitlabType:
-		name = GitlabProviderName
+	if s.vcsProviders == nil {
+
+		vcsConf, err := s.sysconfDS.GetVCSTypes()
+		if err != nil {
+			return nil, err
+		}
+
+		prov := make(map[string]Provider)
+		for _, v := range vcsConf {
+
+			var p Provider
+			if strings.EqualFold(GithubProviderName, v.Name) {
+				p = GithubProvider(s.logger, v.Key, v.Secret, v.CallbackURL)
+			} else if strings.EqualFold(BitBucketProviderName, v.Name) {
+				p = BitbucketProvider(s.logger, v.Key, v.Secret, v.CallbackURL)
+			} else if strings.EqualFold(GitlabProviderName, v.Name) {
+				p = GitlabProvider(s.logger, v.Key, v.Secret, v.CallbackURL)
+			}
+			prov[v.Name] = p
+		}
+		s.vcsProviders = &Providers{prov}
 	}
 
-	return s.vcsProviders.Get(name)
+	return s.vcsProviders.Get(providerName)
 }
 
 func (s vcsService) encode(id string) string {

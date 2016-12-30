@@ -1,3 +1,6 @@
+// Package esh ...
+// Author: Ghazni Nattarshah
+// Date: Dec 30, 2016
 package esh
 
 import (
@@ -5,15 +8,6 @@ import (
 	"time"
 
 	"golang.org/x/oauth2"
-)
-
-// VCS user type
-const (
-	GithubType    = 1
-	GitlabType    = 2
-	BitBucketType = 3
-	SvnType       = 4
-	TfsType       = 5
 )
 
 // Token ..
@@ -46,7 +40,7 @@ type Provider interface {
 
 	RefreshToken(token string) (*oauth2.Token, error)
 
-	GetRepos(token, accountName string, owner int) ([]Repo, error)
+	GetRepos(token, accountName string, owner string) ([]Repo, error)
 }
 
 // Providers type

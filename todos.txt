@@ -1,0 +1,10 @@
+Mongodb conversion:
+D - store teams
+D - store users
+D - store VCS
+D - store repos
+- oauth schema design
+- oauth coding 
+- https no response with postman
+- store builds
+- oauth request (temp storage) and make it thread safe.

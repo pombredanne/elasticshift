@@ -1,11 +1,11 @@
+// Package esh ...
+// Author: Ghazni Nattarshah
+// Date: Oct 29, 2016
 package esh
 
 import (
-	"time"
-
 	"github.com/Sirupsen/logrus"
 	"github.com/palantir/stacktrace"
-	"gitlab.com/conspico/esh/core/util"
 )
 
 type teamservice struct {
@@ -20,19 +20,9 @@ func (s teamservice) Create(name string) (bool, error) {
 		return false, errTeamAlreadyExists
 	}
 
-	id, _ := util.NewUUID()
-	if err != nil {
-		return false, stacktrace.Propagate(err, "Unable to create team"+name)
-	}
-
 	team := &Team{
-		ID:        id,
-		Name:      name,
-		Domain:    name,
-		CreatedBy: "sysadmin",
-		CreatedDt: time.Now(),
-		UpdatedBy: "sysadmin",
-		UpdatedDt: time.Now(),
+		Name:    name,
+		Display: name,
 	}
 
 	err = s.teamDS.Save(team)

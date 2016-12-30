@@ -1,3 +1,6 @@
+// Package esh ...
+// Author: Ghazni Nattarshah
+// Date: Oct 29, 2016
 package esh
 
 type repoService struct {
@@ -14,14 +17,14 @@ func NewRepoService(appCtx AppContext) RepoService {
 	}
 }
 
-func (s *repoService) GetRepos(teamID string) (GetRepoResponse, error) {
+func (s *repoService) GetRepos(team string) (GetRepoResponse, error) {
 
-	result, err := s.repoDS.GetRepos(teamID)
+	result, err := s.repoDS.GetRepos(team)
 	return GetRepoResponse{Result: result}, err
 }
 
-func (s *repoService) GetReposByVCSID(teamID, vcsID string) (GetRepoResponse, error) {
+func (s *repoService) GetReposByVCSID(team, vcsID string) (GetRepoResponse, error) {
 
-	result, err := s.repoDS.GetReposByVCSID(teamID, vcsID)
+	result, err := s.repoDS.GetReposByVCSID(team, vcsID)
 	return GetRepoResponse{Result: result}, err
 }

@@ -1,3 +1,6 @@
+// Package esh ...
+// Author: Ghazni Nattarshah
+// Date: Dec 30, 2016
 package esh
 
 import (
@@ -79,7 +82,7 @@ func (b *Bitbucket) Authorized(code string) (VCS, error) {
 		u.TokenExpiry = tok.Expiry
 	}
 	u.TokenType = tok.TokenType
-	u.Type = BitBucketType
+	u.Type = GithubProviderName
 
 	us := struct {
 		UUID  string
@@ -104,7 +107,7 @@ func (b *Bitbucket) Authorized(code string) (VCS, error) {
 
 	u.AvatarURL = us.Links.Avatar.Href
 	u.Name = us.Name
-	u.VcsID = us.UUID
+	u.ID = us.UUID
 	return u, err
 }
 
@@ -143,7 +146,7 @@ func (b *Bitbucket) RefreshToken(token string) (*oauth2.Token, error) {
 
 // GetRepos ..
 // returns the list of repositories
-func (b *Bitbucket) GetRepos(token, accountName string, ownerType int) ([]Repo, error) {
+func (b *Bitbucket) GetRepos(token, accountName string, ownerType string) ([]Repo, error) {
 
 	r := chttp.NewGetRequestMaker(BitbucketGetUserRepoURL)
 	r.SetLogger(b.logger)
@@ -186,11 +189,8 @@ func (b *Bitbucket) GetRepos(token, accountName string, ownerType int) ([]Repo, 
 			Language:    rpo.Language,
 			Link:        rpo.Links.HTML.Href,
 			Description: rpo.Description,
+			Private:     rpo.Private,
 		}
-		if rpo.Private {
-			repo.Private = True
-		}
-
 		repos = append(repos, *repo)
 	}
 	return repos, err

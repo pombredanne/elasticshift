@@ -1,67 +1,60 @@
+// Package esh ...
+// Author: Ghazni Nattarshah
+// Date: Oct 22, 2016
 package esh
 
-type repoDatastore struct {
-	ds Datastore
-}
-
-var (
-	sqlGetReposByVCSID = `SELECT id,
-							team_id,
-							vcs_id,
-							repo_id,
-							name,
-							private,
-							link,
-							description,
-							fork,
-							default_branch,
-							language
-						FROM REPO WHERE team_id = ? and vcs_id = ?`
-	sqlGetRepos = `SELECT id,
-							team_id,
-							vcs_id,
-							repo_id,
-							name,
-							private,
-							link,
-							description,
-							fork,
-							default_branch,
-							language
-					FROM REPO WHERE team_id = ?`
+import (
+	"gopkg.in/mgo.v2"
+	"gopkg.in/mgo.v2/bson"
 )
 
-func (r *repoDatastore) Save(repo *Repo) error {
-	return r.ds.Create(repo)
+type repoDatastore struct {
+	ds    Datastore
+	cname string
 }
 
-func (r *repoDatastore) GetReposByVCSID(teamID, vcsID string) ([]Repo, error) {
+func (r *repoDatastore) Save(repo *Repo) error {
+	return r.ds.Insert(r.cname, repo)
+}
+
+func (r *repoDatastore) GetReposByVCSID(team, vcsID string) ([]Repo, error) {
 
 	result := []Repo{}
-	err := r.ds.Read(sqlGetReposByVCSID, &result, teamID, vcsID)
-	return result, err
+	r.ds.FindAll(r.cname, bson.M{"team": team, "vcs_id": vcsID}, &result)
+	return result, nil
 }
 
-func (r *repoDatastore) Update(old Repo, repo Repo) error {
-	return r.ds.Update(&old, repo)
+func (r *repoDatastore) Update(repo Repo) error {
+	var err error
+	r.ds.Execute(r.cname, func(c *mgo.Collection) {
+		err = c.Update(bson.M{"_id": repo.ID},
+			bson.M{"$set": bson.M{"name": repo.Name,
+				"private":        repo.Private,
+				"link":           repo.Link,
+				"description":    repo.Description,
+				"fork":           repo.Fork,
+				"default_branch": repo.DefaultBranch,
+				"language":       repo.Language}})
+	})
+	return err
 }
 
 func (r *repoDatastore) Delete(repo Repo) error {
-	return r.ds.Delete(&repo)
+	return r.ds.Remove(r.cname, repo.ID)
 }
 
-func (r *repoDatastore) DeleteIds(ids []string) error {
-	return r.ds.DeleteMultiple(Repo{}, ids)
+func (r *repoDatastore) DeleteIds(ids []bson.ObjectId) error {
+	return r.ds.RemoveMultiple(r.cname, ids)
 }
 
-func (r *repoDatastore) GetRepos(teamID string) ([]Repo, error) {
+func (r *repoDatastore) GetRepos(team string) ([]Repo, error) {
 
 	var result []Repo
-	err := r.ds.Read(sqlGetRepos, &result, teamID)
+	err := r.ds.FindAll(r.cname, bson.M{"team": team}, &result)
 	return result, err
 }
 
 // NewRepoDatastore ..
 func NewRepoDatastore(ds Datastore) RepoDatastore {
-	return &repoDatastore{ds: ds}
+	return &repoDatastore{ds: ds, cname: "repos"}
 }

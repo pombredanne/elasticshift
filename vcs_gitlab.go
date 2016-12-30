@@ -69,7 +69,6 @@ func (g *Gitlab) Name() string {
 func (g *Gitlab) Authorize(baseURL string) string {
 	g.Config.RedirectURL = g.CallbackURL + "?id=" + baseURL
 	url := g.Config.AuthCodeURL("state")
-	g.logger.Println(url)
 	return url
 }
 
@@ -108,9 +107,8 @@ func (g *Gitlab) Authorized(code string) (VCS, error) {
 	u.AccessToken = tok.AccessToken
 	u.TokenExpiry = time.Now().Add(time.Duration(tok.ExpiresIn) * time.Second)
 	u.TokenType = tok.TokenType
-	u.Type = GitlabType
+	u.Type = GitlabProviderName
 
-	g.logger.Warn("Token = ", tok)
 	// Get user profile
 	us := struct {
 		ID        int    `json:"id"`
@@ -132,7 +130,7 @@ func (g *Gitlab) Authorized(code string) (VCS, error) {
 
 	u.AvatarURL = us.AvatarURL
 	u.Name = us.Name
-	u.VcsID = strconv.Itoa(us.ID)
+	u.ID = strconv.Itoa(us.ID)
 	return u, err
 }
 
@@ -179,7 +177,7 @@ func (g *Gitlab) RefreshToken(token string) (*oauth2.Token, error) {
 
 // GetRepos ..
 // returns the list of repositories
-func (g *Gitlab) GetRepos(token, accountName string, ownerType int) ([]Repo, error) {
+func (g *Gitlab) GetRepos(token, accountName string, ownerType string) ([]Repo, error) {
 
 	r := chttp.NewGetRequestMaker(GitlabGetUserRepoURL)
 	r.SetLogger(g.logger)
@@ -211,9 +209,7 @@ func (g *Gitlab) GetRepos(token, accountName string, ownerType int) ([]Repo, err
 			Link:          rpo.WebURL,
 			Description:   rpo.Description,
 			DefaultBranch: rpo.DefaultBranch,
-		}
-		if rpo.Public {
-			repo.Private = False
+			Private:       !rpo.Public,
 		}
 
 		repos = append(repos, *repo)

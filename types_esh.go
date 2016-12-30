@@ -1,9 +1,14 @@
+// Package esh ...
+// Author: Ghazni Nattarshah
+// Date: Dec 30, 2016
 package esh
 
 import (
 	"context"
 	"errors"
 	"time"
+
+	"gopkg.in/mgo.v2/bson"
 
 	"github.com/Sirupsen/logrus"
 	"github.com/gorilla/mux"
@@ -63,8 +68,14 @@ type Config struct {
 	}
 
 	DB struct {
-		Dialect        string
-		Datasource     string
+		Server    string
+		Name      string
+		Username  string
+		Password  string
+		Timeout   int
+		Monotonic bool
+
+		// old info
 		IdleConnection int
 		MaxConnection  int
 		Log            bool
@@ -75,6 +86,8 @@ type Config struct {
 		VerifyCode string
 		Signer     string
 		Verifier   string
+		Certfile   string
+		Keyfile    string
 	}
 	CSRF struct {
 		Key    string
@@ -99,78 +112,76 @@ type AppContext struct {
 	VCSService  VCSService
 	RepoService RepoService
 
-	Datasource    Datastore
-	TeamDatastore TeamDatastore
-	UserDatastore UserDatastore
-	VCSDatastore  VCSDatastore
-	RepoDatastore RepoDatastore
+	Datasource       Datastore
+	TeamDatastore    TeamDatastore
+	UserDatastore    UserDatastore
+	RepoDatastore    RepoDatastore
+	SysconfDatastore SysconfDatastore
+}
+
+// VCSSysConf ..(sysconf)
+type VCSSysConf struct {
+	// common fields for any sys config
+	ID   bson.ObjectId `bson:"_id,omitempty"`
+	Name string        `bson:"name"`
+	Type string        `bson:"type"`
+
+	Key         string `bson:"key"`
+	Secret      string `bson:"secret"`
+	CallbackURL string `bson:"callback_url"`
+	HookURL     string `bson:"hook_url"`
 }
 
 // Team ..
 type Team struct {
-	ID        string
-	Domain    string
-	Name      string
-	CreatedDt time.Time
-	CreatedBy string
-	UpdatedDt time.Time
-	UpdatedBy string
+	ID       bson.ObjectId `bson:"_id,omitempty"`
+	Name     string        `bson:"name"`
+	Display  string        `bson:"display,omitempty"`
+	Accounts []VCS         `bson:"accounts,omitempty"`
 }
 
 // User ..
 type User struct {
-	ID         string
-	TeamID     string
-	Fullname   string
-	Username   string
-	Email      string
-	Password   string
-	Locked     int8
-	Active     int8
-	BadAttempt int8
-	CreatedDt  time.Time
-	CreatedBy  string
-	UpdatedDt  time.Time
-	UpdatedBy  string
+	ID            bson.ObjectId `bson:"_id,omitempty"`
+	Fullname      string        `bson:"fullname"`
+	Username      string        `bson:"username"`
+	Email         string        `bson:"email"`
+	Password      string        `bson:"password"`
+	Locked        int8          `bson:"locked"`
+	Active        int8          `bson:"active"`
+	BadAttempt    int8          `bson:"bad_attempt"`
+	EmailVefified bool          `bson:"email_verified"`
+	Scope         []string      `bson:"scope"`
+	Team          string        `bson:"team"`
 }
 
 // VCS contains the information common amongst most OAuth and OAuth2 providers.
 // All of the "raw" datafrom the provider can be found in the `RawData` field.
 type VCS struct {
-	ID           string `json:"ID"`
-	TeamID       string `json:"-"`
-	VcsID        string `json:"_"`
-	Name         string
-	Type         int
-	OwnerType    int
-	AvatarURL    string    `json:"avatar"`
-	AccessCode   string    `json:"-"`
-	AccessToken  string    `json:"-"`
-	RefreshToken string    `json:"-"`
-	TokenType    string    `json:"-"`
-	TokenExpiry  time.Time `json:"-"`
-	CreatedDt    time.Time `json:"-"`
-	CreatedBy    string    `json:"-"`
-	UpdatedDt    time.Time `json:"lastUpdated"`
-	UpdatedBy    string    `json:"-"`
+	ID           string    `json:"id" bson:"_id,omitempty"`
+	Name         string    `json:"name" bson:"name"`
+	Type         string    `json:"type" bson:"type"`
+	OwnerType    string    `json:"owner_type" bson:"owner_type"`
+	AvatarURL    string    `json:"avatar" bson:"avatar"`
+	AccessCode   string    `json:"-" bson:"access_code"`
+	AccessToken  string    `json:"-" bson:"access_token"`
+	RefreshToken string    `json:"-" bson:"refresh_token"`
+	TokenType    string    `json:"-" bson:"token_type"`
+	TokenExpiry  time.Time `json:"-" bson:"token_expiry"`
 }
 
 // Repo ..
 // Represents as vcs repositories or projects
 type Repo struct {
-	ID            string `json:"ID"`
-	TeamID        string `json:"-"`
-	VcsID         string `json:"-"`
-	RepoID        string
-	Name          string
-	Private       int
-	Link          string
-	Description   string
-	Fork          int
-	DefaultBranch string
-	Language      string
-	CreatedDt     time.Time `json:"-"`
-	CreatedBy     string    `json:"-"`
-	UpdatedDt     time.Time `json:"lastUpdated"`
-	UpdatedBy     string    `json:"-"`
+	ID            bson.ObjectId `json:"id" bson:"_id,omitempty"`
+	Team          string        `json:"-" bson:"team"`
+	RepoID        string        `json:"-" bson:"repo_id"`
+	VcsID         string        `json:"-" bson:"vcs_id"`
+	Name          string        `json:"name" bson:"name"`
+	Private       bool          `json:"private" bson:"private"`
+	Link          string        `json:"link" bson:"link"`
+	Description   string        `json:"description" bson:"description"`
+	Fork          bool          `json:"fork" bson:"fork"`
+	DefaultBranch string        `json:"default_branch" bson:"default_branch"`
+	Language      string        `json:"language" bson:"language"`
 }

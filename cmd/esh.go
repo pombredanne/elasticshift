@@ -10,8 +10,6 @@ import (
 	"fmt"
 
 	"github.com/spf13/viper"
-	"gitlab.com/conspico/esh"
-	"gitlab.com/conspico/esh/core"
 
 	"github.com/gorilla/csrf"
 	"github.com/gorilla/mux"
@@ -23,8 +21,8 @@ import (
 	"strconv"
 
 	"github.com/Sirupsen/logrus"
-	"github.com/jinzhu/gorm"
-	_ "github.com/jinzhu/gorm/dialects/mysql"
+	"gitlab.com/conspico/esh"
+	"gopkg.in/mgo.v2"
 )
 
 func main() {
@@ -59,14 +57,22 @@ func main() {
 	ctx.Config = config
 
 	retryDuration, _ := time.ParseDuration(strconv.Itoa(config.DB.Retry) + "s")
+	timeoutDuration, _ := time.ParseDuration(strconv.Itoa(config.DB.Timeout) + "s")
 
 	// DB Initialization
-	var db *gorm.DB
+	var session *mgo.Session
 	var err error
 	tryit := true
 	for tryit {
 
-		db, err = gorm.Open(config.DB.Dialect, config.DB.Datasource)
+		logger.Infoln("Connecting to database...")
+		session, err = mgo.DialWithInfo(&mgo.DialInfo{
+			Addrs:    []string{config.DB.Server},
+			Username: config.DB.Username,
+			Password: config.DB.Password,
+			Database: config.DB.Name,
+			Timeout:  timeoutDuration,
+		})
 		if err != nil {
 
 			logger.Errorln(fmt.Sprintf("Connecting database failed, retrying in %d seconds.[", config.DB.Retry), err, "]")
@@ -75,7 +81,8 @@ func main() {
 		} else {
 
 			// Ping function checks the database connectivity
-			dberr := db.DB().Ping()
+			session.Refresh()
+			dberr := session.Ping()
 			if dberr != nil {
 				logger.Errorln(fmt.Sprintf("Ping DB failed, retrying in %d seconds", config.DB.Retry), err)
 			} else {
@@ -86,26 +93,22 @@ func main() {
 	}
 
 	// set the configurations
-	db.SingularTable(true)
-	db.SetLogger(logger)
-	db.DB().SetMaxOpenConns(config.DB.MaxConnection)
-	db.DB().SetMaxIdleConns(config.DB.IdleConnection)
-	db.LogMode(config.DB.Log)
+	session.SetMode(mgo.Monotonic, config.DB.Monotonic)
 
 	// starting a background process to reconeb;nct db in case failure.
-	go reconnectOnFailure(ctx, db)
-	defer db.Close()
+	go reconnectOnFailure(ctx, session)
+	defer session.Close()
 
 	// TLS
 
 	// Init datastore
-	ds := core.NewDatasource(db)
+	ds := esh.NewDatasource(config.DB.Name, session)
 	ctx.Datasource = ds
 
 	ctx.TeamDatastore = esh.NewTeamDatastore(ds)
 	ctx.UserDatastore = esh.NewUserDatastore(ds)
-	ctx.VCSDatastore = esh.NewVCSDatastore(ds)
 	ctx.RepoDatastore = esh.NewRepoDatastore(ds)
+	ctx.SysconfDatastore = esh.NewSysconfDatastore(ds)
 
 	// load keys
 	signer, err := loadKey(config.Key.Signer)
@@ -141,8 +144,11 @@ func main() {
 	router.Handle("/", ctx.PublicChain.Then(csrfHandler(router)))
 
 	// Start the server
-	logger.Info("ESH Server listening on port 5050")
-	logger.Info(http.ListenAndServe(":5050", router))
+	logger.Info("Elasticshift Server started successfully.")
+
+	//go http.ListenAndServeTLS(":443", config.Key.Certfile, config.Key.Keyfile, router)
+	//logger.Infoln(http.ListenAndServe(":80", http.HandlerFunc(redirect)))
+	logger.Infoln(http.ListenAndServe(":5050", router))
 }
 
 func loadKey(path string) (interface{}, error) {
@@ -163,7 +169,7 @@ func loadKey(path string) (interface{}, error) {
 	}
 }
 
-func reconnectOnFailure(ctx esh.AppContext, db *gorm.DB) {
+func reconnectOnFailure(ctx esh.AppContext, session *mgo.Session) {
 
 	reconnectDuration, _ := time.ParseDuration(strconv.Itoa(ctx.Config.DB.Reconnect) + "s")
 
@@ -172,8 +178,10 @@ func reconnectOnFailure(ctx esh.AppContext, db *gorm.DB) {
 
 		time.Sleep(reconnectDuration)
 
+		session.Refresh()
+
 		// Ping function checks the database connectivity
-		err := db.DB().Ping()
+		err := session.Ping()
 		if err != nil {
 			disconnected = true
 			ctx.Logger.Errorln(fmt.Sprintf("DB ping failed, something went wrong. Reconnecting in %d seconds", ctx.Config.DB.Reconnect))
@@ -182,4 +190,8 @@ func reconnectOnFailure(ctx esh.AppContext, db *gorm.DB) {
 			disconnected = false
 		}
 	}
+}
+
+func redirect(w http.ResponseWriter, r *http.Request) {
+	http.Redirect(w, r, "https://"+r.Host+r.URL.String(), http.StatusMovedPermanently)
 }

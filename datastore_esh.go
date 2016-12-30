@@ -1,45 +1,59 @@
+// Package esh ...
+// Author: Ghazni Nattarshah
+// Date: Nov 22, 2016
 package esh
+
+import (
+	mgo "gopkg.in/mgo.v2"
+	"gopkg.in/mgo.v2/bson"
+)
 
 // Datastore ..
 // Abstract Datastore to interact with DB.
 type Datastore interface {
-	Create(model interface{}) error
-	Update(old interface{}, updated interface{}) error
-	Read(query string, value interface{}, params ...interface{}) error
-	Delete(model interface{}) error
-	DeleteMultiple(model interface{}, ids []string) error
+	Execute(cname string, handleFunc func(c *mgo.Collection))
+	Insert(cname string, model interface{}) error
+	Upsert(cname string, selector interface{}, model interface{}) (*mgo.ChangeInfo, error)
+	FindAll(cname string, query interface{}, model interface{}) error
+	FindOne(cname string, query interface{}, model interface{}) error
+	Exist(cname string, selector interface{}) (bool, error)
+	Remove(cname string, id bson.ObjectId) error
+	RemoveMultiple(cname string, ids []bson.ObjectId) error
 }
 
 // TeamDatastore provides access a team.
 type TeamDatastore interface {
+
+	//Team
 	Save(team *Team) error
 	CheckExists(name string) (bool, error)
-	GetTeamID(name string) (string, error)
+	GetTeam(name string) (Team, error)
+
+	// VCS Settings
+	SaveVCS(team string, vcs *VCS) error
+	UpdateVCS(team string, vcs VCS) error
+	GetVCSByID(team, id string) (VCS, error)
 }
 
 // UserDatastore provides access a user.
 type UserDatastore interface {
 	Save(user *User) error
-	CheckExists(email, teamID string) (bool, error)
-	GetUser(email, teamID string) (User, error)
-}
-
-// VCSDatastore provides access a user.
-type VCSDatastore interface {
-	Save(user *VCS) error
-	GetVCS(teamID string) ([]VCS, error)
-	GetByID(id string) (VCS, error)
-	Update(old *VCS, updated VCS) error
-	CheckIfExists(vcsID, teamID string) (bool, error)
-	GetByProviderVCSID(teamID, vcsID string) (VCS, error)
+	CheckExists(email, teamname string) (bool, error)
+	GetUser(email, teamname string) (User, error)
 }
 
 // RepoDatastore provides the repository related datastore func.
 type RepoDatastore interface {
 	Save(repo *Repo) error
-	Update(old Repo, repo Repo) error
+	Update(repo Repo) error
 	Delete(repo Repo) error
-	DeleteIds(ids []string) error
+	DeleteIds(ids []bson.ObjectId) error
 	GetRepos(teamID string) ([]Repo, error)
-	GetReposByVCSID(teamID, vcsID string) ([]Repo, error)
+	GetReposByVCSID(team, vcsID string) ([]Repo, error)
+}
+
+// SysconfDatastore provides system level config
+type SysconfDatastore interface {
+	GetVCSTypes() ([]VCSSysConf, error)
+	SaveVCS(scf *VCSSysConf) error
 }

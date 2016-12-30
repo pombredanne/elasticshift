@@ -1,0 +1,89 @@
+// Client registrations
+// User (Resource owner)
+// Tokens and authorization codes
+// Resource permissions and scope definitions.
+
+oauth_scopes : {
+	scope string
+	is_default boolean
+}
+
+team: {
+	name : "conspico",
+	domain "conspico"
+}
+
+oauth_users : {
+	username
+	password
+	first_name
+	last_name
+	email
+	email_verified
+	team
+	scope
+}
+
+sysconf {
+
+	ID
+	name github
+	type VCS | KEY
+	data
+	
+}
+
+settings {
+
+}
+
+apps	
+ {
+	ID
+	name
+	homepage_url
+	description
+	callback_url
+	client_id
+	client_secret
+}
+
+integrations {
+
+	ID
+	team
+	
+}
+
+oauth_clients : {
+	client_id 80 chars
+	client_secret 80 chars
+	redirect_uri []
+	grant_types
+	scope []
+	jwt : {
+		subject
+		public_key
+	},
+	jti : {
+		issuer
+		subject
+		audience
+		expires
+		jti
+	},
+	keys {
+		public
+		private
+		enc_algo
+	}
+}
+
+oauth_secrets {
+
+}
+oauth_authorization_codes {
+
+	code
+}
+

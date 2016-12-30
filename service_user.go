@@ -1,3 +1,6 @@
+// Package esh ...
+// Author: Ghazni Nattarshah
+// Date: Dec 30, 2016
 package esh
 
 import (
@@ -59,20 +62,18 @@ type verification struct {
 // Create a new user for a team
 func (s userService) Create(teamName, domain, fullname, email, password string) (string, error) {
 
-	teamID, err := s.getTeamID(teamName, domain)
-	if err != nil {
-		return "", stacktrace.Propagate(err, "Get team id failed")
+	tname := teamName
+	if tname == "" {
+		tname = domain
 	}
 
-	result, err := s.userDS.CheckExists(email, teamID)
+	result, err := s.userDS.CheckExists(email, tname)
 	if result {
 		return "", errUserAlreadyExists
 	}
 
 	// strip username from email
 	userName := strings.Split(email, "@")[0]
-
-	id, _ := util.NewUUID()
 
 	// generate hashed password
 	hashedPwd, err := bcrypt.GenerateFromPassword([]byte(password), bcrypt.DefaultCost)
@@ -81,19 +82,16 @@ func (s userService) Create(teamName, domain, fullname, email, password string) 
 	}
 
 	user := &User{
-		ID:         id,
-		TeamID:     teamID,
-		Fullname:   fullname,
-		Username:   userName,
-		Email:      email,
-		Locked:     Unlocked,
-		Active:     Active,
-		BadAttempt: 0,
-		Password:   string(hashedPwd[:]),
-		CreatedBy:  "sysadmin",
-		CreatedDt:  time.Now(),
-		UpdatedBy:  "sysadmin",
-		UpdatedDt:  time.Now(),
+		Fullname:      fullname,
+		Username:      userName,
+		Email:         email,
+		Password:      string(hashedPwd[:]),
+		Locked:        Unlocked,
+		Active:        Active,
+		BadAttempt:    0,
+		EmailVefified: false,
+		Team:          tname,
+		Scope:         []string{},
 	}
 
 	err = s.userDS.Save(user)
@@ -101,21 +99,18 @@ func (s userService) Create(teamName, domain, fullname, email, password string) 
 		return "", stacktrace.Propagate(err, errUserCreationFailed.Error())
 	}
 
-	tname := teamName
-	if tname == "" {
-		tname = domain
-	}
-	return s.generateAuthToken(teamID, email, userName, tname)
+	return s.generateAuthToken(tname, email, userName, tname)
 }
 
 // SignIn ..
 func (s userService) SignIn(teamName, domain, email, password string) (string, error) {
 
-	teamID, err := s.getTeamID(teamName, domain)
-	if err != nil {
-		return "", err
+	tname := teamName
+	if tname == "" {
+		tname = domain
 	}
-	user, err := s.userDS.GetUser(email, teamID)
+
+	user, err := s.userDS.GetUser(email, tname)
 	if err != nil {
 		return "", errInvalidEmailOrPassword
 	}
@@ -124,11 +119,7 @@ func (s userService) SignIn(teamName, domain, email, password string) (string, e
 	if err != nil {
 		return errInvalidEmailOrPassword.Error(), nil
 	}
-	tname := teamName
-	if tname == "" {
-		tname = domain
-	}
-	return s.generateAuthToken(teamID, user.ID, user.Username, tname)
+	return s.generateAuthToken(tname, user.ID.String(), user.Username, tname)
 }
 
 // SignOut ..
@@ -172,18 +163,4 @@ func (s userService) Verify(code string) (bool, error) {
 	}
 
 	return true, nil
-}
-
-func (s userService) getTeamID(teamName, domain string) (string, error) {
-
-	// checks the team from subdomain
-	teamID, err := s.teamDS.GetTeamID(domain)
-	if err != nil {
-		// checks the team from JSON request
-		teamID, err = s.teamDS.GetTeamID(teamName)
-		if err != nil {
-			return "", errNoTeamIDNotExist
-		}
-	}
-	return teamID, nil
 }

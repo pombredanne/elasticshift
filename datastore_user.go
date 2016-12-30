@@ -1,46 +1,31 @@
+// Package esh ...
+// Author: Ghazni Nattarshah
+// Date: Dec 30, 2016
 package esh
 
+import "gopkg.in/mgo.v2/bson"
+
 type userDatastore struct {
-	ds Datastore
+	ds    Datastore
+	cname string
 }
-
-var (
-	sqlCheckUserExist = "SELECT 1 as 'exist' FROM USER WHERE email = ? AND TEAM_ID = ? LIMIT 1"
-
-	sqlGetUser = `SELECT id, 
-							team_id, 
-							fullname, 
-							username,
-							email,
-							password,
-							locked,
-							active,
-							bad_attempt
-				     FROM USER WHERE email = ? AND TEAM_ID = ? LIMIT 1`
-)
 
 func (r *userDatastore) Save(user *User) error {
-	return r.ds.Create(user)
+	return r.ds.Insert(r.cname, user)
 }
 
-func (r *userDatastore) CheckExists(email, teamID string) (bool, error) {
-
-	var result struct {
-		Exist int
-	}
-
-	err := r.ds.Read(sqlCheckUserExist, &result, email, teamID)
-	return result.Exist == 1, err
+func (r *userDatastore) CheckExists(email, teamname string) (bool, error) {
+	return r.ds.Exist(r.cname, bson.M{"email": email, "team": teamname})
 }
 
-func (r *userDatastore) GetUser(email, teamID string) (User, error) {
+func (r *userDatastore) GetUser(email, teamname string) (User, error) {
 
 	var result User
-	err := r.ds.Read(sqlGetUser, &result, email, teamID)
+	err := r.ds.FindOne(r.cname, bson.M{"email": email, "team": teamname}, &result)
 	return result, err
 }
 
 // NewUserDatastore ..
 func NewUserDatastore(ds Datastore) UserDatastore {
-	return &userDatastore{ds: ds}
+	return &userDatastore{ds: ds, cname: "oauth_users"}
 }

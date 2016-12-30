@@ -1,7 +1,7 @@
 #Oauth esh credentials
 github:
     key: 2bb421705ee7f6bb0970
-    secret: 5e762a9ec2b4cde5c54350a9a91785929d2f7925
+    secret: ffd145f08ec0ba1261762f29754ab2a9d12544b7
     callback: http://eshift:5050/api/auth/github/callback
     hook_url: http://eshift:5050/api/hooks/github
 
@@ -29,12 +29,12 @@ db:
 
 key:
     verifycode: $h1n1ngF1@tC@r4r$h@hBr0$p01l@ch1
-    signer: config/esh.rsa
-    verifier: config/esh.rsa.pub
+    signer: ../config/esh.rsa
+    verifier: ../config/esh.rsa.pub
     # certfile: config/cert/cert.pem
     # keyfile: config/cert/key.pem
-    certfile: config/cert/ws.crt
-    keyfile: config/cert/ws.key
+    certfile: ../config/cert/ws.crt
+    keyfile: ../config/cert/ws.key
 
 csrf:
     key: $h1n1ngF1@tC@r4r$h@hBr0$p01l@ch1
