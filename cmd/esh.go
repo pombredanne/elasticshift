@@ -146,9 +146,9 @@ func main() {
 	// Start the server
 	logger.Info("Elasticshift Server started successfully.")
 
-	//go http.ListenAndServeTLS(":443", config.Key.Certfile, config.Key.Keyfile, router)
-	//logger.Infoln(http.ListenAndServe(":80", http.HandlerFunc(redirect)))
-	logger.Infoln(http.ListenAndServe(":5050", router))
+	go http.ListenAndServeTLS(":443", config.Key.Certfile, config.Key.Keyfile, router)
+	logger.Infoln(http.ListenAndServe(":80", http.HandlerFunc(redirect)))
+	//logger.Infoln(http.ListenAndServe(":5050", router))
 }
 
 func loadKey(path string) (interface{}, error) {

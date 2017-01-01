@@ -133,6 +133,7 @@ func (b *Bitbucket) RefreshToken(token string) (*oauth2.Token, error) {
 	params.Set("grant_type", "refresh_token")
 	params.Set("refresh_token", token)
 
+	r.SetLogger(b.logger)
 	r.Body(params)
 
 	var tok Token
