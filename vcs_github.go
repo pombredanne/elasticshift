@@ -11,6 +11,8 @@ import (
 	"github.com/Sirupsen/logrus"
 	"github.com/palantir/stacktrace"
 
+	"strings"
+
 	chttp "gitlab.com/conspico/esh/core/http"
 	"golang.org/x/oauth2"
 	gh "golang.org/x/oauth2/github"
@@ -63,19 +65,25 @@ func (g *Github) Name() string {
 	return GithubProviderName
 }
 
+// GetRedirectURL ..
+func (g *Github) GetRedirectURL(id string) string {
+	return g.CallbackURL + "?id=" + id
+}
+
 // Authorize ...
 // Provide access to esh app on accessing the github user and repos.
 // the elasticshift application to have access to github repo
 func (g *Github) Authorize(baseURL string) string {
-	g.Config.RedirectURL = g.CallbackURL + "?id=" + baseURL
+	g.Config.RedirectURL = g.GetRedirectURL(baseURL)
 	url := g.Config.AuthCodeURL("state", oauth2.AccessTypeOffline)
 	return url
 }
 
 // Authorized ...
 // Finishes the authorize
-func (g *Github) Authorized(code string) (VCS, error) {
+func (g *Github) Authorized(code, redirectURL string) (VCS, error) {
 
+	g.Config.RedirectURL = redirectURL
 	tok, err := g.Config.Exchange(oauth2.NoContext, code)
 	u := VCS{}
 	if err != nil {
@@ -91,7 +99,7 @@ func (g *Github) Authorized(code string) (VCS, error) {
 		u.TokenExpiry = time.Now()
 	}
 	u.TokenType = tok.TokenType
-	u.Type = GithubProviderName
+	u.Type = g.Name()
 
 	us := struct {
 		VcsID   int    `json:"id"`
@@ -99,9 +107,7 @@ func (g *Github) Authorized(code string) (VCS, error) {
 		Name    string `json:"name"`
 		Login   string `json:"login"`
 		Picture string `json:"avatar_url"`
-		Owner   struct {
-			Type string
-		}
+		Type    string
 	}{}
 
 	r := chttp.NewGetRequestMaker(GithubProfileURL)
@@ -116,9 +122,9 @@ func (g *Github) Authorized(code string) (VCS, error) {
 
 	u.AvatarURL = us.Picture
 	u.Name = us.Login
-	if "User" == us.Owner.Type {
+	if strings.EqualFold("User", us.Type) {
 		u.OwnerType = OwnerTypeUser
-	} else {
+	} else if strings.EqualFold("Org", us.Type) {
 		u.OwnerType = OwnerTypeOrg
 	}
 	u.ID = strconv.Itoa(us.VcsID)

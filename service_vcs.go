@@ -50,6 +50,7 @@ type vcsService struct {
 	vcsProviders *Providers
 	config       Config
 	logger       *logrus.Logger
+	vcsConf      map[string]VCSSysConf
 }
 
 // NewVCSService ..
@@ -68,6 +69,7 @@ func NewVCSService(ctx AppContext) VCSService {
 		sysconfDS: ctx.SysconfDatastore,
 		config:    conf,
 		logger:    ctx.Logger,
+		vcsConf:   make(map[string]VCSSysConf),
 	}
 }
 
@@ -100,7 +102,8 @@ func (s vcsService) Authorized(id, provider, code string, r *http.Request) (Auth
 		return AuthorizeResponse{}, stacktrace.Propagate(err, "Getting provider %s failed", provider)
 	}
 
-	v, err := p.Authorized(code)
+	redirectURL := p.GetRedirectURL(id)
+	v, err := p.Authorized(code, redirectURL)
 	if err != nil {
 		return AuthorizeResponse{}, stacktrace.Propagate(err, "Finalize the authorization failed.")
 	}
@@ -302,30 +305,28 @@ func (s vcsService) getToken(team string, a VCS) (string, error) {
 // Gets the provider by type
 func (s vcsService) getProvider(providerName string) (Provider, error) {
 
-	if s.vcsProviders == nil {
+	if len(s.vcsConf) == 0 {
 
-		vcsConf, err := s.sysconfDS.GetVCSTypes()
+		conf, err := s.sysconfDS.GetVCSTypes()
 		if err != nil {
 			return nil, err
 		}
 
-		prov := make(map[string]Provider)
-		for _, v := range vcsConf {
-
-			var p Provider
-			if strings.EqualFold(GithubProviderName, v.Name) {
-				p = GithubProvider(s.logger, v.Key, v.Secret, v.CallbackURL)
-			} else if strings.EqualFold(BitBucketProviderName, v.Name) {
-				p = BitbucketProvider(s.logger, v.Key, v.Secret, v.CallbackURL)
-			} else if strings.EqualFold(GitlabProviderName, v.Name) {
-				p = GitlabProvider(s.logger, v.Key, v.Secret, v.CallbackURL)
-			}
-			prov[v.Name] = p
+		for _, c := range conf {
+			(s.vcsConf)[c.Name] = c
 		}
-		s.vcsProviders = &Providers{prov}
 	}
 
-	return s.vcsProviders.Get(providerName)
+	v := s.vcsConf[providerName]
+	var p Provider
+	if strings.EqualFold(GithubProviderName, v.Name) {
+		p = GithubProvider(s.logger, v.Key, v.Secret, v.CallbackURL)
+	} else if strings.EqualFold(BitBucketProviderName, v.Name) {
+		p = BitbucketProvider(s.logger, v.Key, v.Secret, v.CallbackURL)
+	} else if strings.EqualFold(GitlabProviderName, v.Name) {
+		p = GitlabProvider(s.logger, v.Key, v.Secret, v.CallbackURL)
+	}
+	return p, nil
 }
 
 func (s vcsService) encode(id string) string {

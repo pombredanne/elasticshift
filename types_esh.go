@@ -159,15 +159,15 @@ type User struct {
 // All of the "raw" datafrom the provider can be found in the `RawData` field.
 type VCS struct {
 	ID           string    `json:"id" bson:"_id,omitempty"`
-	Name         string    `json:"name" bson:"name"`
-	Type         string    `json:"type" bson:"type"`
-	OwnerType    string    `json:"owner_type" bson:"owner_type"`
-	AvatarURL    string    `json:"avatar" bson:"avatar"`
-	AccessCode   string    `json:"-" bson:"access_code"`
-	AccessToken  string    `json:"-" bson:"access_token"`
-	RefreshToken string    `json:"-" bson:"refresh_token"`
-	TokenType    string    `json:"-" bson:"token_type"`
-	TokenExpiry  time.Time `json:"-" bson:"token_expiry"`
+	Name         string    `json:"name" bson:"name,omitempty"`
+	Type         string    `json:"type" bson:"type,omitempty"`
+	OwnerType    string    `json:"owner_type" bson:"owner_type,omitempty"`
+	AvatarURL    string    `json:"avatar" bson:"avatar,omitempty"`
+	AccessCode   string    `json:"-" bson:"access_code,omitempty"`
+	AccessToken  string    `json:"-" bson:"access_token,omitempty"`
+	RefreshToken string    `json:"-" bson:"refresh_token,omitempty"`
+	TokenType    string    `json:"-" bson:"token_type,omitempty"`
+	TokenExpiry  time.Time `json:"-" bson:"token_expiry,omitempty"`
 }
 
 // Repo ..
@@ -177,11 +177,11 @@ type Repo struct {
 	Team          string        `json:"-" bson:"team"`
 	RepoID        string        `json:"-" bson:"repo_id"`
 	VcsID         string        `json:"-" bson:"vcs_id"`
-	Name          string        `json:"name" bson:"name"`
-	Private       bool          `json:"private" bson:"private"`
-	Link          string        `json:"link" bson:"link"`
-	Description   string        `json:"description" bson:"description"`
-	Fork          bool          `json:"fork" bson:"fork"`
-	DefaultBranch string        `json:"default_branch" bson:"default_branch"`
-	Language      string        `json:"language" bson:"language"`
+	Name          string        `json:"name" bson:"name,omitempty"`
+	Private       bool          `json:"private" bson:"private,omitempty"`
+	Link          string        `json:"link" bson:"link,omitempty"`
+	Description   string        `json:"description" bson:"description,omitempty"`
+	Fork          bool          `json:"fork" bson:"fork,omitempty"`
+	DefaultBranch string        `json:"default_branch" bson:"default_branch,omitempty"`
+	Language      string        `json:"language" bson:"language,omitempty"`
 }

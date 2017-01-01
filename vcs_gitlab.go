@@ -63,18 +63,23 @@ func (g *Gitlab) Name() string {
 	return GitlabProviderName
 }
 
+// GetRedirectURL ..
+func (g *Gitlab) GetRedirectURL(id string) string {
+	return g.CallbackURL + "?id=" + id
+}
+
 // Authorize ...
 // Provide access to esh app on accessing the github user and repos.
 // the elasticshift application to have access to github repo
 func (g *Gitlab) Authorize(baseURL string) string {
-	g.Config.RedirectURL = g.CallbackURL + "?id=" + baseURL
+	g.Config.RedirectURL = g.GetRedirectURL(baseURL)
 	url := g.Config.AuthCodeURL("state")
 	return url
 }
 
 // Authorized ...
 // Finishes the authorize
-func (g *Gitlab) Authorized(code string) (VCS, error) {
+func (g *Gitlab) Authorized(code, redirectURL string) (VCS, error) {
 
 	//tok, err := g.Config.Exchange(oauth2.NoContext, code)
 	// Authorize request
@@ -87,7 +92,7 @@ func (g *Gitlab) Authorized(code string) (VCS, error) {
 	params := make(url.Values)
 	params.Set("grant_type", "authorization_code")
 	params.Set("code", code)
-	params.Set("redirect_uri", g.Config.RedirectURL)
+	params.Set("redirect_uri", redirectURL)
 
 	r.QueryParam("client_id", g.Config.ClientID)
 	r.QueryParam("client_secret", g.Config.ClientSecret)
@@ -107,7 +112,7 @@ func (g *Gitlab) Authorized(code string) (VCS, error) {
 	u.AccessToken = tok.AccessToken
 	u.TokenExpiry = time.Now().Add(time.Duration(tok.ExpiresIn) * time.Second)
 	u.TokenType = tok.TokenType
-	u.Type = GitlabProviderName
+	u.Type = g.Name()
 
 	// Get user profile
 	us := struct {

@@ -56,19 +56,25 @@ func (b *Bitbucket) Name() string {
 	return BitBucketProviderName
 }
 
+// GetRedirectURL ..
+func (b *Bitbucket) GetRedirectURL(id string) string {
+	return b.CallbackURL + "?id=" + id
+}
+
 // Authorize ...
 // Provide access to esh app on accessing the github user and repos.
 // the elasticshift application to have access to github repo
 func (b *Bitbucket) Authorize(baseURL string) string {
-	b.Config.RedirectURL = b.CallbackURL + "?id=" + baseURL
+	b.Config.RedirectURL = b.GetRedirectURL(baseURL)
 	url := b.Config.AuthCodeURL("state", oauth2.AccessTypeOffline)
 	return url
 }
 
 // Authorized ...
 // Finishes the authorize
-func (b *Bitbucket) Authorized(code string) (VCS, error) {
+func (b *Bitbucket) Authorized(code, redirectURL string) (VCS, error) {
 
+	b.Config.RedirectURL = redirectURL
 	tok, err := b.Config.Exchange(oauth2.NoContext, code)
 	u := VCS{}
 	if err != nil {
@@ -82,11 +88,12 @@ func (b *Bitbucket) Authorized(code string) (VCS, error) {
 		u.TokenExpiry = tok.Expiry
 	}
 	u.TokenType = tok.TokenType
-	u.Type = GithubProviderName
+	u.Type = b.Name()
 
 	us := struct {
 		UUID  string
 		Name  string `json:"username"`
+		Type  string `json:"type"`
 		Links struct {
 			Avatar struct {
 				Href string `json:"href"`
@@ -108,6 +115,7 @@ func (b *Bitbucket) Authorized(code string) (VCS, error) {
 	u.AvatarURL = us.Links.Avatar.Href
 	u.Name = us.Name
 	u.ID = us.UUID
+	u.OwnerType = us.Type
 	return u, err
 }
 

@@ -36,7 +36,9 @@ type Provider interface {
 
 	Authorize(baseURL string) string
 
-	Authorized(code string) (VCS, error)
+	GetRedirectURL(id string) string
+
+	Authorized(code, redirectURL string) (VCS, error)
 
 	RefreshToken(token string) (*oauth2.Token, error)
 
