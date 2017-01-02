@@ -60,37 +60,33 @@ type verification struct {
 }
 
 // Create a new user for a team
-func (s userService) Create(teamName, domain, fullname, email, password string) (string, error) {
+func (s userService) Create(r signupRequest) (string, error) {
 
-	tname := teamName
-	if tname == "" {
-		tname = domain
-	}
-
-	result, err := s.userDS.CheckExists(email, tname)
+	//teamName, domain, fullname, email, password string
+	result, err := s.userDS.CheckExists(r.Email, r.Team)
 	if result {
 		return "", errUserAlreadyExists
 	}
 
 	// strip username from email
-	userName := strings.Split(email, "@")[0]
+	userName := strings.Split(r.Email, "@")[0]
 
 	// generate hashed password
-	hashedPwd, err := bcrypt.GenerateFromPassword([]byte(password), bcrypt.DefaultCost)
+	hashedPwd, err := bcrypt.GenerateFromPassword([]byte(r.Password), bcrypt.DefaultCost)
 	if err != nil {
 		return "", stacktrace.Propagate(err, errUserCreationFailed.Error())
 	}
 
 	user := &User{
-		Fullname:      fullname,
+		Fullname:      r.Fullname,
 		Username:      userName,
-		Email:         email,
+		Email:         r.Email,
 		Password:      string(hashedPwd[:]),
 		Locked:        Unlocked,
 		Active:        Active,
 		BadAttempt:    0,
 		EmailVefified: false,
-		Team:          tname,
+		Team:          r.Team,
 		Scope:         []string{},
 	}
 
@@ -99,27 +95,23 @@ func (s userService) Create(teamName, domain, fullname, email, password string) 
 		return "", stacktrace.Propagate(err, errUserCreationFailed.Error())
 	}
 
-	return s.generateAuthToken(tname, email, userName, tname)
+	return s.generateAuthToken(r.Email, userName, r.Team)
 }
 
 // SignIn ..
-func (s userService) SignIn(teamName, domain, email, password string) (string, error) {
+func (s userService) SignIn(r signInRequest) (string, error) {
 
-	tname := teamName
-	if tname == "" {
-		tname = domain
-	}
 
-	user, err := s.userDS.GetUser(email, tname)
+	user, err := s.userDS.GetUser(r.Email, r.Team)
 	if err != nil {
 		return "", errInvalidEmailOrPassword
 	}
 
-	err = bcrypt.CompareHashAndPassword([]byte(user.Password), []byte(password))
+	err = bcrypt.CompareHashAndPassword([]byte(user.Password), []byte(r.Password))
 	if err != nil {
 		return errInvalidEmailOrPassword.Error(), nil
 	}
-	return s.generateAuthToken(tname, user.ID.String(), user.Username, tname)
+	return s.generateAuthToken(user.ID.String(), user.Username, r.Team)
 }
 
 // SignOut ..
@@ -128,13 +120,12 @@ func (s userService) SignOut() (bool, error) {
 }
 
 // Generates the auth token
-func (s userService) generateAuthToken(teamID, userID, userName, teamName string) (string, error) {
+func (s userService) generateAuthToken(userID, userName, team string) (string, error) {
 
 	t := auth.Token{
-		TeamID:   teamID,
 		UserID:   userID,
 		Username: userName,
-		Teamname: teamName,
+		Team: team,
 	}
 
 	signedStr, err := auth.GenerateToken(s.signer, t)

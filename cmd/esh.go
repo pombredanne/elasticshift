@@ -81,7 +81,6 @@ func main() {
 		} else {
 
 			// Ping function checks the database connectivity
-			session.Refresh()
 			dberr := session.Ping()
 			if dberr != nil {
 				logger.Errorln(fmt.Sprintf("Ping DB failed, retrying in %d seconds", config.DB.Retry), err)
@@ -178,13 +177,16 @@ func reconnectOnFailure(ctx esh.AppContext, session *mgo.Session) {
 
 		time.Sleep(reconnectDuration)
 
-		session.Refresh()
-
 		// Ping function checks the database connectivity
 		err := session.Ping()
 		if err != nil {
+
 			disconnected = true
 			ctx.Logger.Errorln(fmt.Sprintf("DB ping failed, something went wrong. Reconnecting in %d seconds", ctx.Config.DB.Reconnect))
+
+			//Trying to refresh the db connection
+			session.Refresh()
+
 		} else if disconnected {
 			ctx.Logger.Infoln("Reconnected to database successfully.")
 			disconnected = false

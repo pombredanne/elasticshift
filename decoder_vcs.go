@@ -13,7 +13,7 @@ import (
 // AuthorizeRequest ..
 type AuthorizeRequest struct {
 	Provider string
-	TeamID   string
+	Team   string
 	ID       string
 	Request  *http.Request
 	Code     string
@@ -21,7 +21,7 @@ type AuthorizeRequest struct {
 
 // SyncVCSRequest ..
 type SyncVCSRequest struct {
-	TeamID     string
+	Team     string
 	Username   string
 	ProviderID string
 }
@@ -33,11 +33,11 @@ type GetVCSRequest struct {
 
 func decodeAuthorizeRequest(ctx context.Context, r *http.Request) (interface{}, error) {
 
-	teamID := ctx.Value("token").(auth.Token).TeamID
+	team := ctx.Value("token").(auth.Token).Team
 	params := ctx.Value("params").(map[string]string)
 	prov := params["provider"]
 
-	return AuthorizeRequest{TeamID: teamID, Provider: prov, Request: r}, nil
+	return AuthorizeRequest{Team: team, Provider: prov, Request: r}, nil
 }
 
 func decodeAuthorizedRequest(ctx context.Context, r *http.Request) (interface{}, error) {
@@ -51,9 +51,7 @@ func decodeAuthorizedRequest(ctx context.Context, r *http.Request) (interface{},
 }
 
 func decodeGetVCSRequest(ctx context.Context, r *http.Request) (interface{}, error) {
-
-	teamID := ctx.Value("token").(auth.Token).TeamID
-	return teamID, nil
+	return ctx.Value("token").(auth.Token).Team, nil
 }
 
 func decodeSyncVCSRequest(ctx context.Context, r *http.Request) (interface{}, error) {
@@ -62,5 +60,5 @@ func decodeSyncVCSRequest(ctx context.Context, r *http.Request) (interface{}, er
 	providerID := params["id"]
 	token := ctx.Value("token").(auth.Token)
 
-	return SyncVCSRequest{TeamID: token.TeamID, Username: token.Username, ProviderID: providerID}, nil
+	return SyncVCSRequest{Team: token.Team, Username: token.Username, ProviderID: providerID}, nil
 }

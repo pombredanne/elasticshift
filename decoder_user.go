@@ -17,14 +17,12 @@ type signupRequest struct {
 	Email    string `json:"email"`
 	Password string `json:"password"`
 	Team     string `json:"team"`
-	Domain   string
 }
 
 type signInRequest struct {
 	Team     string `json:"team"`
 	Email    string `json:"email"`
 	Password string `json:"password"`
-	Domain   string
 }
 
 type signOut struct {
@@ -39,9 +37,8 @@ func decodeSignUpRequest(ctx context.Context, r *http.Request) (interface{}, err
 		return false, stacktrace.Propagate(err, "Unable to decode signup request")
 	}
 
-	subdomain := ctx.Value("subdomain").(string)
-	if len(subdomain) >= 6 {
-		req.Domain = subdomain
+	if req.Team == "" {
+		req.Team = ctx.Value("subdomain").(string)
 	}
 
 	// validate email
@@ -58,9 +55,8 @@ func decodeSignInRequest(ctx context.Context, r *http.Request) (interface{}, err
 		return false, stacktrace.Propagate(err, "Unable to decode signin request")
 	}
 
-	subdomain := ctx.Value("subdomain").(string)
-	if len(subdomain) >= 6 {
-		req.Domain = subdomain
+	if req.Team == "" {
+		req.Team = ctx.Value("subdomain").(string)
 	}
 
 	// validate username and password

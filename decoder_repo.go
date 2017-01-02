@@ -18,9 +18,8 @@ type GetRepoRequest struct {
 
 func decodeGetRepoRequest(ctx context.Context, r *http.Request) (interface{}, error) {
 
-	teamID := ctx.Value("token").(auth.Token).TeamID
-
-	req := GetRepoRequest{TeamID: teamID}
+	team := ctx.Value("token").(auth.Token).Team
+	req := GetRepoRequest{TeamID: team}
 	params := ctx.Value("params").(map[string]string)
 	if params != nil {
 		vcsID := params["id"]

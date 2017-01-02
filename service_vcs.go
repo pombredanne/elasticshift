@@ -5,7 +5,6 @@ package esh
 
 import (
 	"fmt"
-	"net/http"
 	"strings"
 	"time"
 
@@ -73,42 +72,43 @@ func NewVCSService(ctx AppContext) VCSService {
 	}
 }
 
-func (s vcsService) Authorize(teamname, provider string, r *http.Request) (AuthorizeResponse, error) {
+func (s vcsService) Authorize(r AuthorizeRequest) (AuthorizeResponse, error) {
 
-	p, err := s.getProvider(provider)
+	//teamname, provider string, r *http.Request
+	p, err := s.getProvider(r.Provider)
 	if err != nil {
-		return AuthorizeResponse{}, stacktrace.Propagate(err, "Getting provider %s failed", provider)
+		return AuthorizeResponse{}, stacktrace.Propagate(err, "Getting provider %s failed", r.Provider)
 	}
 
 	// Get the base URL
 	var buf bytes.Buffer
-	buf.WriteString(teamname)
+	buf.WriteString(r.Team)
 	buf.WriteString(SEMICOLON)
 	buf.WriteString(SLASH)
 	buf.WriteString(SLASH)
-	buf.WriteString(r.Host)
+	buf.WriteString(r.Request.Host)
 
 	url := p.Authorize(s.encode(buf.String()))
 
-	return AuthorizeResponse{Err: nil, URL: url, Request: r}, nil
+	return AuthorizeResponse{Err: nil, URL: url, Request: r.Request}, nil
 }
 
 // Authorized ..
 // Invoked when authorization finished by oauth app
-func (s vcsService) Authorized(id, provider, code string, r *http.Request) (AuthorizeResponse, error) {
+func (s vcsService) Authorized(r AuthorizeRequest) (AuthorizeResponse, error) {
 
-	p, err := s.getProvider(provider)
+	p, err := s.getProvider(r.Provider)
 	if err != nil {
-		return AuthorizeResponse{}, stacktrace.Propagate(err, "Getting provider %s failed", provider)
+		return AuthorizeResponse{}, stacktrace.Propagate(err, "Getting provider %s failed", r.Provider)
 	}
 
-	redirectURL := p.GetRedirectURL(id)
-	v, err := p.Authorized(code, redirectURL)
+	redirectURL := p.GetRedirectURL(r.ID)
+	v, err := p.Authorized(r.Code, redirectURL)
 	if err != nil {
 		return AuthorizeResponse{}, stacktrace.Propagate(err, "Finalize the authorization failed.")
 	}
 
-	unescID := s.decode(id)
+	unescID := s.decode(r.ID)
 	escID := strings.Split(unescID, SEMICOLON)
 	fmt.Println(escID)
 
@@ -126,13 +126,13 @@ func (s vcsService) Authorized(id, provider, code string, r *http.Request) (Auth
 
 		s.teamDS.UpdateVCS(tname, acc)
 
-		return AuthorizeResponse{Conflict: true, Err: errVCSAccountAlreadyLinked, Request: r}, nil
+		return AuthorizeResponse{Conflict: true, Err: errVCSAccountAlreadyLinked, Request: r.Request}, nil
 	}
 
 	err = s.teamDS.SaveVCS(tname, &v)
 
 	url := escID[1] + "/api/vcs"
-	return AuthorizeResponse{Err: nil, URL: url, Request: r}, err
+	return AuthorizeResponse{Err: nil, URL: url, Request: r.Request}, err
 }
 
 func (s vcsService) GetVCS(team string) (GetVCSResponse, error) {
@@ -141,14 +141,14 @@ func (s vcsService) GetVCS(team string) (GetVCSResponse, error) {
 	return GetVCSResponse{Result: result.Accounts}, err
 }
 
-func (s vcsService) SyncVCS(team, userName, id string) (bool, error) {
+func (s vcsService) SyncVCS(r SyncVCSRequest) (bool, error) {
 
-	acc, err := s.teamDS.GetVCSByID(team, id)
+	acc, err := s.teamDS.GetVCSByID(r.Team, r.ProviderID)
 	if err != nil {
 		return false, stacktrace.Propagate(err, "Get by VCS ID failed during sync.")
 	}
 
-	err = s.sync(acc, userName, team)
+	err = s.sync(acc, r.Username, r.Team)
 	if err != nil {
 		return false, err
 	}

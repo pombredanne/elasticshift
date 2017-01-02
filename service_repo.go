@@ -23,8 +23,8 @@ func (s *repoService) GetRepos(team string) (GetRepoResponse, error) {
 	return GetRepoResponse{Result: result}, err
 }
 
-func (s *repoService) GetReposByVCSID(team, vcsID string) (GetRepoResponse, error) {
+func (s *repoService) GetReposByVCSID(team, id string) (GetRepoResponse, error) {
 
-	result, err := s.repoDS.GetReposByVCSID(team, vcsID)
+	result, err := s.repoDS.GetReposByVCSID(team, id)
 	return GetRepoResponse{Result: result}, err
 }

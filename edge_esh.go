@@ -23,8 +23,7 @@ func makeCreateTeamEdge(s TeamService) edge.Edge {
 func makeSignupEdge(s UserService) edge.Edge {
 
 	return func(ctx context.Context, request interface{}) (interface{}, error) {
-		req := request.(signupRequest)
-		token, err := s.Create(req.Team, req.Domain, req.Fullname, req.Email, req.Password)
+		token, err := s.Create(request.(signupRequest))
 		return signInResponse{Token: token, Err: err}, nil
 	}
 }
@@ -32,8 +31,7 @@ func makeSignupEdge(s UserService) edge.Edge {
 func makeSignInEdge(s UserService) edge.Edge {
 
 	return func(ctx context.Context, request interface{}) (interface{}, error) {
-		req := request.(signInRequest)
-		token, err := s.SignIn(req.Team, req.Domain, req.Email, req.Password)
+		token, err := s.SignIn(request.(signInRequest))
 		return signInResponse{Token: token, Err: err}, nil
 	}
 }
@@ -60,16 +58,14 @@ func makeVerifyCodeEdge(s UserService) edge.Edge {
 func makeAuthorizeEdge(s VCSService) edge.Edge {
 
 	return func(ctx context.Context, request interface{}) (interface{}, error) {
-		req := request.(AuthorizeRequest)
-		return s.Authorize(req.TeamID, req.Provider, req.Request)
+		return s.Authorize(request.(AuthorizeRequest))
 	}
 }
 
 func makeAuthorizedEdge(s VCSService) edge.Edge {
 
 	return func(ctx context.Context, request interface{}) (interface{}, error) {
-		req := request.(AuthorizeRequest)
-		return s.Authorized(req.ID, req.Provider, req.Code, req.Request)
+		return s.Authorized(request.(AuthorizeRequest))
 	}
 }
 
@@ -84,8 +80,7 @@ func makeGetVCSEdge(s VCSService) edge.Edge {
 func makeSyncVCSEdge(s VCSService) edge.Edge {
 
 	return func(ctx context.Context, request interface{}) (interface{}, error) {
-		req := request.(SyncVCSRequest)
-		return s.SyncVCS(req.TeamID, req.Username, req.ProviderID)
+		return s.SyncVCS(request.(SyncVCSRequest))
 	}
 }
 

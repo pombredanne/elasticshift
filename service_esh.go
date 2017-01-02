@@ -3,8 +3,6 @@
 // Date: Dec 30, 2016
 package esh
 
-import "net/http"
-
 // TeamService ..
 type TeamService interface {
 	Create(name string) (bool, error)
@@ -12,22 +10,22 @@ type TeamService interface {
 
 // UserService ..
 type UserService interface {
-	Create(teamName, domain, fullName, email, password string) (string, error)
-	SignIn(teamName, domain, email, password string) (string, error)
+	Create(r signupRequest) (string, error)
+	SignIn(r signInRequest) (string, error)
 	SignOut() (bool, error)
 	Verify(code string) (bool, error)
 }
 
 // VCSService ..
 type VCSService interface {
-	Authorize(subdomain, provider string, r *http.Request) (AuthorizeResponse, error)
-	Authorized(subdomain, provider, code string, r *http.Request) (AuthorizeResponse, error)
+	Authorize(r AuthorizeRequest) (AuthorizeResponse, error)
+	Authorized(r AuthorizeRequest) (AuthorizeResponse, error)
 	GetVCS(teamID string) (GetVCSResponse, error)
-	SyncVCS(teamID, userName, provider string) (bool, error)
+	SyncVCS(r SyncVCSRequest) (bool, error)
 }
 
 // RepoService ..
 type RepoService interface {
-	GetRepos(teamID string) (GetRepoResponse, error)
-	GetReposByVCSID(teamID, vcsID string) (GetRepoResponse, error)
+	GetRepos(team string) (GetRepoResponse, error)
+	GetReposByVCSID(team, id string) (GetRepoResponse, error)
 }
