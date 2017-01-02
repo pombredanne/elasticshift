@@ -1,5 +1,5 @@
 rm -f esh
 echo "Building..."
-go build ./cmd/esh.go
+go build -o=esh ./cmd/esh/main.go
 echo "Running..."
-./esh
+sudo ./esh
