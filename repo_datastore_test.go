@@ -6,21 +6,19 @@ package esh
 import (
 	"testing"
 
-	"gitlab.com/conspico/esh"
-
 	"github.com/spf13/viper"
 
 	"gopkg.in/mgo.v2"
 )
 
-func TestLoadSysconf(t *testing.T) {
+func TestDatastore(t *testing.T) {
 
 	vip := viper.New()
 	vip.SetConfigType("yml")
 	vip.SetConfigFile("esh.yml")
 	vip.ReadInConfig()
 
-	config := esh.Config{}
+	config := Config{}
 	vip.Unmarshal(&config)
 
 	session, err := mgo.DialWithInfo(&mgo.DialInfo{
@@ -34,9 +32,9 @@ func TestLoadSysconf(t *testing.T) {
 	}
 	defer session.Close()
 
-	ds := esh.NewDatasource(config.DB.Name, session)
+	ds := NewDatasource(config.DB.Name, session)
 
-	repoDS := esh.NewRepoDatastore(ds)
+	repoDS := NewRepoDatastore(ds)
 
 	r, err := repoDS.GetReposByVCSID("conspico", "7168293")
 	t.Log(r)

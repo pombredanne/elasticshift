@@ -1,12 +1,12 @@
 // Package esh ...
 // Author: Ghazni Nattarshah
 // Date: Dec 30, 2016
-package esh_test
+package esh
 
 import (
 	"testing"
 
-	"gitlab.com/conspico/esh"
+	"github.com/Sirupsen/logrus"
 )
 
 func TestBitbucketAuthorized(t *testing.T) {
@@ -15,8 +15,9 @@ func TestBitbucketAuthorized(t *testing.T) {
 	secret := "dqHP8bc5qyzwTXuW2dduSSTBJqCa8jzj"
 	callback := "http://eshift:5050/api/auth/bitbucket/callback"
 
-	providers := esh.NewProviders(
-		esh.BitbucketProvider(key, secret, callback),
+
+	providers := NewProviders(
+		BitbucketProvider(logrus.New(), key, secret, callback),
 	)
 
 	// p := vcs.GithubProvider(key, secret, callback)

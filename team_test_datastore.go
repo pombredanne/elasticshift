@@ -7,7 +7,6 @@ import (
 	"testing"
 	"time"
 
-	"gitlab.com/conspico/esh"
 	"gitlab.com/conspico/esh/core/util"
 
 	"github.com/spf13/viper"
@@ -15,14 +14,14 @@ import (
 	"gopkg.in/mgo.v2"
 )
 
-func TestLoadSysconf(t *testing.T) {
+func TestTeam(t *testing.T) {
 
 	vip := viper.New()
 	vip.SetConfigType("yml")
 	vip.SetConfigFile("esh.yml")
 	vip.ReadInConfig()
 
-	config := esh.Config{}
+	config := Config{}
 	vip.Unmarshal(&config)
 
 	session, err := mgo.DialWithInfo(&mgo.DialInfo{
@@ -37,11 +36,11 @@ func TestLoadSysconf(t *testing.T) {
 	}
 	defer session.Close()
 
-	ds := esh.NewDatasource(config.DB.Name, session)
+	ds := NewDatasource(config.DB.Name, session)
 
-	teamDS := esh.NewTeamDatastore(ds)
+	teamDS := NewTeamDatastore(ds)
 
-	team := esh.Team{
+	team := Team{
 		Name:    "test",
 		Display: "test",
 	}
@@ -63,7 +62,7 @@ func TestLoadSysconf(t *testing.T) {
 	}
 
 	id, _ := util.NewUUID()
-	v := &esh.VCS{}
+	v := &VCS{}
 	v.ID = id
 	v.Name = "ghazninattarshah"
 	v.OwnerType = "user"

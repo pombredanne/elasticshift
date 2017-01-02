@@ -6,8 +6,6 @@ package esh
 import (
 	"testing"
 
-	"gitlab.com/conspico/esh"
-
 	"github.com/spf13/viper"
 
 	"gopkg.in/mgo.v2"
@@ -20,7 +18,7 @@ func TestLoadSysconf(t *testing.T) {
 	vip.SetConfigFile("esh.yml")
 	vip.ReadInConfig()
 
-	config := esh.Config{}
+	config := Config{}
 	vip.Unmarshal(&config)
 
 	session, err := mgo.DialWithInfo(&mgo.DialInfo{
@@ -34,9 +32,9 @@ func TestLoadSysconf(t *testing.T) {
 	}
 	defer session.Close()
 
-	ds := esh.NewDatasource(config.DB.Name, session)
+	ds := NewDatasource(config.DB.Name, session)
 
-	syscDS := esh.NewSysconfDatastore(ds)
+	syscDS := NewSysconfDatastore(ds)
 
 	/*sc := &esh.Sysconf{}
 	sc.ID = bson.NewObjectIdWithTime(time.Now())
