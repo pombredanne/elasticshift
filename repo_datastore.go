@@ -6,10 +6,11 @@ package esh
 import (
 	"gopkg.in/mgo.v2"
 	"gopkg.in/mgo.v2/bson"
+	"gitlab.com/conspico/esh/core"
 )
 
 type repoDatastore struct {
-	ds    Datastore
+	ds    core.Datastore
 	cname string
 }
 
@@ -55,6 +56,6 @@ func (r *repoDatastore) GetRepos(team string) ([]Repo, error) {
 }
 
 // NewRepoDatastore ..
-func NewRepoDatastore(ds Datastore) RepoDatastore {
+func NewRepoDatastore(ds core.Datastore) RepoDatastore {
 	return &repoDatastore{ds: ds, cname: "repos"}
 }

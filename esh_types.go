@@ -13,6 +13,7 @@ import (
 	"github.com/Sirupsen/logrus"
 	"github.com/gorilla/mux"
 	"github.com/justinas/alice"
+	"gitlab.com/conspico/esh/core"
 )
 
 var (
@@ -112,7 +113,7 @@ type AppContext struct {
 	VCSService  VCSService
 	RepoService RepoService
 
-	Datasource       Datastore
+	Datasource       core.Datastore
 	TeamDatastore    TeamDatastore
 	UserDatastore    UserDatastore
 	RepoDatastore    RepoDatastore

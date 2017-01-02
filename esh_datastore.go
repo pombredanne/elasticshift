@@ -4,22 +4,9 @@
 package esh
 
 import (
-	mgo "gopkg.in/mgo.v2"
 	"gopkg.in/mgo.v2/bson"
 )
 
-// Datastore ..
-// Abstract Datastore to interact with DB.
-type Datastore interface {
-	Execute(cname string, handleFunc func(c *mgo.Collection))
-	Insert(cname string, model interface{}) error
-	Upsert(cname string, selector interface{}, model interface{}) (*mgo.ChangeInfo, error)
-	FindAll(cname string, query interface{}, model interface{}) error
-	FindOne(cname string, query interface{}, model interface{}) error
-	Exist(cname string, selector interface{}) (bool, error)
-	Remove(cname string, id bson.ObjectId) error
-	RemoveMultiple(cname string, ids []bson.ObjectId) error
-}
 
 // TeamDatastore provides access a team.
 type TeamDatastore interface {

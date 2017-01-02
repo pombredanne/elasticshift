@@ -1,7 +1,7 @@
 // Package esh ...
 // Author: Ghazni Nattarshah
 // Date: Dec 30, 2016
-package esh
+package core
 
 import (
 	"gopkg.in/mgo.v2"
@@ -11,6 +11,19 @@ import (
 var (
 	recordNotFound = "record not found"
 )
+
+// Datastore ..
+// Abstract Datastore to interact with DB.
+type Datastore interface {
+	Execute(cname string, handleFunc func(c *mgo.Collection))
+	Insert(cname string, model interface{}) error
+	Upsert(cname string, selector interface{}, model interface{}) (*mgo.ChangeInfo, error)
+	FindAll(cname string, query interface{}, model interface{}) error
+	FindOne(cname string, query interface{}, model interface{}) error
+	Exist(cname string, selector interface{}) (bool, error)
+	Remove(cname string, id bson.ObjectId) error
+	RemoveMultiple(cname string, ids []bson.ObjectId) error
+}
 
 // Datastore ..
 // A base datasource that performs actualy sql interactions.

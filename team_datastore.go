@@ -6,10 +6,11 @@ package esh
 import (
 	"gopkg.in/mgo.v2"
 	"gopkg.in/mgo.v2/bson"
+	"gitlab.com/conspico/esh/core"
 )
 
 type teamDatastore struct {
-	ds    Datastore
+	ds    core.Datastore
 	cname string
 }
 
@@ -83,6 +84,6 @@ func (r *teamDatastore) UpdateVCS(team string, vcs VCS) error {
 }
 
 // NewTeamDatastore ..
-func NewTeamDatastore(ds Datastore) TeamDatastore {
+func NewTeamDatastore(ds core.Datastore) TeamDatastore {
 	return &teamDatastore{ds: ds, cname: "teams"}
 }

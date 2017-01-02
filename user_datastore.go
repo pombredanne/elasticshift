@@ -3,10 +3,13 @@
 // Date: Dec 30, 2016
 package esh
 
-import "gopkg.in/mgo.v2/bson"
+import (
+	"gopkg.in/mgo.v2/bson"
+	"gitlab.com/conspico/esh/core"
+)
 
 type userDatastore struct {
-	ds    Datastore
+	ds    core.Datastore
 	cname string
 }
 
@@ -26,6 +29,6 @@ func (r *userDatastore) GetUser(email, teamname string) (User, error) {
 }
 
 // NewUserDatastore ..
-func NewUserDatastore(ds Datastore) UserDatastore {
+func NewUserDatastore(ds core.Datastore) UserDatastore {
 	return &userDatastore{ds: ds, cname: "oauth_users"}
 }

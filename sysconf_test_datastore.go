@@ -9,6 +9,7 @@ import (
 	"github.com/spf13/viper"
 
 	"gopkg.in/mgo.v2"
+	"gitlab.com/conspico/esh/core"
 )
 
 func TestLoadSysconf(t *testing.T) {
@@ -32,7 +33,7 @@ func TestLoadSysconf(t *testing.T) {
 	}
 	defer session.Close()
 
-	ds := NewDatasource(config.DB.Name, session)
+	ds := core.NewDatasource(config.DB.Name, session)
 
 	syscDS := NewSysconfDatastore(ds)
 

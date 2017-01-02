@@ -12,6 +12,7 @@ import (
 	"github.com/spf13/viper"
 
 	"gopkg.in/mgo.v2"
+	"gitlab.com/conspico/esh/core"
 )
 
 func TestTeam(t *testing.T) {
@@ -36,7 +37,7 @@ func TestTeam(t *testing.T) {
 	}
 	defer session.Close()
 
-	ds := NewDatasource(config.DB.Name, session)
+	ds := core.NewDatasource(config.DB.Name, session)
 
 	teamDS := NewTeamDatastore(ds)
 
