@@ -43,4 +43,5 @@ type RepoDatastore interface {
 type SysconfDatastore interface {
 	GetVCSTypes() ([]VCSSysConf, error)
 	SaveVCS(scf *VCSSysConf) error
+	Delete(id bson.ObjectId) error
 }

@@ -19,18 +19,6 @@ const (
 
 	// Separator used to delimit user info sent for activation
 	Separator = ";"
-
-	// Inactive ..
-	Inactive = 0
-
-	// Active ..
-	Active = 1
-
-	// Unlocked ..
-	Unlocked = 0
-
-	// Locked ..
-	Locked = 1
 )
 
 type userService struct {
@@ -82,8 +70,8 @@ func (s userService) Create(r signupRequest) (string, error) {
 		Username:      userName,
 		Email:         r.Email,
 		Password:      string(hashedPwd[:]),
-		Locked:        Unlocked,
-		Active:        Active,
+		Locked:        false,
+		Active:        true,
 		BadAttempt:    0,
 		EmailVefified: false,
 		Team:          r.Team,

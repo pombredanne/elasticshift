@@ -1,5 +1,5 @@
-hash: a7963c96e7131cef776ad7c9796e6c6372ae12b5a2a31bccb462aa9ce59a2cb8
-updated: 2016-12-28T13:05:00.757557258-05:00
+hash: 82835edc94af76fa3e2971d18741d9d4f2fc02a723527ac458ae71a875808b6e
+updated: 2017-01-02T10:53:11.335116246-05:00
 imports:
 - name: github.com/dgrijalva/jwt-go
   version: d2709f9f1f31ebcda9651b03077758c1f3a0018c
@@ -45,7 +45,7 @@ imports:
 - name: github.com/pelletier/go-buffruneio
   version: df1e16fde7fc330a0ca68167c23bf7ed6ac31d6d
 - name: github.com/pelletier/go-toml
-  version: 017119f7a78a0b5fc0ea39ef6be09f03acf3345d
+  version: 439fbba1f887c286024370cb4f281ba815c4c7d7
 - name: github.com/pkg/errors
   version: 248dadf4e9068a0b3e79f02ed0a610d935de5302
 - name: github.com/Sirupsen/logrus
@@ -62,13 +62,15 @@ imports:
   version: 25f8b5b07aece3207895bf19f7ab517eb3b22a40
 - name: github.com/spf13/viper
   version: 5ed0fc31f7f453625df314d8e66b9791e8d13003
+- name: github.com/stretchr/testify
+  version: 69483b4bd14f5845b5a1e55bca19e954e827f1d0
 - name: golang.org/x/crypto
   version: f6b343c37ca80bfa8ea539da67a0b621f84fab1d
   subpackages:
   - bcrypt
   - blowfish
 - name: golang.org/x/net
-  version: 45e771701b814666a7eb299e6c7a57d0b1799e91
+  version: 8fd7f25955530b92e73e9e1932a41b522b22ccd9
   subpackages:
   - context
 - name: golang.org/x/oauth2
@@ -82,7 +84,7 @@ imports:
   subpackages:
   - unix
 - name: golang.org/x/text
-  version: a49bea13b776691cb1b49873e5d8df96ec74831a
+  version: fd889fe3a20f4878f5f47672fd3ca5b86db005e2
   subpackages:
   - transform
   - unicode/norm

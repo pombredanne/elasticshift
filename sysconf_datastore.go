@@ -28,34 +28,9 @@ func (r *sysconfDatastore) SaveVCS(v *VCSSysConf) error {
 	return r.ds.Insert(r.cname, v)
 }
 
-/*
-func (r *sysconfDatastore) CheckExists(name string) (bool, error) {
-
-	var count int
-	var err error
-	r.ds.Execute(r.cname, func(c *mgo.Collection) {
-		count, err = c.Find(bson.M{"name": name}).Count()
-	})
-
-	if err != nil {
-		return false, err
-	}
-	return count > 0, nil
+func (r *sysconfDatastore) Delete(id bson.ObjectId) error {
+	return r.ds.Remove(r.cname, id)
 }
-
-func (r *sysconfDatastore) GetTeamID(name string) (string, error) {
-
-	var err error
-	var result Team
-	r.ds.Execute(r.cname, func(c *mgo.Collection) {
-		err = c.Find(bson.M{"name": name}).One(&result)
-	})
-
-	if err != nil {
-		return "", err
-	}
-	return result.ID.String(), nil
-}*/
 
 // NewSysconfDatastore ..
 func NewSysconfDatastore(ds core.Datastore) SysconfDatastore {

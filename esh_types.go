@@ -148,8 +148,8 @@ type User struct {
 	Username      string        `bson:"username"`
 	Email         string        `bson:"email"`
 	Password      string        `bson:"password"`
-	Locked        int8          `bson:"locked"`
-	Active        int8          `bson:"active"`
+	Locked        bool          `bson:"locked"`
+	Active        bool          `bson:"active"`
 	BadAttempt    int8          `bson:"bad_attempt"`
 	EmailVefified bool          `bson:"email_verified"`
 	Scope         []string      `bson:"scope"`
