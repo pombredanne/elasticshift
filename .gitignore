@@ -1,4 +1,6 @@
-esh
+bin
 debug
+cover.out
+cover.html
 esh.iml
 .idea/
