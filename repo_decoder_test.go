@@ -22,14 +22,6 @@ type RepoDecoderTestSuite struct {
 	ctx context.Context
 }
 
-func (suite *RepoDecoderTestSuite) SetupTest() {
-
-}
-
-func (suite *RepoDecoderTestSuite) TearDownTest() {
-
-}
-
 func (suite *RepoDecoderTestSuite) TestGetRepoRequest() {
 
 	tok := auth.Token{ Team: "testteam"}
