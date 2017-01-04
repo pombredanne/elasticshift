@@ -1,9 +1,6 @@
 package main
 
 import (
-	"crypto/x509"
-	"encoding/pem"
-	"io/ioutil"
 	"net/http"
 
 	"context"
@@ -24,6 +21,7 @@ import (
 	"gitlab.com/conspico/esh"
 	"gopkg.in/mgo.v2"
 	"gitlab.com/conspico/esh/core"
+	"gitlab.com/conspico/esh/core/util"
 )
 
 func main() {
@@ -111,14 +109,14 @@ func main() {
 	ctx.SysconfDatastore = esh.NewSysconfDatastore(ds)
 
 	// load keys
-	signer, err := loadKey(config.Key.Signer)
+	signer, err := util.LoadKey(config.Key.Signer)
 	if err != nil {
 		logger.Fatalln("Cannot load signer key", err)
 		os.Exit(-1)
 	}
 	ctx.Signer = signer
 
-	verifier, err := loadKey(config.Key.Verifier)
+	verifier, err := util.LoadKey(config.Key.Verifier)
 	if err != nil {
 		logger.Fatalln("Cannot load verifier key", err)
 		os.Exit(-1)
@@ -149,24 +147,6 @@ func main() {
 	go http.ListenAndServeTLS(":443", config.Key.Certfile, config.Key.Keyfile, router)
 	logger.Infoln(http.ListenAndServe(":80", http.HandlerFunc(redirect)))
 	//logger.Infoln(http.ListenAndServe(":5050", router))
-}
-
-func loadKey(path string) (interface{}, error) {
-
-	keyBytes, err := ioutil.ReadFile(path)
-	if err != nil {
-		return nil, err
-	}
-	keyBlock, _ := pem.Decode(keyBytes)
-
-	switch keyBlock.Type {
-	case "PUBLIC KEY":
-		return x509.ParsePKIXPublicKey(keyBlock.Bytes)
-	case "RSA PRIVATE KEY":
-		return x509.ParsePKCS1PrivateKey(keyBlock.Bytes)
-	default:
-		return nil, fmt.Errorf("unsupported key type %q", keyBlock.Type)
-	}
 }
 
 func reconnectOnFailure(ctx esh.AppContext, session *mgo.Session) {
