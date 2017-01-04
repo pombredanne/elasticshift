@@ -11,7 +11,6 @@ import (
 
 	"github.com/palantir/stacktrace"
 	"gitlab.com/conspico/esh/core/auth"
-	"gitlab.com/conspico/esh/core/util"
 	"golang.org/x/crypto/bcrypt"
 )
 
@@ -127,7 +126,7 @@ func (s userService) generateAuthToken(userID, userName, team string) (string, e
 func (s userService) Verify(code string) (bool, error) {
 
 	//teamID, err := s.teamRepository.GetTeamID(teamName)
-	decrypted, err := util.XORDecrypt(s.config.Key.VerifyCode, code)
+	/*decrypted, err := util.XORDecrypt(s.config.Key.VerifyCode, code)
 	if err != nil {
 		return false, errVerificationCodeFailed
 	}
@@ -139,7 +138,7 @@ func (s userService) Verify(code string) (bool, error) {
 
 	if diff.Hours() <= 0 && diff.Minutes() <= 0 {
 		return false, errVerificationCodeExpired
-	}
+	}*/
 
 	return true, nil
 }
