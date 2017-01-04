@@ -1,6 +1,6 @@
 // Package esh
 // Author Ghazni Nattarshah
-// Date: 1/3/17
+// Date: Jan 1, 2017
 package esh
 
 import (
@@ -83,11 +83,11 @@ func (suite *RepoServiceTestSuite) SetupTest() {
 
 	err = appCtx.RepoDatastore.Save(&repo)
 	assert.Nil(suite.T(), err)
-
 }
 
 func (suite *RepoServiceTestSuite) TearDownTest() {
 
+	//cleanup the data
 	suite.appCtx.RepoDatastore.Delete(suite.repo)
 
 	suite.session.Close()
@@ -108,5 +108,4 @@ func (suite *RepoServiceTestSuite) Test01GetReposBYVCSID() {
 	assert.NotNil(suite.T(), len(repos.Result) > 0)
 
 	suite.repo = repos.Result[0]
-
 }
