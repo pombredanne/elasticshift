@@ -74,12 +74,13 @@ type verifyCodeRequest struct {
 
 func decodeVerifyCodeRequest(ctx context.Context, r *http.Request) (interface{}, error) {
 
-	params := ctx.Value("params").(map[string]string)
-	code := params["code"]
-	if len(code) == 0 {
-		return false, errVerificationCodeIsEmpty
-	}
-	return verifyCodeRequest{Code: code}, nil
+	//params := ctx.Value("params").(map[string]string)
+	//code := params["code"]
+	//if len(code) == 0 {
+	//	return false, errVerificationCodeIsEmpty
+	//}
+	//return verifyCodeRequest{Code: code}, nil
+	return verifyCodeRequest{}, nil
 }
 
 func decodeSignOutRequest(ctx context.Context, r *http.Request) (interface{}, error) {
