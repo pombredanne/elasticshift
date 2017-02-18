@@ -1,0 +1,1 @@
+ab -p create.user.json -T 'application/json' -c 10 -n 2000 http://127.0.0.1:8080/v1/user

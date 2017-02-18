@@ -1,6 +1,7 @@
 bin
 debug
-cover.out
+bin/covererage.out
+bin/covererage-all.out
 cover.html
 esh.iml
 .idea/
