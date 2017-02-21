@@ -1,18 +1,22 @@
-hash: f060a1bdc23b861ad1b3d5e3043517e3570972a1a5023f8e85149157516e2ed5
-updated: 2017-02-12T19:38:26.082504721-05:00
+hash: dce0c70de5f7cc02ef8f397d91e05ba814fc9d571344d175f4e5f1ecf6e1998c
+updated: 2017-02-20T14:43:58.572229084-05:00
 imports:
+- name: github.com/coreos/dex
+  version: a3ef8d26bc6dcc478854fef0e53f4f0a47c3dee9
+  subpackages:
+  - api
 - name: github.com/ghodss/yaml
   version: 04f313413ffd65ce25f2541bfd2b2ceec5c0908c
 - name: github.com/golang/glog
   version: 23def4e6c14b4da8ac2ed8007337bc5eb5007998
 - name: github.com/golang/protobuf
-  version: 8ee79997227bf9b34611aee7946ae64735e6fd93
+  version: 69b215d01a5606c843240eab4937eab3acee6530
   subpackages:
   - jsonpb
   - proto
   - protoc-gen-go
 - name: github.com/googleapis/googleapis
-  version: 4f5691d030ba2219961b0f03dbd4481539916fc0
+  version: cc80e9432f082553cb7e5af0b29cb8a89d9ffb46
 - name: github.com/grpc-ecosystem/grpc-gateway
   version: a8f25bd1ab549f8b87afd48aa9181221e9d439bb
   subpackages:
@@ -26,18 +30,20 @@ imports:
 - name: github.com/Sirupsen/logrus
   version: d26492970760ca5d33129d2d799e34be5c4782eb
 - name: github.com/spf13/cobra
-  version: b5d8e8f46a2f829f755b6e33b454e25c61c935e1
+  version: ee4055870c2d5f7ce112642377e32c9929c3bbaf
 - name: github.com/spf13/pflag
   version: 9ff6c6923cfffbcd502984b8e0c80539a94968b7
 - name: github.com/stretchr/testify
   version: 69483b4bd14f5845b5a1e55bca19e954e827f1d0
+  subpackages:
+  - assert
 - name: golang.org/x/crypto
   version: 453249f01cfeb54c3d549ddb75ff152ca243f9d8
   subpackages:
   - bcrypt
   - blowfish
 - name: golang.org/x/net
-  version: 61557ac0112b576429a0df080e1c2cef5dfbb642
+  version: 6b27048ae5e6ad1ef927e72e437531493de612fe
   subpackages:
   - context
   - http2
@@ -47,11 +53,11 @@ imports:
   - lex/httplex
   - trace
 - name: golang.org/x/sys
-  version: aaabbdc969c3935a2a7f61efac801e7163c73a2a
+  version: 075e574b89e4c2d22f2286a7e2b919519c6f3547
   subpackages:
   - unix
 - name: google.golang.org/grpc
-  version: 708a7f9f3283aa2d4f6132d287d78683babe55c8
+  version: d0c32ee6a441117d49856d6120ca9552af413ee0
   subpackages:
   - codes
   - credentials
@@ -65,16 +71,21 @@ imports:
   - transport
 - name: gopkg.in/mgo.v2
   version: 3f83fa5005286a7fe593b055f0d7771a7dce4655
+  repo: git@github.com:go-mgo/mgo.git
   subpackages:
   - bson
   - internal/json
   - internal/sasl
   - internal/scram
-- name: gopkg.in/square/go-jose.v2
-  version: 296c7f1463ec9b712176dc804dea0173d06dc728
-  subpackages:
-  - cipher
-  - json
 - name: gopkg.in/yaml.v2
   version: a3f3340b5840cee44f372bddb5880fcbc419b46a
-testImports: []
+  repo: git@github.com:go-yaml/yaml.git
+testImports:
+- name: github.com/davecgh/go-spew
+  version: 6d212800a42e8ab5c146b8ace3490ee17e5225f9
+  subpackages:
+  - spew
+- name: github.com/pmezard/go-difflib
+  version: d8ed2627bdf02c080bf22230dbb337003b7aba2d
+  subpackages:
+  - difflib

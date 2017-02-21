@@ -49,6 +49,10 @@ func Connect(logger logrus.FieldLogger, cfg Config) (*mgo.Session, error) {
 		})
 		if err != nil {
 
+			if !cfg.AutoReconnect {
+				return nil, err
+			}
+
 			logger.Errorln(fmt.Sprintf("Connecting database failed, retrying in %v [", cfg.RetryIn), err, "]")
 			time.Sleep(cfg.RetryIn)
 

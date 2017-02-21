@@ -17,20 +17,21 @@ import (
 	"github.com/Sirupsen/logrus"
 	"github.com/ghodss/yaml"
 	"github.com/grpc-ecosystem/grpc-gateway/runtime"
-	"gitlab.com/conspico/elasticshift/pb"
+	"gitlab.com/conspico/elasticshift/api"
+	"gitlab.com/conspico/elasticshift/api/dex"
 	"gitlab.com/conspico/elasticshift/server"
 	"gitlab.com/conspico/elasticshift/store"
 	"golang.org/x/net/context"
 	"google.golang.org/grpc"
+	"google.golang.org/grpc/grpclog"
 )
 
 // Config ..
 type Config struct {
-	Issuer   string   `json:"Issuer"`
-	Store    Store    `json:"store"`
-	Web      Web      `json:"webore"`
-	Lifespan Lifespan `json:"expiry"`
-	Logger   Logger   `json:"logger"`
+	Store  Store  `json:"store"`
+	Web    Web    `json:"web"`
+	Logger Logger `json:"logger"`
+	Dex    Dex    `json:"dex"`
 }
 
 // Store ..
@@ -56,10 +57,10 @@ type Web struct {
 	GRPC string `json:"grpc"`
 }
 
-// Lifespan ..
-type Lifespan struct {
-	SigningKeys string `json:"signingKeys"`
-	IDTokens    string `json:"idTokens"`
+// Dex ..
+// Holds the web server configuration
+type Dex struct {
+	GRPC string `json:"grpc"`
 }
 
 // Logger ..x``
@@ -79,10 +80,6 @@ type Logger struct {
 //     timeout: "10s"
 //     retry: "10s"
 
-// lifespan:
-//   signingKeys: "6h"
-//   idTokens: "24h"
-
 // logger:
 //   level: "debug"
 //   format: "json"
@@ -94,14 +91,14 @@ type Logger struct {
 
 func main() {
 
-	err := startArmor()
+	err := elasticshift()
 	log.Fatalln(err)
 	os.Exit(-1)
 }
 
-func startArmor() error {
+func elasticshift() error {
 
-	cfgFile := "/etc/conspico/armor/config.yaml"
+	cfgFile := "/etc/conspico/elasticshift/config.yaml"
 	cfgData, err := ioutil.ReadFile(cfgFile)
 
 	var c Config
@@ -109,21 +106,15 @@ func startArmor() error {
 	case os.IsNotExist(err):
 		c = Config{
 
-			Issuer: "http://armor.elasticshift.com",
 			Store: Store{
 
 				Server:    "127.0.0.1",
-				Name:      "armor",
-				Username:  "armor",
-				Password:  "armorpazz",
+				Name:      "esh",
+				Username:  "esh",
+				Password:  "eshpazz",
 				Monotonic: true,
 				Timeout:   "10s",
 				Retry:     "10s",
-			},
-
-			Lifespan: Lifespan{
-				IDTokens:    "24h",
-				SigningKeys: "6h",
 			},
 
 			Logger: Logger{
@@ -135,6 +126,10 @@ func startArmor() error {
 			Web: Web{
 				HTTP: "127.0.0.1:5050",
 				GRPC: "127.0.0.1:5051",
+			},
+
+			Dex: Dex{
+				GRPC: "127.0.0.1:5557",
 			},
 		}
 	case err == nil:
@@ -173,30 +168,13 @@ func startArmor() error {
 		return fmt.Errorf("Failed to parse database retryin duration %s :%v", c.Store.Retry, err)
 	}
 
-	//SignerKeysLifeSpan time.Duration
-	//logger.Info("ID tokens = ", c.Lifespan.IDTokens)
-	if c.Lifespan.IDTokens != "" {
+	ctx := context.Background()
 
-		sc.IDTokensLifeSpan, err = time.ParseDuration(c.Lifespan.IDTokens)
-		if err != nil {
-			return fmt.Errorf("Failed to parse idtokens lifespan %s: %v", c.Lifespan.IDTokens, err)
-		}
-		logger.Info("IDTokens valid for %v", sc.IDTokensLifeSpan)
-	} else {
-		sc.IDTokensLifeSpan, _ = time.ParseDuration("24h")
+	dexClient, err := newDexClient(ctx, c.Dex.GRPC, "")
+	if err != nil {
+		return fmt.Errorf("Failed to connect to dex server [%v]", err)
 	}
-
-	//logger.Info("Signing keys = ", c.Lifespan.SigningKeys)
-	if c.Lifespan.SigningKeys != "" {
-
-		sc.SignerKeysLifeSpan, err = time.ParseDuration(c.Lifespan.SigningKeys)
-		if err != nil {
-			return fmt.Errorf("Failed to parse signerkeys lifespan %s: %v", c.Lifespan.SigningKeys, err)
-		}
-		logger.Info("Signer keys valid for %v", sc.SignerKeysLifeSpan)
-	} else {
-		sc.SignerKeysLifeSpan, _ = time.ParseDuration("6h")
-	}
+	sc.Dex = dexClient
 
 	// set rest of databse properties to server config
 	sc.Store.Name = c.Store.Name
@@ -212,8 +190,6 @@ func startArmor() error {
 	}
 	sc.Session = session
 	defer session.Close()
-
-	ctx := context.Background()
 
 	s, err := server.NewServer(ctx, sc)
 	if err != nil {
@@ -234,9 +210,9 @@ func startArmor() error {
 			grpcOpts := []grpc.ServerOption{}
 			grpcServer := grpc.NewServer(grpcOpts...)
 
-			pb.RegisterUserServer(grpcServer, server.NewUserServer(s))
-			pb.RegisterAuthServer(grpcServer, server.NewAuthServer(s))
-			pb.RegisterClientServer(grpcServer, server.NewClientServer(s))
+			api.RegisterUserServer(grpcServer, server.NewUserServer(s))
+			api.RegisterTeamServer(grpcServer, server.NewTeamServer(s))
+			api.RegisterClientServer(grpcServer, server.NewClientServer(s))
 
 			err = grpcServer.Serve(listen)
 			return fmt.Errorf("Listening on %s : %v", c.Web.GRPC, err)
@@ -251,9 +227,9 @@ func startArmor() error {
 			dialopts := []grpc.DialOption{grpc.WithInsecure()}
 
 			gwmux := runtime.NewServeMux()
-			pb.RegisterUserHandlerFromEndpoint(ctx, gwmux, c.Web.GRPC, dialopts)
-			pb.RegisterAuthHandlerFromEndpoint(ctx, gwmux, c.Web.GRPC, dialopts)
-			pb.RegisterClientHandlerFromEndpoint(ctx, gwmux, c.Web.GRPC, dialopts)
+			api.RegisterUserHandlerFromEndpoint(ctx, gwmux, c.Web.GRPC, dialopts)
+			api.RegisterTeamHandlerFromEndpoint(ctx, gwmux, c.Web.GRPC, dialopts)
+			api.RegisterClientHandlerFromEndpoint(ctx, gwmux, c.Web.GRPC, dialopts)
 
 			err := http.ListenAndServe(c.Web.HTTP, gwmux)
 			return fmt.Errorf("Listing on %s failed with : %v", c.Web.HTTP, err)
@@ -305,4 +281,30 @@ func newLogger(level string, format string) (logrus.FieldLogger, error) {
 		Formatter: &formatter,
 		Level:     logLevel,
 	}, nil
+}
+
+func newDexClient(ctx context.Context, hostAndPort, caPath string) (dex.DexClient, error) {
+	// creds, err := credentials.NewClientTLSFromFile(caPath, "")
+	// if err != nil {
+	//     return nil, fmt.Errorf("load dex cert: %v", err)
+	// }
+
+	//conn, err := grpc.Dial(hostAndPort, grpc.WithTransportCredentials(creds))
+
+	conn, err := grpc.Dial(hostAndPort, grpc.WithInsecure())
+	defer func() {
+		if err != nil {
+			if cerr := conn.Close(); cerr != nil {
+				grpclog.Printf("Failed to close conn to %s: %v", hostAndPort, cerr)
+			}
+			return
+		}
+		go func() {
+			<-ctx.Done()
+			if cerr := conn.Close(); cerr != nil {
+				grpclog.Printf("Failed to close conn to %s: %v", hostAndPort, cerr)
+			}
+		}()
+	}()
+	return dex.NewDexClient(conn), nil
 }

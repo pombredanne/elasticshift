@@ -1,0 +1,24 @@
+store:
+    server: 127.0.0.1:27017
+    name: esh
+    username: esh
+    password: eshpazz
+    monotonic: true
+    timeout: "10s"
+    retry: "10s"
+
+logger:
+  level: "debug"
+  format: "json"
+
+web:
+  http: 127.0.0.1:5050
+  grpc: 127.0.0.1:5051
+
+dex:
+  grpc: 127.0.0.1:5557
+
+client:
+  id: yyjw66rn2hso6wriuzlic62jiy
+  secret: l77r6wixjjtgmo4iym2kmk3jcuuxetj3afnqaw5w3rnl5nu5hehu
+  redirect_uri: http://eshift/auth/local/callback

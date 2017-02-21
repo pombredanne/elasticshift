@@ -28,13 +28,6 @@ func TestServer(t *testing.T) {
 			err:        false,
 		},
 		{
-			name: "Invalid Issuer",
-			configFunc: func(c *Config) {
-				c.Issuer = "http://192.168.0.%31/"
-			},
-			err: true,
-		},
-		{
 			name: "No logger",
 			configFunc: func(c *Config) {
 				c.Logger = nil
@@ -57,8 +50,6 @@ func TestServer(t *testing.T) {
 func newTestServer(ctx context.Context, t *testing.T, updateFunc func(conf *Config)) (*Server, error) {
 
 	timeout, _ := time.ParseDuration("10s")
-	idTokenExpiry, _ := time.ParseDuration("24h")
-	signingKeysExpiry, _ := time.ParseDuration("6h")
 
 	logger := &logrus.Logger{
 		Out:       os.Stderr,
@@ -68,21 +59,17 @@ func newTestServer(ctx context.Context, t *testing.T, updateFunc func(conf *Conf
 
 	c := Config{
 
-		Issuer: "http://armor.elasticshift.com",
-
 		Store: store.Config{
 
 			Server:        "127.0.0.1",
-			Name:          "armor",
-			Username:      "armor",
-			Password:      "armorpazz",
+			Name:          "esh",
+			Username:      "esh",
+			Password:      "eshpazz",
 			Monotonic:     true,
 			Timeout:       timeout,
 			AutoReconnect: false,
+			RetryIn:       timeout,
 		},
-
-		IDTokensLifeSpan:   idTokenExpiry,
-		SignerKeysLifeSpan: signingKeysExpiry,
 
 		Logger: logger,
 	}
@@ -105,5 +92,6 @@ func newTestServer(ctx context.Context, t *testing.T, updateFunc func(conf *Conf
 		logger.Errorf("Failed initialize the server : %v", err)
 		return nil, err
 	}
+
 	return s, nil
 }

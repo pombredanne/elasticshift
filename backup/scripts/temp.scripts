@@ -1,7 +1,0 @@
-db.getCollection('team').insert({"name":"conspico", "domain":"conspico"})
-db.getCollection('team').insert({"id:":"ajkiope47890asmdjdkdksd1q2w3e4r5", "name":"conspico2", "domain":"conspico2"})
-db.getCollection('team').find({"name": "conspico"})
-
-db.createUser({ user: "esh", pwd: "eshpazz", roles: ['readWrite'] } );
-
-db.createUser({ user: "armor", pwd: "armorpazz", roles: ['readWrite'] } );

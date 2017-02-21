@@ -9,85 +9,76 @@ import (
 	"golang.org/x/net/context"
 
 	"github.com/Sirupsen/logrus"
-	"gitlab.com/conspico/elasticshift/pb"
+	"gitlab.com/conspico/elasticshift/api"
+	"gitlab.com/conspico/elasticshift/api/dex"
 	"gitlab.com/conspico/elasticshift/store"
 )
 
 var (
 	errNoClient           = errors.New("No client provided")
 	errNoClientIDProvided = errors.New("No client id provided")
-
-	errDeleteClient = errors.New("Failed to delete the client")
+	errFailedCreateClient = errors.New("Failed to create the client")
+	errDeleteClient       = errors.New("Failed to delete the client")
 )
 
 type clientServer struct {
 	store  store.ClientStore
 	logger logrus.FieldLogger
+	dex    dex.DexClient
 }
 
 // NewClientServer ..
-// Implementation of pb.UserServer
-func NewClientServer(s *Server) pb.ClientServer {
+// Implementation of api.UserServer
+func NewClientServer(s *Server) api.ClientServer {
 	return &clientServer{
 		store:  store.NewClientStore(s.Store),
+		dex:    s.Dex,
 		logger: s.Logger,
 	}
 }
 
 // Create ..
-func (s *clientServer) Create(ctx context.Context, req *pb.CreateReq) (*pb.CreateRes, error) {
+func (s *clientServer) Create(ctx context.Context, req *api.CreateClientReq) (*api.CreateClientRes, error) {
 
-	if req.Client == nil {
-		return nil, errNoClient
-	}
+	in := &dex.CreateClientReq{}
+	in.Client = &dex.Client{}
+	in.Client.Name = req.Name
+	in.Client.RedirectUris = req.RedirectUris
+	in.Client.Public = req.Public
+	in.Client.TrustedPeers = req.TrustedPeers
+	in.Client.LogoUrl = req.LogoUrl
 
-	c := store.Client{}
-	c.ID = store.NewID()
-	c.Secret = store.NewID() + store.NewID()
-	c.Name = req.Client.Name
-	c.RedirectURIs = req.Client.RedirectUris
-	c.Public = req.Client.Public
-	c.TrustedPeers = req.Client.TrustedPeers
-
-	exist, err := s.store.Exist(c.Name)
+	out, err := s.dex.CreateClient(ctx, in)
 	if err != nil {
-		s.logger.Errorf("failed to insert client : %v", err)
-		return nil, errors.New("Failed to create client")
+		return nil, errFailedCreateClient
 	}
 
-	res := &pb.CreateRes{
-		Exists: exist,
-	}
-
-	if exist {
-		return res, nil
-	}
-
-	err = s.store.Insert(&c)
-	if err != nil {
-		s.logger.Errorf("failed to insert client : %v", err)
-		return nil, errDeleteClient
-	}
-
-	req.Client.Id = c.ID
-	req.Client.Secret = c.Secret
-	res.Client = req.Client
+	res := &api.CreateClientRes{}
+	res.Id = out.Client.Id
+	res.Secret = out.Client.Secret
+	res.Name = out.Client.Name
+	res.Public = out.Client.Public
+	res.TrustedPeers = out.Client.TrustedPeers
+	res.LogoUrl = out.Client.LogoUrl
+	res.RedirectUris = out.Client.RedirectUris
 
 	return res, nil
 }
 
 // Delete ..
-func (s *clientServer) Delete(ctx context.Context, req *pb.DeleteReq) (*pb.DeleteRes, error) {
+func (s *clientServer) Delete(ctx context.Context, req *api.DeleteClientReq) (*api.DeleteClientRes, error) {
 
 	if req.ClientId == "" {
 		return nil, errNoClientIDProvided
 	}
 
-	err := s.store.Delete(req.ClientId)
+	in := &dex.DeleteClientReq{}
+	in.Id = req.ClientId
+
+	out, err := s.dex.DeleteClient(ctx, in)
 	if err != nil {
-		s.logger.Errorf("Failed to delete the client %s : %v", req.ClientId, err)
 		return nil, errDeleteClient
 	}
 
-	return &pb.DeleteRes{}, nil
+	return &api.DeleteClientRes{NotFound: out.NotFound}, nil
 }
