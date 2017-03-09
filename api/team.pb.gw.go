@@ -106,7 +106,7 @@ func RegisterTeamHandler(ctx context.Context, mux *runtime.ServeMux, conn *grpc.
 }
 
 var (
-	pattern_Team_Create_0 = runtime.MustPattern(runtime.NewPattern(1, []int{2, 0, 2, 1}, []string{"v1", "team"}, ""))
+	pattern_Team_Create_0 = runtime.MustPattern(runtime.NewPattern(1, []int{2, 0}, []string{"team"}, ""))
 )
 
 var (

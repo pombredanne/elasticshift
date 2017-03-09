@@ -18,12 +18,10 @@ import (
 	"github.com/ghodss/yaml"
 	"github.com/grpc-ecosystem/grpc-gateway/runtime"
 	"gitlab.com/conspico/elasticshift/api"
-	"gitlab.com/conspico/elasticshift/api/dex"
 	"gitlab.com/conspico/elasticshift/server"
 	"gitlab.com/conspico/elasticshift/store"
 	"golang.org/x/net/context"
 	"google.golang.org/grpc"
-	"google.golang.org/grpc/grpclog"
 )
 
 // Config ..
@@ -60,7 +58,11 @@ type Web struct {
 // Dex ..
 // Holds the web server configuration
 type Dex struct {
-	GRPC string `json:"grpc"`
+	GRPC        string `json:"grpc"`
+	Issuer      string `json:"issuer"`
+	ID          string `json:"id"`
+	Secret      string `json:"secret"`
+	RedirectURI string `json:"redirect_uri"`
 }
 
 // Logger ..x``
@@ -129,7 +131,11 @@ func elasticshift() error {
 			},
 
 			Dex: Dex{
-				GRPC: "127.0.0.1:5557",
+				GRPC:        "127.0.0.1:5557",
+				Issuer:      "http://127.0.0.1:5556/dex",
+				ID:          "yyjw66rn2hso6wriuzlic62jiy",
+				Secret:      "l77r6wixjjtgmo4iym2kmk3jcuuxetj3afnqaw5w3rnl5nu5hehu",
+				RedirectURI: "http://eshift/auth/local/callback",
 			},
 		}
 	case err == nil:
@@ -168,13 +174,26 @@ func elasticshift() error {
 		return fmt.Errorf("Failed to parse database retryin duration %s :%v", c.Store.Retry, err)
 	}
 
-	ctx := context.Background()
-
-	dexClient, err := newDexClient(ctx, c.Dex.GRPC, "")
-	if err != nil {
-		return fmt.Errorf("Failed to connect to dex server [%v]", err)
+	// parse Dex config
+	if c.Dex.Issuer != "" {
+		sc.Dex.Issuer = c.Dex.Issuer
 	}
-	sc.Dex = dexClient
+
+	if c.Dex.ID != "" {
+		sc.Dex.ID = c.Dex.ID
+	}
+
+	if c.Dex.Secret != "" {
+		sc.Dex.Secret = c.Dex.Secret
+	}
+
+	if c.Dex.RedirectURI != "" {
+		sc.Dex.RedirectURI = c.Dex.RedirectURI
+	}
+
+	sc.Dex.HostAndPort = c.Dex.GRPC
+
+	ctx := context.Background()
 
 	// set rest of databse properties to server config
 	sc.Store.Name = c.Store.Name
@@ -226,12 +245,22 @@ func elasticshift() error {
 
 			dialopts := []grpc.DialOption{grpc.WithInsecure()}
 
-			gwmux := runtime.NewServeMux()
-			api.RegisterUserHandlerFromEndpoint(ctx, gwmux, c.Web.GRPC, dialopts)
-			api.RegisterTeamHandlerFromEndpoint(ctx, gwmux, c.Web.GRPC, dialopts)
-			api.RegisterClientHandlerFromEndpoint(ctx, gwmux, c.Web.GRPC, dialopts)
+			// user
+			userMux := runtime.NewServeMux()
+			api.RegisterUserHandlerFromEndpoint(ctx, userMux, c.Web.GRPC, dialopts)
+			s.Mux.Handle("/user", userMux)
 
-			err := http.ListenAndServe(c.Web.HTTP, gwmux)
+			// team
+			teamMux := runtime.NewServeMux()
+			api.RegisterTeamHandlerFromEndpoint(ctx, teamMux, c.Web.GRPC, dialopts)
+			s.Mux.Handle("/team", teamMux)
+
+			// client
+			clientMux := runtime.NewServeMux()
+			api.RegisterClientHandlerFromEndpoint(ctx, clientMux, c.Web.GRPC, dialopts)
+			s.Mux.Handle("/client", clientMux)
+
+			err := http.ListenAndServe(c.Web.HTTP, s.Mux)
 			return fmt.Errorf("Listing on %s failed with : %v", c.Web.HTTP, err)
 		}()
 	}()
@@ -281,30 +310,4 @@ func newLogger(level string, format string) (logrus.FieldLogger, error) {
 		Formatter: &formatter,
 		Level:     logLevel,
 	}, nil
-}
-
-func newDexClient(ctx context.Context, hostAndPort, caPath string) (dex.DexClient, error) {
-	// creds, err := credentials.NewClientTLSFromFile(caPath, "")
-	// if err != nil {
-	//     return nil, fmt.Errorf("load dex cert: %v", err)
-	// }
-
-	//conn, err := grpc.Dial(hostAndPort, grpc.WithTransportCredentials(creds))
-
-	conn, err := grpc.Dial(hostAndPort, grpc.WithInsecure())
-	defer func() {
-		if err != nil {
-			if cerr := conn.Close(); cerr != nil {
-				grpclog.Printf("Failed to close conn to %s: %v", hostAndPort, cerr)
-			}
-			return
-		}
-		go func() {
-			<-ctx.Done()
-			if cerr := conn.Close(); cerr != nil {
-				grpclog.Printf("Failed to close conn to %s: %v", hostAndPort, cerr)
-			}
-		}()
-	}()
-	return dex.NewDexClient(conn), nil
 }

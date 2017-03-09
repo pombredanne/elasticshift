@@ -40,10 +40,10 @@ message DeleteClientRes {
 
 service Client {
     rpc Create(CreateClientReq) returns (CreateClientRes) {
-        option (google.api.http) = { post : "/v1/client" body : "*" };
+        option (google.api.http) = { post : "/client" body : "*" };
     };
 
     rpc Delete(DeleteClientReq) returns (DeleteClientRes) {
-        option (google.api.http) = { get : "/v1/client/{client_id}"};
+        option (google.api.http) = { get : "/client/{client_id}"};
     };
 }

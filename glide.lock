@@ -1,22 +1,26 @@
-hash: dce0c70de5f7cc02ef8f397d91e05ba814fc9d571344d175f4e5f1ecf6e1998c
-updated: 2017-02-20T14:43:58.572229084-05:00
+hash: 99d6478c811f67b7649a479366a9094ab25c56c238edfb97328cebacfc11ef2a
+updated: 2017-03-08T20:43:41.296808197-05:00
 imports:
 - name: github.com/coreos/dex
-  version: a3ef8d26bc6dcc478854fef0e53f4f0a47c3dee9
+  version: 29af9b4c75cdd918dd8f6784f8a6891e23c28372
   subpackages:
   - api
+- name: github.com/coreos/go-oidc
+  version: be73733bb8cc830d0205609b95d125215f8e9c70
 - name: github.com/ghodss/yaml
   version: 04f313413ffd65ce25f2541bfd2b2ceec5c0908c
 - name: github.com/golang/glog
   version: 23def4e6c14b4da8ac2ed8007337bc5eb5007998
 - name: github.com/golang/protobuf
-  version: 69b215d01a5606c843240eab4937eab3acee6530
+  version: c9c7427a2a70d2eb3bafa0ab2dc163e45f143317
   subpackages:
   - jsonpb
   - proto
   - protoc-gen-go
 - name: github.com/googleapis/googleapis
-  version: cc80e9432f082553cb7e5af0b29cb8a89d9ffb46
+  version: 29915d486c29d23aa874d4d361b0653e6aecb7ac
+- name: github.com/gorilla/mux
+  version: 392c28fe23e1c45ddba891b0320b3b5df220beea
 - name: github.com/grpc-ecosystem/grpc-gateway
   version: a8f25bd1ab549f8b87afd48aa9181221e9d439bb
   subpackages:
@@ -27,10 +31,14 @@ imports:
   - utilities
 - name: github.com/nu7hatch/gouuid
   version: 179d4d0c4d8d407a32af483c2354df1d2c91e6c3
+- name: github.com/pquerna/cachecontrol
+  version: c97913dcbd76de40b051a9b4cd827f7eaeb7a868
+  subpackages:
+  - cacheobject
 - name: github.com/Sirupsen/logrus
   version: d26492970760ca5d33129d2d799e34be5c4782eb
 - name: github.com/spf13/cobra
-  version: ee4055870c2d5f7ce112642377e32c9929c3bbaf
+  version: 24bb44aac8fd4730262546161cac1cc7d2869b32
 - name: github.com/spf13/pflag
   version: 9ff6c6923cfffbcd502984b8e0c80539a94968b7
 - name: github.com/stretchr/testify
@@ -38,12 +46,12 @@ imports:
   subpackages:
   - assert
 - name: golang.org/x/crypto
-  version: 453249f01cfeb54c3d549ddb75ff152ca243f9d8
+  version: 728b753d0135da6801d45a38e6f43ff55779c5c2
   subpackages:
   - bcrypt
   - blowfish
 - name: golang.org/x/net
-  version: 6b27048ae5e6ad1ef927e72e437531493de612fe
+  version: a6577fac2d73be281a500b310739095313165611
   subpackages:
   - context
   - http2
@@ -52,17 +60,32 @@ imports:
   - internal/timeseries
   - lex/httplex
   - trace
+- name: golang.org/x/oauth2
+  version: efb10a30610e617dbb17fc243f4cc61a8cfa2903
+  subpackages:
+  - internal
 - name: golang.org/x/sys
-  version: 075e574b89e4c2d22f2286a7e2b919519c6f3547
+  version: 99f16d856c9836c42d24e7ab64ea72916925fa97
   subpackages:
   - unix
+- name: google.golang.org/appengine
+  version: b79c28f0197795b4050bfcd7c4c2209136c594b1
+  subpackages:
+  - internal
+  - internal/base
+  - internal/datastore
+  - internal/log
+  - internal/remote_api
+  - internal/urlfetch
+  - urlfetch
 - name: google.golang.org/grpc
-  version: d0c32ee6a441117d49856d6120ca9552af413ee0
+  version: 4eaacfed9779ee7568c9e72e9f763dbd3af8e0b4
   subpackages:
   - codes
   - credentials
   - grpclog
   - internal
+  - keepalive
   - metadata
   - naming
   - peer
@@ -77,6 +100,12 @@ imports:
   - internal/json
   - internal/sasl
   - internal/scram
+- name: gopkg.in/square/go-jose.v2
+  version: d5683d954d08cd430460c651e2a2fff4f3b39f86
+  repo: git@github.com:square/go-jose.git
+  subpackages:
+  - cipher
+  - json
 - name: gopkg.in/yaml.v2
   version: a3f3340b5840cee44f372bddb5880fcbc419b46a
   repo: git@github.com:go-yaml/yaml.git
