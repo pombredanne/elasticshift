@@ -45,12 +45,6 @@ type authServer struct {
 	oauth2Config oauth2.Config
 }
 
-// AuthServer ..
-type AuthServer interface {
-	login(w http.ResponseWriter, r *http.Request)
-	handleOAuth2Callback(w http.ResponseWriter, r *http.Request)
-}
-
 // NewAuthServer ..
 func NewAuthServer(ctx context.Context, r *mux.Router, c Config) error {
 
