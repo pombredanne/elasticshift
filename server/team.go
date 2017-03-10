@@ -45,7 +45,6 @@ func (s *teamServer) Create(ctx context.Context, req *api.CreateTeamReq) (*api.C
 
 	// team name validation
 	nameLength := len(req.Name)
-	s.logger.Warnln(req.Name)
 	if nameLength == 0 {
 		return res, errTeamNameIsEmpty
 	}
