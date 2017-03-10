@@ -5,6 +5,7 @@ package server
 
 import (
 	"fmt"
+	"net/http/pprof"
 
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/grpclog"
@@ -22,7 +23,7 @@ import (
 type Server struct {
 	Logger logrus.FieldLogger
 	Store  store.Store
-	Mux    *mux.Router
+	Router *mux.Router
 	Dex    dex.DexClient
 }
 
@@ -63,9 +64,20 @@ func NewServer(ctx context.Context, c Config) (*Server, error) {
 	}
 	s.Dex = d
 
-	s.Mux = mux.NewRouter()
+	r := mux.NewRouter()
 
-	err = NewAuthServer(ctx, s.Mux, c)
+	// pprof
+	r.HandleFunc("/debug/pprof", pprof.Index)
+	r.HandleFunc("/debug/symbol", pprof.Symbol)
+	r.HandleFunc("/debug/profile", pprof.Profile)
+	r.Handle("/debug/heap", pprof.Handler("heap"))
+	r.Handle("/debug/goroutine", pprof.Handler("goroutine"))
+	r.Handle("/debug/threadcreate", pprof.Handler("threadcreate"))
+	r.Handle("/debug/block", pprof.Handler("block"))
+
+	s.Router = r
+
+	err = NewAuthServer(ctx, r, c)
 	if err != nil {
 		return nil, err
 	}

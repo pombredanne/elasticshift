@@ -246,21 +246,21 @@ func elasticshift() error {
 			dialopts := []grpc.DialOption{grpc.WithInsecure()}
 
 			// user
-			userMux := runtime.NewServeMux()
-			api.RegisterUserHandlerFromEndpoint(ctx, userMux, c.Web.GRPC, dialopts)
-			s.Mux.Handle("/user", userMux)
+			userRouter := runtime.NewServeMux()
+			api.RegisterUserHandlerFromEndpoint(ctx, userRouter, c.Web.GRPC, dialopts)
+			s.Router.Handle("/user", userRouter)
 
 			// team
-			teamMux := runtime.NewServeMux()
-			api.RegisterTeamHandlerFromEndpoint(ctx, teamMux, c.Web.GRPC, dialopts)
-			s.Mux.Handle("/team", teamMux)
+			teamRouter := runtime.NewServeMux()
+			api.RegisterTeamHandlerFromEndpoint(ctx, teamRouter, c.Web.GRPC, dialopts)
+			s.Router.Handle("/team", teamRouter)
 
 			// client
-			clientMux := runtime.NewServeMux()
-			api.RegisterClientHandlerFromEndpoint(ctx, clientMux, c.Web.GRPC, dialopts)
-			s.Mux.Handle("/client", clientMux)
+			clientRouter := runtime.NewServeMux()
+			api.RegisterClientHandlerFromEndpoint(ctx, clientRouter, c.Web.GRPC, dialopts)
+			s.Router.Handle("/client", clientRouter)
 
-			err := http.ListenAndServe(c.Web.HTTP, s.Mux)
+			err := http.ListenAndServe(c.Web.HTTP, s.Router)
 			return fmt.Errorf("Listing on %s failed with : %v", c.Web.HTTP, err)
 		}()
 	}()
