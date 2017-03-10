@@ -9,12 +9,13 @@ message CreateTeamReq {
 }
 
 message CreateTeamRes {
-    string already_exist = 1;
+    bool already_exist = 1;
+    bool created = 2;
 }
 
 service Team {
 
     rpc Create(CreateTeamReq) returns (CreateTeamRes) {
-        option (google.api.http) = { get : "/team" };
+        option (google.api.http) = { post : "/team" body : "*" };
     };
 }

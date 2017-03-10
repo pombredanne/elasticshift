@@ -20,4 +20,4 @@ dex:
   grpc: 127.0.0.1:5557
   id: yyjw66rn2hso6wriuzlic62jiy
   secret: l77r6wixjjtgmo4iym2kmk3jcuuxetj3afnqaw5w3rnl5nu5hehu
-  redirect_uri: http://eshift/auth/local/callback
+  redirect_uri: http://127.0.0.1:5050/login/callback

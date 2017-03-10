@@ -135,7 +135,7 @@ func elasticshift() error {
 				Issuer:      "http://127.0.0.1:5556/dex",
 				ID:          "yyjw66rn2hso6wriuzlic62jiy",
 				Secret:      "l77r6wixjjtgmo4iym2kmk3jcuuxetj3afnqaw5w3rnl5nu5hehu",
-				RedirectURI: "http://eshift/auth/local/callback",
+				RedirectURI: "http://127.0.0.1:5050/login/callback",
 			},
 		}
 	case err == nil:

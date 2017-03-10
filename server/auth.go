@@ -133,7 +133,9 @@ func NewAuthServer(ctx context.Context, r *mux.Router, c Config) error {
 }
 
 func (a *authServer) login(w http.ResponseWriter, r *http.Request) {
-	http.Redirect(w, r, a.oauth2Config.AuthCodeURL("test"), http.StatusFound)
+
+	authURL := a.oauth2Config.AuthCodeURL("test")
+	http.Redirect(w, r, authURL, http.StatusFound)
 }
 
 func (a *authServer) handleOAuth2Callback(w http.ResponseWriter, r *http.Request) {
