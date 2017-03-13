@@ -6,12 +6,18 @@ package server
 import (
 	"context"
 	"net/http"
+	"strconv"
 
 	"golang.org/x/oauth2"
 
 	"net/url"
 
 	"fmt"
+
+	"bytes"
+	"time"
+
+	"strings"
 
 	oidc "github.com/coreos/go-oidc"
 	"github.com/gorilla/mux"
@@ -44,6 +50,10 @@ type authServer struct {
 	debug        bool
 	oauth2Config oauth2.Config
 }
+
+var (
+	idTokenName = "__idt"
+)
 
 // NewAuthServer ..
 func NewAuthServer(ctx context.Context, r *mux.Router, c Config) error {
@@ -128,13 +138,24 @@ func NewAuthServer(ctx context.Context, r *mux.Router, c Config) error {
 
 func (a *authServer) login(w http.ResponseWriter, r *http.Request) {
 
-	authURL := a.oauth2Config.AuthCodeURL("test")
+	// opts := oauth2.SetAuthURLParam("id", encode(r.Host))
+	// fmt.Println(encode(r.Host))
+	var buf bytes.Buffer
+	buf.WriteString(r.URL.Scheme)
+	buf.WriteString(SEMICOLON)
+	buf.WriteString(r.Host)
+	buf.WriteString(SEMICOLON)
+	buf.WriteString(strconv.Itoa(time.Now().Nanosecond()))
+	state := encode(buf.String())
+
+	authURL := a.oauth2Config.AuthCodeURL(state)
 	http.Redirect(w, r, authURL, http.StatusFound)
 }
 
 func (a *authServer) handleOAuth2Callback(w http.ResponseWriter, r *http.Request) {
 
-	oauth2Token, err := a.oauth2Config.Exchange(a.app.ctx, r.URL.Query().Get("code"))
+	params := r.URL.Query()
+	oauth2Token, err := a.oauth2Config.Exchange(a.app.ctx, params.Get("code"))
 	if err != nil {
 		// handle error
 	}
@@ -161,5 +182,18 @@ func (a *authServer) handleOAuth2Callback(w http.ResponseWriter, r *http.Request
 		// handle error
 	}
 
-	fmt.Println(idToken)
+	state := decode(params.Get("state"))
+	states := strings.Split(state, SEMICOLON)
+	fmt.Println(states[0])
+	cookie := &http.Cookie{
+		Name:     idTokenName,
+		Value:    rawIDToken,
+		HttpOnly: true,
+		Path:     "/",
+		//Secure : true, // TODO enable this to ensure the cookie is passed only with https
+	}
+	http.SetCookie(w, cookie)
+
+	homeURL := states[0] + "//" + states[1] + "/vcs"
+	http.Redirect(w, r, homeURL, http.StatusMovedPermanently)
 }

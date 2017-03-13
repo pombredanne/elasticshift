@@ -4,8 +4,10 @@
 package server
 
 import (
+	"encoding/base64"
 	"fmt"
 	"net/http/pprof"
+	"strings"
 
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/grpclog"
@@ -17,6 +19,17 @@ import (
 	"golang.org/x/net/context"
 
 	mgo "gopkg.in/mgo.v2"
+)
+
+// Constants for performing encode decode
+const (
+	EQUAL        = "="
+	DOUBLEEQUALS = "=="
+	DOT0         = ".0"
+	DOT1         = ".1"
+	DOT2         = ".2"
+	SLASH        = "/"
+	SEMICOLON    = ";"
 )
 
 // Server ..
@@ -108,4 +121,30 @@ func newDexClient(ctx context.Context, c Dex) (dex.DexClient, error) {
 		}()
 	}()
 	return dex.NewDexClient(conn), nil
+}
+
+func encode(id string) string {
+
+	eid := base64.URLEncoding.EncodeToString([]byte(id))
+	if strings.Contains(eid, DOUBLEEQUALS) {
+		eid = strings.TrimRight(eid, DOUBLEEQUALS) + DOT2
+	} else if strings.Contains(eid, EQUAL) {
+		eid = strings.TrimRight(eid, EQUAL) + DOT1
+	} else {
+		eid = eid + DOT0
+	}
+	return eid
+}
+
+func decode(id string) string {
+
+	if strings.Contains(id, DOT2) {
+		id = strings.TrimRight(id, DOT2) + DOUBLEEQUALS
+	} else if strings.Contains(id, DOT1) {
+		id = strings.TrimRight(id, DOT1) + EQUAL
+	} else {
+		id = strings.TrimRight(id, DOT0)
+	}
+	did, _ := base64.URLEncoding.DecodeString(id)
+	return string(did[:])
 }
