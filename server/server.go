@@ -7,6 +7,7 @@ import (
 	"encoding/base64"
 	"fmt"
 	"net/http/pprof"
+	"regexp"
 	"strings"
 
 	"google.golang.org/grpc"
@@ -147,4 +148,11 @@ func decode(id string) string {
 	}
 	did, _ := base64.URLEncoding.DecodeString(id)
 	return string(did[:])
+}
+
+// isAlphaNumericOnly ..
+// Check to see if the given text is alpha-numeric only
+func isAlphaNumericOnly(str string) bool {
+	matched, _ := regexp.MatchString("^[A-Za-z0-9]*$", str)
+	return matched
 }

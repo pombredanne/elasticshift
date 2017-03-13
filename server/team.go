@@ -9,7 +9,6 @@ import (
 	"golang.org/x/net/context"
 
 	"github.com/Sirupsen/logrus"
-	"gitlab.com/conspico/backup/core/util"
 	"gitlab.com/conspico/elasticshift/api"
 	"gitlab.com/conspico/elasticshift/store"
 )
@@ -49,7 +48,7 @@ func (s *teamServer) Create(ctx context.Context, req *api.CreateTeamReq) (*api.C
 		return res, errTeamNameIsEmpty
 	}
 
-	if !util.IsAlphaNumericOnly(req.Name) {
+	if !isAlphaNumericOnly(req.Name) {
 		return res, errTeamNameContainsSymbols
 	}
 
