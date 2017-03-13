@@ -71,6 +71,14 @@ func newTestServer(ctx context.Context, t *testing.T, updateFunc func(conf *Conf
 			RetryIn:       timeout,
 		},
 
+		Dex: Dex{
+			HostAndPort: "127.0.0.1:5557",
+			Issuer:      "http://127.0.0.1:5556/dex",
+			ID:          "yyjw66rn2hso6wriuzlic62jiy",
+			Secret:      "l77r6wixjjtgmo4iym2kmk3jcuuxetj3afnqaw5w3rnl5nu5hehu",
+			RedirectURI: "http://127.0.0.1:5050/login/callback",
+		},
+
 		Logger: logger,
 	}
 
