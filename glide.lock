@@ -1,8 +1,8 @@
-hash: 99d6478c811f67b7649a479366a9094ab25c56c238edfb97328cebacfc11ef2a
-updated: 2017-03-08T20:43:41.296808197-05:00
+hash: 0f327cbbea693869b29e874aa3c3903922095f13391070bd55e4777acf655766
+updated: 2017-03-16T21:35:07.321847156-04:00
 imports:
 - name: github.com/coreos/dex
-  version: 29af9b4c75cdd918dd8f6784f8a6891e23c28372
+  version: 11d4d78d6bef77881caf6b6ae79db01a948dad3e
   subpackages:
   - api
 - name: github.com/coreos/go-oidc
@@ -18,9 +18,9 @@ imports:
   - proto
   - protoc-gen-go
 - name: github.com/googleapis/googleapis
-  version: 29915d486c29d23aa874d4d361b0653e6aecb7ac
-- name: github.com/gorilla/mux
-  version: 392c28fe23e1c45ddba891b0320b3b5df220beea
+  version: 6b34693dfb447973a587bcccb1cae25ab48a5fbd
+- name: github.com/gorilla/handlers
+  version: 3a5767ca75ece5f7f1440b1d16975247f8d8b221
 - name: github.com/grpc-ecosystem/grpc-gateway
   version: a8f25bd1ab549f8b87afd48aa9181221e9d439bb
   subpackages:
@@ -29,6 +29,8 @@ imports:
   - runtime
   - runtime/internal
   - utilities
+- name: github.com/justinas/alice
+  version: 052b8b6c18edb9db317af86806d8e00ebaa94160
 - name: github.com/nu7hatch/gouuid
   version: 179d4d0c4d8d407a32af483c2354df1d2c91e6c3
 - name: github.com/pquerna/cachecontrol
@@ -38,7 +40,7 @@ imports:
 - name: github.com/Sirupsen/logrus
   version: d26492970760ca5d33129d2d799e34be5c4782eb
 - name: github.com/spf13/cobra
-  version: 24bb44aac8fd4730262546161cac1cc7d2869b32
+  version: 7be4beda01ec05d0b93d80b3facd2b6f44080d94
 - name: github.com/spf13/pflag
   version: 9ff6c6923cfffbcd502984b8e0c80539a94968b7
 - name: github.com/stretchr/testify
@@ -61,7 +63,7 @@ imports:
   - lex/httplex
   - trace
 - name: golang.org/x/oauth2
-  version: efb10a30610e617dbb17fc243f4cc61a8cfa2903
+  version: 30fcca6531eb4bb278493c9fb299295b3b145934
   subpackages:
   - internal
 - name: golang.org/x/sys
@@ -79,7 +81,7 @@ imports:
   - internal/urlfetch
   - urlfetch
 - name: google.golang.org/grpc
-  version: 4eaacfed9779ee7568c9e72e9f763dbd3af8e0b4
+  version: cdee119ee21e61eef7093a41ba148fa83585e143
   subpackages:
   - codes
   - credentials

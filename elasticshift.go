@@ -16,7 +16,9 @@ import (
 
 	"github.com/Sirupsen/logrus"
 	"github.com/ghodss/yaml"
+	"github.com/gorilla/handlers"
 	"github.com/grpc-ecosystem/grpc-gateway/runtime"
+	"github.com/justinas/alice"
 	"gitlab.com/conspico/elasticshift/api"
 	"gitlab.com/conspico/elasticshift/server"
 	"gitlab.com/conspico/elasticshift/store"
@@ -210,6 +212,18 @@ func elasticshift() error {
 	sc.Session = session
 	defer session.Close()
 
+	corsOpts := handlers.AllowedOrigins([]string{"*"})
+	corsHandler := handlers.CORS(corsOpts)
+	recoveryHandler := handlers.RecoveryHandler()
+
+	publicChain := alice.New(recoveryHandler, corsHandler)
+
+	//extractHandler := handlers.ExtractHandler(ctx.Context, ctx.Router)
+	//ctx.PublicChain = commonChain.Extend(alice.New(extractHandler))
+
+	//secureHandler := handlers.SecurityHandler(ctx.Context, ctx.Logger, ctx.Signer, ctx.Verifier)
+	//ctx.SecureChain = commonChain.Extend(alice.New(secureHandler, extractHandler))
+
 	s, err := server.NewServer(ctx, sc)
 	if err != nil {
 		logger.Fatalln(fmt.Errorf("Failed to initialize the server [%v]", err))
@@ -245,22 +259,28 @@ func elasticshift() error {
 
 			dialopts := []grpc.DialOption{grpc.WithInsecure()}
 
+			mux := runtime.NewServeMux()
+
 			// user
-			userRouter := runtime.NewServeMux()
-			api.RegisterUserHandlerFromEndpoint(ctx, userRouter, c.Web.GRPC, dialopts)
-			s.Router.Handle("/user", userRouter)
+			err := api.RegisterUserHandlerFromEndpoint(ctx, mux, c.Web.GRPC, dialopts)
+			if err != nil {
+				return fmt.Errorf("Registering User handler failed : %v", err)
+			}
 
 			// team
-			teamRouter := runtime.NewServeMux()
-			api.RegisterTeamHandlerFromEndpoint(ctx, teamRouter, c.Web.GRPC, dialopts)
-			s.Router.Handle("/team", teamRouter)
+			err = api.RegisterTeamHandlerFromEndpoint(ctx, mux, c.Web.GRPC, dialopts)
+			if err != nil {
+				return fmt.Errorf("Registering Team handler failed : %v", err)
+			}
 
 			// client
-			clientRouter := runtime.NewServeMux()
-			api.RegisterClientHandlerFromEndpoint(ctx, clientRouter, c.Web.GRPC, dialopts)
-			s.Router.Handle("/client", clientRouter)
+			err = api.RegisterClientHandlerFromEndpoint(ctx, mux, c.Web.GRPC, dialopts)
+			if err != nil {
+				return fmt.Errorf("Registering Client handler failed : %v", err)
+			}
+			s.Router.Handle("/", mux)
 
-			err := http.ListenAndServe(c.Web.HTTP, s.Router)
+			err = http.ListenAndServe(c.Web.HTTP, publicChain.Then(s.Router))
 			return fmt.Errorf("Listing on %s failed with : %v", c.Web.HTTP, err)
 		}()
 	}()

@@ -20,7 +20,6 @@ import (
 	"strings"
 
 	oidc "github.com/coreos/go-oidc"
-	"github.com/gorilla/mux"
 )
 
 // App ...
@@ -56,7 +55,7 @@ var (
 )
 
 // NewAuthServer ..
-func NewAuthServer(ctx context.Context, r *mux.Router, c Config) error {
+func NewAuthServer(ctx context.Context, r *http.ServeMux, c Config) error {
 
 	authServ := authServer{}
 	a := App{}

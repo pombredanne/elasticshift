@@ -6,6 +6,7 @@ package server
 import (
 	"encoding/base64"
 	"fmt"
+	"net/http"
 	"net/http/pprof"
 	"regexp"
 	"strings"
@@ -14,7 +15,6 @@ import (
 	"google.golang.org/grpc/grpclog"
 
 	"github.com/Sirupsen/logrus"
-	"github.com/gorilla/mux"
 	"gitlab.com/conspico/elasticshift/api/dex"
 	"gitlab.com/conspico/elasticshift/store"
 	"golang.org/x/net/context"
@@ -37,7 +37,7 @@ const (
 type Server struct {
 	Logger logrus.FieldLogger
 	Store  store.Store
-	Router *mux.Router
+	Router *http.ServeMux
 	Dex    dex.DexClient
 }
 
@@ -78,7 +78,8 @@ func NewServer(ctx context.Context, c Config) (*Server, error) {
 	}
 	s.Dex = d
 
-	r := mux.NewRouter()
+	//r := mux.NewRouter()
+	r := http.NewServeMux()
 
 	// pprof
 	r.HandleFunc("/debug/pprof", pprof.Index)
