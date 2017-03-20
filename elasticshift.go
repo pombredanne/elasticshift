@@ -9,6 +9,7 @@ import (
 	"net"
 	"net/http"
 	"os"
+	"os/signal"
 	"strings"
 	"time"
 
@@ -231,6 +232,8 @@ func elasticshift() error {
 
 	errch := make(chan error, 2)
 
+	var grpcServer *grpc.Server
+
 	//start grpc
 	go func() {
 
@@ -241,16 +244,19 @@ func elasticshift() error {
 				return fmt.Errorf("Listening on %s : %v", c.Web.GRPC, err)
 			}
 			grpcOpts := []grpc.ServerOption{}
-			grpcServer := grpc.NewServer(grpcOpts...)
+			grpcServer = grpc.NewServer(grpcOpts...)
 
 			api.RegisterUserServer(grpcServer, server.NewUserServer(s))
 			api.RegisterTeamServer(grpcServer, server.NewTeamServer(s))
 			api.RegisterClientServer(grpcServer, server.NewClientServer(s))
 
 			err = grpcServer.Serve(listen)
+
 			return fmt.Errorf("Listening on %s : %v", c.Web.GRPC, err)
 		}()
 	}()
+
+	var serv *http.Server
 
 	// start http
 	go func() {
@@ -280,8 +286,30 @@ func elasticshift() error {
 			}
 			s.Router.Handle("/", mux)
 
-			err = http.ListenAndServe(c.Web.HTTP, publicChain.Then(s.Router))
+			serv = &http.Server{Addr: c.Web.HTTP, Handler: publicChain.Then(s.Router)}
+			err = serv.ListenAndServe()
+
 			return fmt.Errorf("Listing on %s failed with : %v", c.Web.HTTP, err)
+		}()
+	}()
+
+	//graceful shutdown
+	sigs := make(chan os.Signal, 1)
+	signal.Notify(sigs, os.Interrupt)
+
+	go func() {
+
+		errch <- func() error {
+
+			<-sigs
+
+			//logger.Infoln("Stopping GRPC Server..")
+			//grpcServer.GracefulStop()
+
+			logger.Infoln("Stopping HTTP(S) Server..")
+			serv.Shutdown(ctx)
+
+			return fmt.Errorf("Server gracefully stopped ")
 		}()
 	}()
 
