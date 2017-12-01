@@ -1,0 +1,99 @@
+
+version : "3"
+
+services:
+
+  # fluentd:
+  #   build: ./fluentd
+  #   container_name: fluentd
+  #   ports:
+  #     - "24224:24224"
+  #     - "24224:24224/udp"
+  #   depends_on:
+  #     - elasticsearch
+  #   networks:
+  #     - backend
+
+  # vault:
+  #   build: ./vault
+  #   container_name: vault
+  #   environment:
+  #     - VAULT_CONFIG_DIR=${VAULT_CONFIG_DIR}
+  #     - VAULT_ADDR=${VAULT_ADDR}
+  #     - KEYS_FILE=${KEYS_FILE}
+  #   cap_add:
+  #     - IPC_LOCK
+  #   volumes:
+  #     - "${DATA_HOME}/vault:/data/vault"
+  #   depends_on:
+  #     - fluentd
+  #     - mongodb
+  #   networks:
+  #     - backend
+  #   logging:
+  #     driver: "fluentd"
+  #     options:
+  #       fluentd-address: "127.0.0.1:24224"
+  #       tag: "{{.Name}}"
+
+  mongodb:
+    build: ./mongodb
+    container_name: mongodb
+    ports:
+      - "27017:27017"
+    volumes:
+      - "${DATA_HOME}/mongodb:/data/db"
+    # depends_on:
+    #   - fluentd
+    networks:
+      - backend
+
+    #   driver: "fluentd"
+    #   options:
+    #     fluentd-address: "127.0.0.1:24224"
+    #     tag: "{{.Name}}"
+
+  # elasticsearch:
+  #   build: ./elasticsearch
+  #   container_name: elasticsearch
+  #   ports:
+  #     - "9200:9200"
+  #     - "9300:9200"
+  #   environment:
+  #     - ES_JAVA_OPTS=${ES_JAVA_OPTS}
+  #   command: elasticsearch -v
+  #   volumes:
+  #     - "${DATA_HOME}/elasticsearch:/usr/share/elasticsearch/data"
+  #   networks:
+  #     - backend
+
+  # logstash:
+  #   build: ./logstash
+  #   volumes:
+  #     - ./logstash/config/logstash.yml:/usr/share/logstash/config/logstash.yml
+  #     - ./logstash/pipeline:/usr/share/logstash/pipeline
+  #   ports:
+  #     - "5000:5000"
+  #   environment:
+  #     - LS_JAVA_OPTS=${LS_JAVA_OPTS}
+  #   networks:
+  #     - elk
+  #   depends_on:
+  #     - elasticsearch
+
+  # kibana:
+  #   build: ./kibana
+  #   container_name: kibana
+  #   ports:
+  #     - "5601:5601"
+  #   networks:
+  #     - backend
+  #   depends_on:
+  #     - elasticsearch
+
+  # nodejs:
+  #   build: ./nodejs
+
+networks:
+  backend:
+    driver: bridge

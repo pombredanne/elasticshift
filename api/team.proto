@@ -16,6 +16,6 @@ message CreateTeamRes {
 service Team {
 
     rpc Create(CreateTeamReq) returns (CreateTeamRes) {
-        option (google.api.http) = { post : "/team" body : "*" };
+        option (google.api.http) = { post : "/v1/team" body : "*" };
     };
 }

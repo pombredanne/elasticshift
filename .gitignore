@@ -3,5 +3,7 @@ debug
 bin/covererage.out
 bin/covererage-all.out
 cover.html
-esh.iml
+elasticshift.iml
+elasticshift
 .idea/
+.vscode/

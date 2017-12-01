@@ -4,8 +4,8 @@ package api;
 
 import "google/api/annotations.proto";
 
-// CreateClientReq is a request to make a client.
-message CreateClientReq {
+// ClientReq is a request to make a client.
+message InsertClientReq {
   string id = 1;
   string secret = 2;
   repeated string redirect_uris = 3;
@@ -15,8 +15,8 @@ message CreateClientReq {
   string logo_url = 7;
 }
 
-// CreateClientResp returns the response from creating a client.
-message CreateClientRes {
+// InsertClientResp returns the response from creating a client.
+message InsertClientRes {
   bool already_exists = 1;
   string id = 2;
   string secret = 3;
@@ -27,23 +27,23 @@ message CreateClientRes {
   string logo_url = 8;
 }
 
-// DeleteClientReq is a request to delete a client.
-message DeleteClientReq {
+// RemoveClientReq is a request to delete a client.
+message RemoveClientReq {
   // The ID of the client.
   string client_id = 1;
 }
 
-// DeleteClientResp determines if the. 
-message DeleteClientRes {
+// RemoveClientResp determines if the. 
+message RemoveClientRes {
   bool not_found = 1;
 }
 
 service Client {
-    rpc Create(CreateClientReq) returns (CreateClientRes) {
-        option (google.api.http) = { post : "/client" body : "*" };
+    rpc Create(InsertClientReq) returns (InsertClientRes) {
+        option (google.api.http) = { post : "/v1/client" body : "*" };
     };
 
-    rpc Delete(DeleteClientReq) returns (DeleteClientRes) {
-        option (google.api.http) = { get : "/client/{client_id}"};
+    rpc Delete(RemoveClientReq) returns (RemoveClientRes) {
+        option (google.api.http) = { get : "/v1/client/{client_id}"};
     };
 }

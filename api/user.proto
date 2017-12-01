@@ -28,10 +28,10 @@ message SignInRes {
 service User {
 
     rpc SignUp(SignUpReq) returns (SignUpRes) {
-        option (google.api.http) = { post : "/user/signup" body : "*" };
+        option (google.api.http) = { post : "/v1/user/signup" body : "*" };
     };
 
     rpc SignIn(SignInReq) returns (SignInRes) {
-        option (google.api.http) = { post : "/user/signin" body : "*" };
+        option (google.api.http) = { post : "/v1/user/signin" body : "*" };
     };
 }

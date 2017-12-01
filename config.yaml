@@ -1,9 +1,9 @@
 store:
     server: 127.0.0.1:27017
-    name: esh
-    username: esh
-    password: eshpazz
-    monotonic: true
+    name: elasticshift
+    username: elasticshift
+    password: 3l@$t1c$h1ft
+    monotonih: true
     timeout: "10s"
     retry: "10s"
 
@@ -15,8 +15,8 @@ web:
   http: 127.0.0.1:5050
   grpc: 127.0.0.1:5051
 
-dex:
-  issuer: http://127.0.0.1:5556/dex
+identity:
+  issuer: http://127.0.0.1:5556/identity
   grpc: 127.0.0.1:5557
   id: yyjw66rn2hso6wriuzlic62jiy
   secret: l77r6wixjjtgmo4iym2kmk3jcuuxetj3afnqaw5w3rnl5nu5hehu

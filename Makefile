@@ -1,5 +1,8 @@
+#
+# Copyright 2015 The Elasticshift Authors.
+#
 PROJ=elasticshift
-ORG_PATH=gitlab.com/elasticshift
+ORG_PATH=gitlab.com/conspico
 REPO_PATH=$(ORG_PATH)/$(PROJ)
 export PATH := $(PWD)/bin:$(PATH)
 
@@ -73,7 +76,7 @@ grpc: pb/gen-pb.go
 pb/gen-pb.go: bin/protoc bin/protoc-gen-go bin/protoc-gen-grpc-gateway bin/protoc-gen-swagger get-proto-descriptor
 	@./bin/protoc -I/usr/local/include -I. \
 	-I${PWD}/vendor \
-	--go_out=Mgoogle/api/annotations.proto=google/api,plugins=grpc:. \
+	--go_out=pMgoogle/api/annotations.proto=github.com/google/go-genproto/googleapis/api/annotations,Mgoogle/protobuf/descriptor.proto=github.com/golang/protobuf/protoc-gen-go/descriptor,plugins=grpc:. \
 	api/*.proto
 	@./bin/protoc -I/usr/local/include -I. \
 	-I${PWD}/vendor \
@@ -107,7 +110,7 @@ get-proto-descriptor:
 	@wget -nc -c ${PROTOBUF_URL}/descriptor.proto -P vendor/google/protobuf
 	@wget -nc -c ${GOOGLEAPIS_URL}/annotations.proto -P vendor/google/api
 	@wget -nc -c ${GOOGLEAPIS_URL}/http.proto -P vendor/google/api
-	@wget -nc -c https://raw.githubusercontent.com/coreos/dex/${DEX_VERSION}/api/api.proto -P api/dex
+	# @wget -nc -c https://raw.githubusercontent.com/coreos/dex/${DEX_VERSION}/api/api.proto -P api/dex
 
 .PHONY: go-version-checker
 go-version-checker:

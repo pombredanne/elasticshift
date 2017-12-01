@@ -1,6 +1,6 @@
-// Package armor
-// Author Ghazni Nattarshah
-// Date: 1/10/17
+/*
+Copyright 2017 The Elasticshift Authors.
+*/
 package main
 
 import (
@@ -16,23 +16,22 @@ import (
 	"log"
 
 	"github.com/Sirupsen/logrus"
-	"github.com/ghodss/yaml"
 	"github.com/gorilla/handlers"
 	"github.com/grpc-ecosystem/grpc-gateway/runtime"
 	"github.com/justinas/alice"
-	"gitlab.com/conspico/elasticshift/api"
-	"gitlab.com/conspico/elasticshift/server"
-	"gitlab.com/conspico/elasticshift/store"
+	"gitlab.com/conspico/elasticshift/core/server"
+	"gitlab.com/conspico/elasticshift/core/store"
 	"golang.org/x/net/context"
 	"google.golang.org/grpc"
+	"gopkg.in/yaml.v2"
 )
 
 // Config ..
 type Config struct {
-	Store  Store  `json:"store"`
-	Web    Web    `json:"web"`
-	Logger Logger `json:"logger"`
-	Dex    Dex    `json:"dex"`
+	Store    Store    `json:"store"`
+	Web      Web      `json:"web"`
+	Logger   Logger   `json:"logger"`
+	Identity Identity `json:"dex"`
 }
 
 // Store ..
@@ -60,7 +59,7 @@ type Web struct {
 
 // Dex ..
 // Holds the web server configuration
-type Dex struct {
+type Identity struct {
 	GRPC        string `json:"grpc"`
 	Issuer      string `json:"issuer"`
 	ID          string `json:"id"`
@@ -114,9 +113,9 @@ func elasticshift() error {
 			Store: Store{
 
 				Server:    "127.0.0.1",
-				Name:      "esh",
-				Username:  "esh",
-				Password:  "eshpazz",
+				Name:      "elasticshift",
+				Username:  "elasticshift",
+				Password:  "3l@$t1c$h1ft",
 				Monotonic: true,
 				Timeout:   "10s",
 				Retry:     "10s",
@@ -133,9 +132,9 @@ func elasticshift() error {
 				GRPC: "127.0.0.1:5051",
 			},
 
-			Dex: Dex{
+			Identity: Identity{
 				GRPC:        "127.0.0.1:5557",
-				Issuer:      "http://127.0.0.1:5556/dex",
+				Issuer:      "http://127.0.0.1:5556/Identity",
 				ID:          "yyjw66rn2hso6wriuzlic62jiy",
 				Secret:      "l77r6wixjjtgmo4iym2kmk3jcuuxetj3afnqaw5w3rnl5nu5hehu",
 				RedirectURI: "http://127.0.0.1:5050/login/callback",
@@ -177,24 +176,24 @@ func elasticshift() error {
 		return fmt.Errorf("Failed to parse database retryin duration %s :%v", c.Store.Retry, err)
 	}
 
-	// parse Dex config
-	if c.Dex.Issuer != "" {
-		sc.Dex.Issuer = c.Dex.Issuer
+	// parse identity config
+	if c.Identity.Issuer != "" {
+		sc.Identity.Issuer = c.Identity.Issuer
 	}
 
-	if c.Dex.ID != "" {
-		sc.Dex.ID = c.Dex.ID
+	if c.Identity.ID != "" {
+		sc.Identity.ID = c.Identity.ID
 	}
 
-	if c.Dex.Secret != "" {
-		sc.Dex.Secret = c.Dex.Secret
+	if c.Identity.Secret != "" {
+		sc.Identity.Secret = c.Identity.Secret
 	}
 
-	if c.Dex.RedirectURI != "" {
-		sc.Dex.RedirectURI = c.Dex.RedirectURI
+	if c.Identity.RedirectURI != "" {
+		sc.Identity.RedirectURI = c.Identity.RedirectURI
 	}
 
-	sc.Dex.HostAndPort = c.Dex.GRPC
+	sc.Identity.HostAndPort = c.Identity.GRPC
 
 	ctx := context.Background()
 
@@ -225,7 +224,7 @@ func elasticshift() error {
 	//secureHandler := handlers.SecurityHandler(ctx.Context, ctx.Logger, ctx.Signer, ctx.Verifier)
 	//ctx.SecureChain = commonChain.Extend(alice.New(secureHandler, extractHandler))
 
-	s, err := server.NewServer(ctx, sc)
+	s, err := server.New(ctx, sc)
 	if err != nil {
 		logger.Fatalln(fmt.Errorf("Failed to initialize the server [%v]", err))
 	}
@@ -246,9 +245,7 @@ func elasticshift() error {
 			grpcOpts := []grpc.ServerOption{}
 			grpcServer = grpc.NewServer(grpcOpts...)
 
-			api.RegisterUserServer(grpcServer, server.NewUserServer(s))
-			api.RegisterTeamServer(grpcServer, server.NewTeamServer(s))
-			api.RegisterClientServer(grpcServer, server.NewClientServer(s))
+			server.RegisterGRPCServices(grpcServer, s)
 
 			err = grpcServer.Serve(listen)
 
@@ -267,23 +264,11 @@ func elasticshift() error {
 
 			mux := runtime.NewServeMux()
 
-			// user
-			err := api.RegisterUserHandlerFromEndpoint(ctx, mux, c.Web.GRPC, dialopts)
+			err := server.RegisterHTTPServices(ctx, mux, c.Web.GRPC, dialopts)
 			if err != nil {
-				return fmt.Errorf("Registering User handler failed : %v", err)
+				return fmt.Errorf("Error when registering services.. : %v", err)
 			}
 
-			// team
-			err = api.RegisterTeamHandlerFromEndpoint(ctx, mux, c.Web.GRPC, dialopts)
-			if err != nil {
-				return fmt.Errorf("Registering Team handler failed : %v", err)
-			}
-
-			// client
-			err = api.RegisterClientHandlerFromEndpoint(ctx, mux, c.Web.GRPC, dialopts)
-			if err != nil {
-				return fmt.Errorf("Registering Client handler failed : %v", err)
-			}
 			s.Router.Handle("/", mux)
 
 			serv = &http.Server{Addr: c.Web.HTTP, Handler: publicChain.Then(s.Router)}
@@ -303,8 +288,8 @@ func elasticshift() error {
 
 			<-sigs
 
-			//logger.Infoln("Stopping GRPC Server..")
-			//grpcServer.GracefulStop()
+			logger.Infoln("Stopping GRPC Server..")
+			grpcServer.GracefulStop()
 
 			logger.Infoln("Stopping HTTP(S) Server..")
 			serv.Shutdown(ctx)

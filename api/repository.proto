@@ -1,3 +1,40 @@
 syntax = "proto3";
 
 package api;
+
+import "google/api/annotations.proto";
+
+message Repo {
+    string ID = 1;
+    bool private = 2;
+    string link = 3;
+    string description = 4;
+    bool fork = 5;
+    string default_branch = 6;
+    string language = 7;
+}
+
+message GetRepositoriesReq {}
+
+message GetRepositoriesRes {
+    repeated Repo repositories = 1;
+}
+
+message GetRepositoryReq {
+    string repo_id = 1;
+}
+
+message GetRepositoryRes {
+    Repo repository = 1;
+}
+
+service Repository {
+
+    rpc GetRepositories(GetRepositoriesReq) returns (GetRepositoriesRes) {
+        option (google.api.http) = { get : "/v1/repositories" };
+    };
+
+    rpc GetRepisotory(GetRepositoryReq) returns (GetRepositoryRes) {
+        option (google.api.http) = { get : "/v1/repository/{repo_id}" };
+    };
+}

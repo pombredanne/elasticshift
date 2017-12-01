@@ -1,4 +1,0 @@
-Reference
-
-https://github.com/braintree/manners
-
