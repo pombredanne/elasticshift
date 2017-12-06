@@ -20,7 +20,8 @@ type Store interface {
 	//Team
 	Save(team *types.Team) error
 	CheckExists(name string) (bool, error)
-	GetTeam(name string) (types.Team, error)
+	GetTeam(id, name string) (types.Team, error)
+	GetTeams(limit, offset int) (types.ListResult, error)
 
 	// VCS Settings
 	SaveVCS(team string, vcs *types.VCS) error
@@ -30,11 +31,16 @@ type Store interface {
 
 // NewStore related database operations
 func NewStore(s core.Store) Store {
-	return &store{s, "team"}
+	return &store{store: s, cname: "team"}
 }
 
 func (r *store) Save(team *types.Team) error {
 	return r.store.Insert(r.cname, team)
+}
+
+func (r *store) GetTeams(limit, offset int) (types.ListResult, error) {
+
+	return types.ListResult{}, nil
 }
 
 func (r *store) CheckExists(name string) (bool, error) {
@@ -51,12 +57,21 @@ func (r *store) CheckExists(name string) (bool, error) {
 	return count > 0, nil
 }
 
-func (r *store) GetTeam(name string) (types.Team, error) {
+func (r *store) GetTeam(id, name string) (types.Team, error) {
+
+	q := bson.M{}
+	if id != "" {
+		q["_id"] = bson.ObjectIdHex(id)
+	}
+
+	if name != "" {
+		q["name"] = name
+	}
 
 	var err error
 	var result types.Team
 	r.store.Execute(r.cname, func(c *mgo.Collection) {
-		err = c.Find(bson.M{"name": name}).One(&result)
+		err = c.Find(q).One(&result)
 	})
 	return result, err
 }

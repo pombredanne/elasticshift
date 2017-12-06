@@ -38,7 +38,12 @@ type Team struct {
 	ID       bson.ObjectId `bson:"_id,omitempty"`
 	Name     string        `bson:"name"`
 	Display  string        `bson:"display,omitempty"`
-	Accounts []VCS         `bson:"accounts,omitempty"`
+	Accounts []VCS         `bson:"accounts"`
+}
+
+type ListResult struct {
+	Nodes []interface{} `json:"nodes"`
+	Count int           `json:"totalCount"`
 }
 
 // User ..

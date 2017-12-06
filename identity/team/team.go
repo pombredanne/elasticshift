@@ -6,12 +6,9 @@ package team
 import (
 	"errors"
 
-	"golang.org/x/net/context"
-
 	"github.com/Sirupsen/logrus"
-	"gitlab.com/conspico/elasticshift/api"
+	"github.com/graphql-go/graphql"
 	"gitlab.com/conspico/elasticshift/api/types"
-	core "gitlab.com/conspico/elasticshift/core/store"
 	"gitlab.com/conspico/elasticshift/core/utils"
 )
 
@@ -22,63 +19,70 @@ var (
 	errTeamNameMaxLength       = errors.New("Team name should not exceed 63 chars")
 	errTeamNameContainsSymbols = errors.New("Team name should be alpha-numeric, no special chars or whitespace is allowed")
 	errTeamAlreadyExists       = errors.New("Team name already exists")
+	errTeamNameOrIdNeeded      = errors.New("Team name or ID must be given")
 	errFailedToCreateTeam      = errors.New("Failed to create team")
 )
 
-type server struct {
+type resolver struct {
 	store  Store
 	logger logrus.FieldLogger
 }
 
-// NewServer ..
-// Implementation of api.UserServer
-func NewServer(s core.Store, logger logrus.FieldLogger) api.TeamServer {
-	return &server{
-		store:  NewStore(s),
-		logger: logger,
-	}
-}
+func (r *resolver) CreateTeam(params graphql.ResolveParams) (interface{}, error) {
 
-// Teamorize ..
-func (s *server) Create(ctx context.Context, req *api.CreateTeamReq) (*api.CreateTeamRes, error) {
-
-	res := &api.CreateTeamRes{}
+	name := params.Args["name"].(string)
 
 	// team name validation
-	nameLength := len(req.Name)
+	nameLength := len(name)
 	if nameLength == 0 {
-		return res, errTeamNameIsEmpty
+		return nil, errTeamNameIsEmpty
 	}
 
-	if !utils.IsAlphaNumericOnly(req.Name) {
-		return res, errTeamNameContainsSymbols
+	if !utils.IsAlphaNumericOnly(name) {
+		return nil, errTeamNameContainsSymbols
 	}
 
 	if nameLength < 6 {
-		return res, errTeamNameMinLength
+		return nil, errTeamNameMinLength
 	}
 
 	if nameLength > 63 {
-		return res, errTeamNameMaxLength
+		return nil, errTeamNameMaxLength
 	}
 
-	result, err := s.store.CheckExists(req.Name)
+	result, err := r.store.CheckExists(name)
 	if result {
-
-		res.AlreadyExist = true
-		return res, errTeamAlreadyExists
+		return nil, errTeamAlreadyExists
 	}
 
-	team := &types.Team{
-		Name:    req.Name,
-		Display: req.Name,
+	t := &types.Team{
+		Name:     name,
+		Display:  name,
+		Accounts: []types.VCS{},
 	}
 
-	err = s.store.Save(team)
+	err = r.store.Save(t)
 	if err != nil {
-		return res, errFailedToCreateTeam
+		return nil, errFailedToCreateTeam
 	}
 
-	res.Created = true
-	return res, err
+	return t, err
+}
+
+func (r *resolver) FetchByNameOrID(params graphql.ResolveParams) (interface{}, error) {
+
+	id, _ := params.Args["id"].(string)
+	name, _ := params.Args["name"].(string)
+
+	if id == "" && name == "" {
+		return nil, errTeamNameOrIdNeeded
+	}
+
+	t, err := r.store.GetTeam(id, name)
+	return &t, err
+}
+
+func (r *resolver) FetchTeams(params graphql.ResolveParams) (interface{}, error) {
+
+	return nil, nil
 }

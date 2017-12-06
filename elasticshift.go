@@ -245,6 +245,7 @@ func elasticshift() error {
 			grpcOpts := []grpc.ServerOption{}
 			grpcServer = grpc.NewServer(grpcOpts...)
 
+			logger.Info("Exposing GRPC services on ", c.Web.GRPC)
 			server.RegisterGRPCServices(grpcServer, s)
 
 			err = grpcServer.Serve(listen)
@@ -272,6 +273,8 @@ func elasticshift() error {
 			s.Router.Handle("/", mux)
 
 			serv = &http.Server{Addr: c.Web.HTTP, Handler: publicChain.Then(s.Router)}
+
+			logger.Info("Exposing HTTP services on ", c.Web.HTTP)
 			err = serv.ListenAndServe()
 
 			return fmt.Errorf("Listing on %s failed with : %v", c.Web.HTTP, err)

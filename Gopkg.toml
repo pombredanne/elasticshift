@@ -76,3 +76,11 @@
 [[constraint]]
   branch = "v2"
   name = "gopkg.in/yaml.v2"
+
+[[constraint]]
+  name = "github.com/graphql-go/graphql"
+  version = "0.7.3"
+
+[[constraint]]
+  name = "github.com/graphql-go/handler"
+  version = "0.2.1"

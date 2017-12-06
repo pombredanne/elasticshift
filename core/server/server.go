@@ -6,15 +6,19 @@ package server
 import (
 	"encoding/base64"
 	"fmt"
+	"log"
 	"net/http"
 	"net/http/pprof"
 	"strings"
 
 	"github.com/Sirupsen/logrus"
+	"github.com/graphql-go/graphql"
+	"github.com/graphql-go/handler"
 	"github.com/grpc-ecosystem/grpc-gateway/runtime"
 	"gitlab.com/conspico/elasticshift/api"
 	"gitlab.com/conspico/elasticshift/api/dex"
 	"gitlab.com/conspico/elasticshift/core/store"
+	core "gitlab.com/conspico/elasticshift/core/store"
 	"gitlab.com/conspico/elasticshift/identity/client"
 	"gitlab.com/conspico/elasticshift/identity/team"
 	"gitlab.com/conspico/elasticshift/identity/user"
@@ -92,6 +96,9 @@ func New(ctx context.Context, c Config) (*Server, error) {
 	r.Handle("/debug/threadcreate", pprof.Handler("threadcreate"))
 	r.Handle("/debug/block", pprof.Handler("block"))
 
+	// initialize graphql based services
+	RegisterGraphQLServices(r, s.Logger, s.Store)
+
 	s.Router = r
 
 	// err := NewAuthServer(ctx, r, c)
@@ -101,9 +108,49 @@ func New(ctx context.Context, c Config) (*Server, error) {
 	return s, nil
 }
 
+func RegisterGraphQLServices(r *http.ServeMux, logger logrus.FieldLogger, s core.Store) {
+
+	// initialize schema
+	queryFields := graphql.Fields{}
+	mutations := graphql.Fields{}
+
+	// team fields
+	teamQuery, teamMutation := team.InitSchema(s, logger)
+	appendFields(queryFields, teamQuery)
+	appendFields(mutations, teamMutation)
+
+	rootQuery := graphql.ObjectConfig{Name: "RootQuery", Fields: queryFields}
+	rootMutation := graphql.ObjectConfig{Name: "RootMutation", Fields: mutations}
+
+	schemaConfig := graphql.SchemaConfig{
+		Query:    graphql.NewObject(rootQuery),
+		Mutation: graphql.NewObject(rootMutation),
+	}
+
+	schema, err := graphql.NewSchema(schemaConfig)
+	if err != nil {
+		log.Fatalf("Failed to create team schema due to errors :v", err)
+	}
+
+	// initialize graphql
+	h := handler.New(&handler.Config{
+		Schema:   &schema,
+		Pretty:   true,
+		GraphiQL: true,
+	})
+	r.Handle("/graphql", h)
+}
+
+// Utility method to append fields
+func appendFields(fields graphql.Fields, input graphql.Fields) {
+
+	for k, v := range input {
+		fields[k] = v
+	}
+}
+
 func RegisterGRPCServices(grpcServer *grpc.Server, s *Server) {
 
-	api.RegisterTeamServer(grpcServer, team.NewServer(s.Store, s.Logger))
 	api.RegisterUserServer(grpcServer, user.NewServer(s.Logger, s.Dex))
 	api.RegisterClientServer(grpcServer, client.NewServer(s.Store, s.Logger, s.Dex))
 }
@@ -114,11 +161,6 @@ func RegisterHTTPServices(ctx context.Context, router *runtime.ServeMux, grpcAdd
 	err := api.RegisterUserHandlerFromEndpoint(ctx, router, grpcAddress, dialopts)
 	if err != nil {
 		return fmt.Errorf("Registering User handler failed : %v", err)
-	}
-
-	err = api.RegisterTeamHandlerFromEndpoint(ctx, router, grpcAddress, dialopts)
-	if err != nil {
-		return fmt.Errorf("Registering Team handler failed : %v", err)
 	}
 
 	err = api.RegisterClientHandlerFromEndpoint(ctx, router, grpcAddress, dialopts)

@@ -40,7 +40,6 @@ func Connect(logger logrus.FieldLogger, cfg Config) (*mgo.Session, error) {
 	for tryit {
 
 		logger.Infoln("Connecting to database...")
-		logger.Info(cfg.Name, cfg.Password)
 		session, err = mgo.DialWithInfo(&mgo.DialInfo{
 			Addrs:    []string{cfg.Server},
 			Username: cfg.Username,
