@@ -41,11 +41,6 @@ type Team struct {
 	Accounts []VCS         `bson:"accounts"`
 }
 
-type ListResult struct {
-	Nodes []interface{} `json:"nodes"`
-	Count int           `json:"totalCount"`
-}
-
 // User ..
 type User struct {
 	ID            bson.ObjectId `bson:"_id,omitempty"`
@@ -64,16 +59,15 @@ type User struct {
 // VCS contains the information common amongst most OAuth and OAuth2 providers.
 // All of the "raw" datafrom the provider can be found in the `RawData` field.
 type VCS struct {
-	ID           string    `json:"id" bson:"_id,omitempty"`
-	Name         string    `json:"name" bson:"name,omitempty"`
-	Type         string    `json:"type" bson:"type,omitempty"`
-	OwnerType    string    `json:"owner_type" bson:"owner_type,omitempty"`
-	AvatarURL    string    `json:"avatar" bson:"avatar,omitempty"`
-	AccessCode   string    `json:"-" bson:"access_code,omitempty"`
-	AccessToken  string    `json:"-" bson:"access_token,omitempty"`
-	RefreshToken string    `json:"-" bson:"refresh_token,omitempty"`
-	TokenType    string    `json:"-" bson:"token_type,omitempty"`
-	TokenExpiry  time.Time `json:"-" bson:"token_expiry,omitempty"`
+	ID           bson.ObjectId `json:"id" bson:"_id,omitempty"`
+	Name         string        `json:"name" bson:"name,omitempty"`
+	Kind         string        `json:"kind" bson:"kind,omitempty"`
+	OwnerType    string        `json:"owner_type" bson:"owner_type,omitempty"`
+	AvatarURL    string        `json:"avatar" bson:"avatar,omitempty"`
+	AccessCode   string        `json:"-" bson:"access_code,omitempty"`
+	AccessToken  string        `json:"-" bson:"access_token,omitempty"`
+	RefreshToken string        `json:"-" bson:"refresh_token,omitempty"`
+	TokenExpiry  time.Time     `json:"-" bson:"token_expiry,omitempty"`
 }
 
 // Repository ..

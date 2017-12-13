@@ -7,20 +7,19 @@ import (
 	"github.com/Sirupsen/logrus"
 	"github.com/graphql-go/graphql"
 	"gitlab.com/conspico/elasticshift/api/types"
-	core "gitlab.com/conspico/elasticshift/core/store"
-	"gitlab.com/conspico/elasticshift/core/utils"
 )
 
-func InitSchema(s core.Store, logger logrus.FieldLogger) (queries graphql.Fields, mutations graphql.Fields) {
+func InitSchema(logger logrus.FieldLogger, s Store) (queries graphql.Fields, mutations graphql.Fields) {
 
 	r := &resolver{
-		store:  NewStore(s),
+		store:  s,
 		logger: logger,
 	}
 
 	fields := graphql.Fields{
 		"id": &graphql.Field{
-			Type: graphql.ID,
+			Type:        graphql.ID,
+			Description: "Represents the team ID",
 			Resolve: func(p graphql.ResolveParams) (interface{}, error) {
 				if t, ok := p.Source.(*types.Team); ok {
 					return t.ID.Hex(), nil
@@ -30,7 +29,8 @@ func InitSchema(s core.Store, logger logrus.FieldLogger) (queries graphql.Fields
 		},
 
 		"name": &graphql.Field{
-			Type: graphql.String,
+			Type:        graphql.String,
+			Description: "Name of the team",
 			Resolve: func(p graphql.ResolveParams) (interface{}, error) {
 				if t, ok := p.Source.(*types.Team); ok {
 					return t.Name, nil
@@ -40,7 +40,8 @@ func InitSchema(s core.Store, logger logrus.FieldLogger) (queries graphql.Fields
 		},
 
 		"display": &graphql.Field{
-			Type: graphql.String,
+			Type:        graphql.String,
+			Description: "Name that is used to represent for display purpose such as logged in name etc",
 			Resolve: func(p graphql.ResolveParams) (interface{}, error) {
 				if t, ok := p.Source.(*types.Team); ok {
 					return t.Display, nil
@@ -50,7 +51,8 @@ func InitSchema(s core.Store, logger logrus.FieldLogger) (queries graphql.Fields
 		},
 
 		"accounts": &graphql.Field{
-			Type: graphql.NewList(graphql.String),
+			Type:        graphql.NewList(graphql.String),
+			Description: "List of version control system accounts linked for this team",
 			Resolve: func(p graphql.ResolveParams) (interface{}, error) {
 				if t, ok := p.Source.(*types.Team); ok {
 					return t.Accounts, nil
@@ -62,8 +64,9 @@ func InitSchema(s core.Store, logger logrus.FieldLogger) (queries graphql.Fields
 
 	teamType := graphql.NewObject(
 		graphql.ObjectConfig{
-			Name:   "Team",
-			Fields: fields,
+			Name:        "Team",
+			Fields:      fields,
+			Description: "An object of team type",
 		},
 	)
 
@@ -72,15 +75,17 @@ func InitSchema(s core.Store, logger logrus.FieldLogger) (queries graphql.Fields
 			Type: teamType,
 			Args: graphql.FieldConfigArgument{
 				"id": &graphql.ArgumentConfig{
-					Type: graphql.String,
+					Type:        graphql.String,
+					Description: "Represent the team ID",
 				},
 				"name": &graphql.ArgumentConfig{
-					Type: graphql.String,
+					Type:        graphql.String,
+					Description: "Name of the team",
 				},
 			},
 			Resolve: r.FetchByNameOrID,
 		},
-		"teams": utils.MakeListField(utils.MakeNodeListType("TeamList", teamType), r.FetchTeams),
+		// "teams": utils.MakeListField(utils.MakeNodeListType("TeamList", teamType), r.FetchTeams),
 	}
 
 	mutations = graphql.Fields{
@@ -88,7 +93,8 @@ func InitSchema(s core.Store, logger logrus.FieldLogger) (queries graphql.Fields
 			Type: teamType,
 			Args: graphql.FieldConfigArgument{
 				"name": &graphql.ArgumentConfig{
-					Type: graphql.NewNonNull(graphql.String),
+					Type:        graphql.NewNonNull(graphql.String),
+					Description: "Name of the team",
 				},
 			},
 			Resolve: r.CreateTeam,

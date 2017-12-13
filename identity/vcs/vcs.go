@@ -4,11 +4,12 @@ Copyright 2017 The Elasticshift Authors.
 package vcs
 
 import (
+	"errors"
+
 	"github.com/Sirupsen/logrus"
-	"gitlab.com/conspico/elasticshift/api"
-	"gitlab.com/conspico/elasticshift/core/store"
+	"github.com/graphql-go/graphql"
+	"gitlab.com/conspico/elasticshift/api/types"
 	"gitlab.com/conspico/elasticshift/identity/team"
-	"golang.org/x/net/context"
 )
 
 // VCSServer ..
@@ -19,24 +20,35 @@ import (
 //SyncVCS(r SyncVCSRequest) (bool, error)
 //}
 
-type server struct {
-	store  team.Store
-	logger logrus.FieldLogger
+var (
+	// VCS errors
+	errFailedToFetchVCS = errors.New("Unknown vcs id")
+)
+
+type resolver struct {
+	store     Store
+	teamStore team.Store
+	logger    logrus.FieldLogger
 }
 
-// NewVCSServer ..
-// Implementation of api.VCSServer
-func NewVCSServer(s store.Store, logger logrus.FieldLogger) api.VCSServer {
-	return &server{
-		store:  team.NewStore(s),
-		logger: logger,
+func (r resolver) FetchVCSByTeamID(params graphql.ResolveParams) (interface{}, error) {
+
+	teamName, _ := params.Args["teamname"].(string)
+	t, err := r.teamStore.GetTeam("", teamName)
+	if err != nil {
+		return nil, err
 	}
+
+	return t.Accounts, nil
 }
 
-func (s server) GetVCS(ctx context.Context, req *api.GetVCSReq) (*api.GetVCSRes, error) {
-	return nil, nil
+func (r resolver) FetchVCS(params graphql.ResolveParams) (interface{}, error) {
+
+	result := make([]types.VCS, 1)
+
+	return result, nil
 }
 
-func (s server) Sync(ctx context.Context, req *api.SyncVCSReq) (*api.SyncVCSRes, error) {
-	return nil, nil
-}
+// func (s resolver) Sync(ctx context.Context, req *api.SyncVCSReq) (*api.SyncVCSRes, error) {
+// 	return nil, nil
+// }

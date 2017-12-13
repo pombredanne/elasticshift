@@ -79,10 +79,13 @@ func (r *resolver) FetchByNameOrID(params graphql.ResolveParams) (interface{}, e
 	}
 
 	t, err := r.store.GetTeam(id, name)
+
 	return &t, err
 }
 
 func (r *resolver) FetchTeams(params graphql.ResolveParams) (interface{}, error) {
 
-	return nil, nil
+	result := make([]types.Team, 1)
+
+	return result, nil
 }

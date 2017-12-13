@@ -4,6 +4,7 @@ Copyright 2017 The Elasticshift Authors.
 package vcs
 
 import (
+	"gitlab.com/conspico/elasticshift/api/types"
 	core "gitlab.com/conspico/elasticshift/core/store"
 	"gopkg.in/mgo.v2/bson"
 )
@@ -19,8 +20,8 @@ type store struct {
 
 // Store provides system level config
 type Store interface {
-	GetVCSTypes() ([]VCSSysConf, error)
-	SaveVCS(scf *VCSSysConf) error
+	GetVCSTypes() ([]types.VCSSysConf, error)
+	SaveVCS(scf *types.VCSSysConf) error
 	Delete(id bson.ObjectId) error
 }
 
@@ -29,14 +30,14 @@ func NewStore(s core.Store) Store {
 	return &store{s, "sysconf"}
 }
 
-func (r *store) GetVCSTypes() ([]VCSSysConf, error) {
+func (r *store) GetVCSTypes() ([]types.VCSSysConf, error) {
 
-	result := make([]VCSSysConf, 0)
+	result := make([]types.VCSSysConf, 0)
 	err := r.store.FindAll(r.cname, bson.M{"type": vcsType}, &result)
 	return result, err
 }
 
-func (r *store) SaveVCS(v *VCSSysConf) error {
+func (r *store) SaveVCS(v *types.VCSSysConf) error {
 	return r.store.Insert(r.cname, v)
 }
 

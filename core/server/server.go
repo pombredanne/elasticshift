@@ -22,6 +22,7 @@ import (
 	"gitlab.com/conspico/elasticshift/identity/client"
 	"gitlab.com/conspico/elasticshift/identity/team"
 	"gitlab.com/conspico/elasticshift/identity/user"
+	"gitlab.com/conspico/elasticshift/identity/vcs"
 	"golang.org/x/net/context"
 	"google.golang.org/grpc"
 
@@ -114,10 +115,18 @@ func RegisterGraphQLServices(r *http.ServeMux, logger logrus.FieldLogger, s core
 	queryFields := graphql.Fields{}
 	mutations := graphql.Fields{}
 
+	teamStore := team.NewStore(s)
+	vcsStore := vcs.NewStore(s)
+
 	// team fields
-	teamQuery, teamMutation := team.InitSchema(s, logger)
+	teamQuery, teamMutation := team.InitSchema(logger, teamStore)
 	appendFields(queryFields, teamQuery)
 	appendFields(mutations, teamMutation)
+
+	// vcs fields
+	vcsQuery, vcsMutation := vcs.InitSchema(logger, vcsStore, teamStore)
+	appendFields(queryFields, vcsQuery)
+	appendFields(mutations, vcsMutation)
 
 	rootQuery := graphql.ObjectConfig{Name: "RootQuery", Fields: queryFields}
 	rootMutation := graphql.ObjectConfig{Name: "RootMutation", Fields: mutations}

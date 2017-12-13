@@ -21,7 +21,7 @@ type Store interface {
 	Save(team *types.Team) error
 	CheckExists(name string) (bool, error)
 	GetTeam(id, name string) (types.Team, error)
-	GetTeams(limit, offset int) (types.ListResult, error)
+	GetTeams(limit, offset int) ([]types.Team, error)
 
 	// VCS Settings
 	SaveVCS(team string, vcs *types.VCS) error
@@ -38,9 +38,13 @@ func (r *store) Save(team *types.Team) error {
 	return r.store.Insert(r.cname, team)
 }
 
-func (r *store) GetTeams(limit, offset int) (types.ListResult, error) {
+func (r *store) GetTeams(limit, offset int) ([]types.Team, error) {
 
-	return types.ListResult{}, nil
+	list := make([]types.Team, 1)
+
+	// TODO fetch list of teams
+
+	return list, nil
 }
 
 func (r *store) CheckExists(name string) (bool, error) {
