@@ -23,6 +23,7 @@ import (
 	"gitlab.com/conspico/elasticshift/identity/team"
 	"gitlab.com/conspico/elasticshift/identity/user"
 	"gitlab.com/conspico/elasticshift/identity/vcs"
+	"gitlab.com/conspico/elasticshift/sysconf"
 	"golang.org/x/net/context"
 	"google.golang.org/grpc"
 
@@ -115,18 +116,25 @@ func RegisterGraphQLServices(r *http.ServeMux, logger logrus.FieldLogger, s core
 	queryFields := graphql.Fields{}
 	mutations := graphql.Fields{}
 
+	// data store
 	teamStore := team.NewStore(s)
 	vcsStore := vcs.NewStore(s)
+	sysconfStore := sysconf.NewStore(s)
 
 	// team fields
-	teamQuery, teamMutation := team.InitSchema(logger, teamStore)
-	appendFields(queryFields, teamQuery)
-	appendFields(mutations, teamMutation)
+	teamQ, teamM := team.InitSchema(logger, teamStore)
+	appendFields(queryFields, teamQ)
+	appendFields(mutations, teamM)
 
 	// vcs fields
-	vcsQuery, vcsMutation := vcs.InitSchema(logger, vcsStore, teamStore)
-	appendFields(queryFields, vcsQuery)
-	appendFields(mutations, vcsMutation)
+	vcsQ, vcsM := vcs.InitSchema(logger, vcsStore, teamStore)
+	appendFields(queryFields, vcsQ)
+	appendFields(mutations, vcsM)
+
+	// vcs fields
+	sysconfQ, sysconfM := sysconf.InitSchema(logger, sysconfStore)
+	appendFields(queryFields, sysconfQ)
+	appendFields(mutations, sysconfM)
 
 	rootQuery := graphql.ObjectConfig{Name: "RootQuery", Fields: queryFields}
 	rootMutation := graphql.ObjectConfig{Name: "RootMutation", Fields: mutations}

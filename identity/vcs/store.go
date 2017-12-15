@@ -9,38 +9,38 @@ import (
 	"gopkg.in/mgo.v2/bson"
 )
 
-const (
-	vcsType = "vcs"
-)
-
 type store struct {
-	store core.Store
-	cname string
+	store core.Store // store
+	cname string     // collection name
 }
 
-// Store provides system level config
+//Store related database operations
 type Store interface {
-	GetVCSTypes() ([]types.VCSSysConf, error)
-	SaveVCS(scf *types.VCSSysConf) error
-	Delete(id bson.ObjectId) error
+
+	// VCS Settings
+	SaveVCS(vcs *types.VCS) error
+	UpdateVCS(vcs types.VCS) error
+	GetVCSByID(id string) (types.VCS, error)
 }
 
-// NewStore ..
+// NewStore related database operations
 func NewStore(s core.Store) Store {
-	return &store{s, "sysconf"}
+	return &store{store: s, cname: "vcs"}
 }
 
-func (r *store) GetVCSTypes() ([]types.VCSSysConf, error) {
+func (s *store) SaveVCS(vcs *types.VCS) error {
+	return s.store.Insert(s.cname, vcs)
+}
 
-	result := make([]types.VCSSysConf, 0)
-	err := r.store.FindAll(r.cname, bson.M{"type": vcsType}, &result)
+func (s *store) GetVCSByID(id string) (types.VCS, error) {
+
+	var result types.VCS
+	err := s.store.FindOne(s.cname, bson.M{"_id": bson.ObjectIdHex(id)}, &result)
 	return result, err
 }
 
-func (r *store) SaveVCS(v *types.VCSSysConf) error {
-	return r.store.Insert(r.cname, v)
-}
+func (s *store) UpdateVCS(vcs types.VCS) error {
 
-func (r *store) Delete(id bson.ObjectId) error {
-	return r.store.Remove(r.cname, id)
+	var err error
+	return err
 }

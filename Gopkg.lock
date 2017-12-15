@@ -56,12 +56,6 @@
   revision = "03f45bd4b7dad4734bc4620e46a35789349abb20"
 
 [[projects]]
-  branch = "master"
-  name = "github.com/nu7hatch/gouuid"
-  packages = ["."]
-  revision = "179d4d0c4d8d407a32af483c2354df1d2c91e6c3"
-
-[[projects]]
   name = "github.com/pmezard/go-difflib"
   packages = ["difflib"]
   revision = "792786c7400a136282c1664665ae0a8db921c6c2"
@@ -72,6 +66,12 @@
   name = "github.com/pquerna/cachecontrol"
   packages = [".","cacheobject"]
   revision = "0dec1b30a0215bb68605dfc568e8855066c9202d"
+
+[[projects]]
+  name = "github.com/satori/go.uuid"
+  packages = ["."]
+  revision = "879c5887cd475cd7864858769793b2ceb0d44feb"
+  version = "v1.1.0"
 
 [[projects]]
   name = "github.com/stretchr/testify"
@@ -94,7 +94,7 @@
 [[projects]]
   branch = "master"
   name = "golang.org/x/oauth2"
-  packages = [".","internal"]
+  packages = [".","bitbucket","github","internal"]
   revision = "f95fa95eaa936d9d87489b15d1d18b97c1ba9c28"
 
 [[projects]]
@@ -148,6 +148,6 @@
 [solve-meta]
   analyzer-name = "dep"
   analyzer-version = 1
-  inputs-digest = "55d5ee81152307aee08d440d2b208edd2c48623b17e8df2a01b62986025b36d3"
+  inputs-digest = "1420baa2c9fd326dc3fadfad4086dffd75d230392f4937876e7c3520bb9dfc4b"
   solver-name = "gps-cdcl"
   solver-version = 1

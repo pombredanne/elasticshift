@@ -25,7 +25,7 @@ type VCSSysConf struct {
 	// common fields for any sys config
 	ID   bson.ObjectId `bson:"_id,omitempty"`
 	Name string        `bson:"name"`
-	Type string        `bson:"type"`
+	Kind string        `bson:"kind"`
 
 	Key         string `bson:"key"`
 	Secret      string `bson:"secret"`

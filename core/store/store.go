@@ -5,10 +5,8 @@ package store
 
 import (
 	"encoding/json"
-	"fmt"
 
-	uuid "github.com/nu7hatch/gouuid"
-
+	"gitlab.com/conspico/elasticshift/core/utils"
 	mgo "gopkg.in/mgo.v2"
 	"gopkg.in/mgo.v2/bson"
 )
@@ -145,12 +143,5 @@ func decode(data []byte, out interface{}) error {
 // NewID ..
 // Creates a new UUID and returns string
 func NewID() string {
-
-	u, err := uuid.NewV4()
-	if err != nil {
-		panic(err)
-	}
-
-	// trim the uuid without hyphen
-	return fmt.Sprintf("%x", u[0:])
+	return utils.NewUUID()
 }
