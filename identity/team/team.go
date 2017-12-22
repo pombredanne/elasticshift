@@ -14,13 +14,13 @@ import (
 
 var (
 	// Team
-	errTeamNameIsEmpty         = errors.New("Team name is empty")
-	errTeamNameMinLength       = errors.New("Team name should should be minimum of 6 chars")
-	errTeamNameMaxLength       = errors.New("Team name should not exceed 63 chars")
-	errTeamNameContainsSymbols = errors.New("Team name should be alpha-numeric, no special chars or whitespace is allowed")
-	errTeamAlreadyExists       = errors.New("Team name already exists")
-	errTeamNameOrIdNeeded      = errors.New("Team name or ID must be given")
-	errFailedToCreateTeam      = errors.New("Failed to create team")
+	ErrTeamNameIsEmpty         = errors.New("Team name is empty")
+	ErrTeamNameMinLength       = errors.New("Team name should should be minimum of 6 chars")
+	ErrTeamNameMaxLength       = errors.New("Team name should not exceed 63 chars")
+	ErrTeamNameContainsSymbols = errors.New("Team name should be alpha-numeric, no special chars or whitespace is allowed")
+	ErrTeamAlreadyExists       = errors.New("Team name already exists")
+	ErrTeamNameOrIdNeeded      = errors.New("Team name or ID must be given")
+	ErrFailedToCreateTeam      = errors.New("Failed to create team")
 )
 
 type resolver struct {
@@ -35,24 +35,24 @@ func (r *resolver) CreateTeam(params graphql.ResolveParams) (interface{}, error)
 	// team name validation
 	nameLength := len(name)
 	if nameLength == 0 {
-		return nil, errTeamNameIsEmpty
+		return nil, ErrTeamNameIsEmpty
 	}
 
 	if !utils.IsAlphaNumericOnly(name) {
-		return nil, errTeamNameContainsSymbols
+		return nil, ErrTeamNameContainsSymbols
 	}
 
 	if nameLength < 6 {
-		return nil, errTeamNameMinLength
+		return nil, ErrTeamNameMinLength
 	}
 
 	if nameLength > 63 {
-		return nil, errTeamNameMaxLength
+		return nil, ErrTeamNameMaxLength
 	}
 
 	result, err := r.store.CheckExists(name)
 	if result {
-		return nil, errTeamAlreadyExists
+		return nil, ErrTeamAlreadyExists
 	}
 
 	t := &types.Team{
@@ -63,7 +63,7 @@ func (r *resolver) CreateTeam(params graphql.ResolveParams) (interface{}, error)
 
 	err = r.store.Save(t)
 	if err != nil {
-		return nil, errFailedToCreateTeam
+		return nil, ErrFailedToCreateTeam
 	}
 
 	return t, err
@@ -75,7 +75,7 @@ func (r *resolver) FetchByNameOrID(params graphql.ResolveParams) (interface{}, e
 	name, _ := params.Args["name"].(string)
 
 	if id == "" && name == "" {
-		return nil, errTeamNameOrIdNeeded
+		return nil, ErrTeamNameOrIdNeeded
 	}
 
 	t, err := r.store.GetTeam(id, name)

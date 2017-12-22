@@ -110,7 +110,7 @@ func (g *Gitlab) Authorized(id, code string) (types.VCS, error) {
 	u.RefreshToken = tok.RefreshToken
 	u.AccessToken = tok.AccessToken
 	u.TokenExpiry = time.Now().Add(time.Duration(tok.ExpiresIn) * time.Second)
-	u.Kind = GitlabType
+	u.Kind = g.Name()
 
 	g.logger.Warn("Token = ", tok)
 	// Get user profile

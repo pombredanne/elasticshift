@@ -98,10 +98,7 @@ func (prov Providers) Set(name string, p Provider) {
 // Get the provider by namee
 func (prov Providers) Get(name string) (Provider, error) {
 
-	fmt.Println("Providers map: ", prov.Providers)
 	if p, ok := prov.Providers[name]; ok {
-		fmt.Println("OK : ", ok)
-		fmt.Println("Inside Provider: ", p)
 		return p, nil
 	}
 

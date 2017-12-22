@@ -83,27 +83,16 @@ func (g *Github) Name() string {
 // Provide access to esh app on accessing the github user and repos.
 // the elasticshift application to have access to github repo
 func (g *Github) Authorize(baseURL string) string {
-	// g.Config.RedirectURL = g.CallbackURL + "?id=" + baseURL
-	g.logger.Warnln("Redirect URI :", g.CallbackURL+"?id="+baseURL)
 
 	opts := oauth2.SetAuthURLParam("redirect_uri", g.CallbackURL+"?id="+baseURL)
-
-	url := g.Config.AuthCodeURL("state", oauth2.AccessTypeOffline, opts)
-	return url
+	return g.Config.AuthCodeURL("state", oauth2.AccessTypeOffline, opts)
 }
 
 // Authorized ...
 // Finishes the authorize
 func (g *Github) Authorized(id, code string) (types.VCS, error) {
 
-	g.logger.Infoln("Callback code: ", code)
-	g.logger.Warnln("github config: ", g)
-
-	// var tok Token
-	// tok := &Token{}
 	tok, err := g.Config.Exchange(oauth2.NoContext, code)
-
-	fmt.Println(tok)
 
 	u := types.VCS{}
 	if err != nil {
@@ -117,7 +106,7 @@ func (g *Github) Authorized(id, code string) (types.VCS, error) {
 		u.TokenExpiry = tok.Expiry
 	}
 
-	u.Kind = GithubType
+	u.Kind = g.Name()
 
 	us := struct {
 		VcsID   int    `json:"id"`

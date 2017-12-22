@@ -62,7 +62,7 @@ type VCS struct {
 	// ID           bson.ObjectId `json:"id" bson:"_id,omitempty"`
 	ID           string    `json:"id" bson:"id,omitempty"`
 	Name         string    `json:"name" bson:"name,omitempty"`
-	Kind         int       `json:"kind" bson:"kind,omitempty"`
+	Kind         string    `json:"kind" bson:"kind,omitempty"`
 	OwnerType    string    `json:"owner_type" bson:"owner_type,omitempty"`
 	AvatarURL    string    `json:"avatar" bson:"avatar,omitempty"`
 	AccessCode   string    `json:"access_code" bson:"access_code,omitempty"`

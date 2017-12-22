@@ -80,7 +80,7 @@ func (b *Bitbucket) Authorized(id, code string) (types.VCS, error) {
 	if !tok.Expiry.IsZero() { // zero never expires
 		u.TokenExpiry = tok.Expiry
 	}
-	u.Kind = BitBucketType
+	u.Kind = b.Name()
 
 	us := struct {
 		UUID  string
