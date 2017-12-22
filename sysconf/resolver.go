@@ -5,7 +5,6 @@ package sysconf
 
 import (
 	"errors"
-	"fmt"
 
 	"github.com/Sirupsen/logrus"
 	"github.com/graphql-go/graphql"
@@ -50,8 +49,6 @@ func (r *resolver) FetchVCSSysConfByName(params graphql.ResolveParams) (interfac
 	if err != nil {
 		return nil, err
 	}
-	fmt.Println("Result:", res)
-	fmt.Println("Len", len(res))
 	return res, nil
 }
 

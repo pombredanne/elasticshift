@@ -99,10 +99,8 @@ func (s vcsService) initProviders() {
 		panic(err)
 	}
 
-	// s.vcsProviders = providers.New()
 	for _, conf := range vcsConf {
 
-		// fmt.Println(conf)
 		var prov providers.Provider
 		switch conf.Name {
 		case providers.GithubProviderName:
@@ -117,16 +115,11 @@ func (s vcsService) initProviders() {
 			s.vcsProviders.Set(conf.Name, prov)
 		}
 	}
-	fmt.Println("Init prov:", s.vcsProviders.Providers)
 }
 
 func (s vcsService) Authorize(w http.ResponseWriter, r *http.Request) {
 
-	fmt.Println("Authorize", r.URL.Path)
-
 	team := mux.Vars(r)["team"]
-	fmt.Println("Team: ", team)
-
 	exist, err := s.teamStore.CheckExists(team)
 	if err != nil {
 		http.Error(w, fmt.Sprintf("Failed to fetch the team: %s, error: %v", team, err), http.StatusBadRequest)
@@ -139,16 +132,12 @@ func (s vcsService) Authorize(w http.ResponseWriter, r *http.Request) {
 	}
 
 	provider := mux.Vars(r)["provider"]
-	fmt.Println("Provider: ", provider)
-
 	p, err := s.vcsProviders.Get(provider)
-	fmt.Println("Fetched Provider: ", p)
+
 	if err != nil {
 		http.Error(w, fmt.Sprintf("Getting provider %s failed: %v", provider, err), http.StatusBadRequest)
 		return
 	}
-
-	s.logger.Infoln(p)
 
 	var buf bytes.Buffer
 	buf.WriteString(team)
@@ -167,8 +156,6 @@ func (s vcsService) Authorize(w http.ResponseWriter, r *http.Request) {
 func (s vcsService) Authorized(w http.ResponseWriter, r *http.Request) {
 
 	provider := mux.Vars(r)["provider"]
-
-	fmt.Println("Authorized Provider: ", provider)
 	p, err := s.vcsProviders.Get(provider)
 	if err != nil {
 		http.Error(w, fmt.Sprintf("Getting provider %s failed: %v", provider, err), http.StatusBadRequest)
@@ -187,10 +174,7 @@ func (s vcsService) Authorized(w http.ResponseWriter, r *http.Request) {
 	// persist user
 	team := escID[0]
 
-	fmt.Println("Team param after authorized: ", team)
-
 	acc, err := s.teamStore.GetVCSByID(team, u.ID)
-	fmt.Println("VCS=", acc)
 	if strings.EqualFold(acc.ID, u.ID) {
 
 		// updvcs.UpdatedDt = time.Now()
@@ -371,7 +355,7 @@ func (s vcsService) getToken(team string, a types.VCS) (string, error) {
 		return a.AccessToken, nil
 	}
 
-	p, err := s.getProvider(a.Kind)
+	p, err := s.vcsProviders.Get(a.Kind)
 	if err != nil {
 		return "", fmt.Errorf(errNoProviderFound, err)
 	}

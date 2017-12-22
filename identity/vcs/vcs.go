@@ -34,12 +34,12 @@ type resolver struct {
 func (r resolver) FetchVCSByTeamID(params graphql.ResolveParams) (interface{}, error) {
 
 	teamName, _ := params.Args["team"].(string)
-	r.logger.Infoln("Fetch vcs by team id: ", teamName)
+	if teamName == "" {
+		return nil, team.ErrTeamNameIsEmpty
+	}
 
 	result, err := r.teamStore.GetVCS(teamName)
-	r.logger.Infoln("VCS Accounts: ", result)
 
-	// res := types.VCSList{}
 	var res types.VCSList
 	res.Nodes = result
 	res.Count = len(res.Nodes)

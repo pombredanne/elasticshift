@@ -5,7 +5,6 @@ package user
 
 import (
 	"errors"
-	"fmt"
 	"strings"
 
 	"net/mail"
@@ -43,7 +42,7 @@ func NewServer(logger logrus.Logger, dex dex.DexClient) api.UserServer {
 
 func (s server) SignUp(ctx context.Context, req *api.SignUpReq) (*api.SignUpRes, error) {
 
-	fmt.Println("SignUp Request", req)
+	// fmt.Println("SignUp Request", req)
 
 	resp := &api.SignUpRes{Created: false}
 
