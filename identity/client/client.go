@@ -23,13 +23,13 @@ var (
 
 type server struct {
 	store  Store
-	logger logrus.FieldLogger
+	logger logrus.Logger
 	dex    dex.DexClient
 }
 
 // NewServer ..
 // Implementation of api.UserServer
-func NewServer(s core.Store, logger logrus.FieldLogger, dex dex.DexClient) api.ClientServer {
+func NewServer(s core.Store, logger logrus.Logger, dex dex.DexClient) api.ClientServer {
 	return &server{
 		store:  NewStore(s),
 		dex:    dex,

@@ -6,10 +6,10 @@ package providers
 import (
 	"fmt"
 	"strconv"
-	"time"
 
 	"github.com/Sirupsen/logrus"
 
+	"gitlab.com/conspico/elasticshift/api/types"
 	"gitlab.com/conspico/elasticshift/core/dispatch"
 	"golang.org/x/oauth2"
 	gh "golang.org/x/oauth2/github"
@@ -44,7 +44,7 @@ type Github struct {
 	CallbackURL string
 	HookURL     string
 	Config      *oauth2.Config
-	logger      *logrus.Logger
+	logger      logrus.Logger
 }
 
 // GithubUser ..
@@ -57,7 +57,7 @@ type githubUser struct {
 
 // GithubProvider ...
 // Creates a new Github provider
-func GithubProvider(logger *logrus.Logger, clientID, secret, callbackURL, hookURL string) *Github {
+func GithubProvider(logger logrus.Logger, clientID, secret, callbackURL, hookURL string) *Github {
 
 	conf := &oauth2.Config{
 		ClientID:     clientID,
@@ -83,31 +83,41 @@ func (g *Github) Name() string {
 // Provide access to esh app on accessing the github user and repos.
 // the elasticshift application to have access to github repo
 func (g *Github) Authorize(baseURL string) string {
-	g.Config.RedirectURL = g.CallbackURL + "?id=" + baseURL
-	url := g.Config.AuthCodeURL("state", oauth2.AccessTypeOffline)
+	// g.Config.RedirectURL = g.CallbackURL + "?id=" + baseURL
+	g.logger.Warnln("Redirect URI :", g.CallbackURL+"?id="+baseURL)
+
+	opts := oauth2.SetAuthURLParam("redirect_uri", g.CallbackURL+"?id="+baseURL)
+
+	url := g.Config.AuthCodeURL("state", oauth2.AccessTypeOffline, opts)
 	return url
 }
 
 // Authorized ...
 // Finishes the authorize
-func (g *Github) Authorized(code string) (VCS, error) {
+func (g *Github) Authorized(id, code string) (types.VCS, error) {
 
+	g.logger.Infoln("Callback code: ", code)
+	g.logger.Warnln("github config: ", g)
+
+	// var tok Token
+	// tok := &Token{}
 	tok, err := g.Config.Exchange(oauth2.NoContext, code)
-	u := VCS{}
-	// if err != nil {
-	// 	return u, stacktrace.Propagate(err, "Exchange token after bitbucket auth failed")
-	// }
+
+	fmt.Println(tok)
+
+	u := types.VCS{}
+	if err != nil {
+		return u, fmt.Errorf("Exchange token after authorization failed: ", err)
+	}
 
 	u.AccessCode = code
 	u.RefreshToken = tok.RefreshToken
 	u.AccessToken = tok.AccessToken
 	if !tok.Expiry.IsZero() { // zero never expires
 		u.TokenExpiry = tok.Expiry
-	} else {
-		u.TokenExpiry = time.Now()
 	}
-	u.TokenType = tok.TokenType
-	u.Type = GithubType
+
+	u.Kind = GithubType
 
 	us := struct {
 		VcsID   int    `json:"id"`
@@ -115,9 +125,7 @@ func (g *Github) Authorized(code string) (VCS, error) {
 		Name    string `json:"name"`
 		Login   string `json:"login"`
 		Picture string `json:"avatar_url"`
-		Owner   struct {
-			Type string
-		}
+		Type    string
 	}{}
 
 	r := dispatch.NewGetRequestMaker(GithubProfileURL)
@@ -130,14 +138,16 @@ func (g *Github) Authorized(code string) (VCS, error) {
 		return u, err
 	}
 
+	g.logger.Warnln("Callback response: ", us)
+
 	u.AvatarURL = us.Picture
 	u.Name = us.Login
-	if "User" == us.Owner.Type {
+	if "User" == us.Type {
 		u.OwnerType = OwnerTypeUser
 	} else {
 		u.OwnerType = OwnerTypeOrg
 	}
-	u.VcsID = strconv.Itoa(us.VcsID)
+	u.ID = strconv.Itoa(us.VcsID)
 	return u, err
 }
 
@@ -166,7 +176,7 @@ func (g *Github) RefreshToken(token string) (*oauth2.Token, error) {
 
 // GetRepos ..
 // returns the list of repositories
-func (g *Github) GetRepos(token, accountName string, ownerType int) ([]Repo, error) {
+func (g *Github) GetRepos(token, accountName string, ownerType string) ([]types.Repository, error) {
 
 	var url string
 	if OwnerTypeUser == ownerType {
@@ -202,10 +212,10 @@ func (g *Github) GetRepos(token, accountName string, ownerType int) ([]Repo, err
 		return nil, err
 	}
 
-	var repos []Repo
+	var repos []types.Repository
 	for _, repo := range result {
 
-		rp := &Repo{
+		rp := &types.Repository{
 			RepoID:        strconv.Itoa(repo.RepoID),
 			Name:          repo.Name,
 			Link:          repo.Link,
@@ -215,11 +225,11 @@ func (g *Github) GetRepos(token, accountName string, ownerType int) ([]Repo, err
 		}
 
 		if repo.Private {
-			rp.Private = True
+			rp.Private = true
 		}
 
 		if repo.Fork {
-			rp.Fork = True
+			rp.Fork = true
 		}
 		repos = append(repos, *rp)
 	}

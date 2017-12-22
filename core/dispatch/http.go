@@ -1,5 +1,5 @@
 /*
-Copyright 2015 The Elasticshift Authors.
+Copyright 2017 The Elasticshift Authors.
 */
 package dispatch
 
@@ -52,7 +52,7 @@ type RequestMaker struct {
 	username    string
 	password    string
 	contentType string
-	logger      *logrus.Logger
+	logger      logrus.Logger
 }
 
 // NewGetRequestMaker ..
@@ -134,7 +134,7 @@ func (r *RequestMaker) SetContentType(contentType string) *RequestMaker {
 
 // SetLogger ..
 // Set the logger
-func (r *RequestMaker) SetLogger(logger *logrus.Logger) *RequestMaker {
+func (r *RequestMaker) SetLogger(logger logrus.Logger) *RequestMaker {
 	r.logger = logger
 	return r
 }
@@ -253,7 +253,7 @@ func (r *RequestMaker) Dispatch() error {
 		return err
 	}
 
-	//r.logger.Infoln("Response = ", string(bits[:]))
+	r.logger.Infoln("Response = ", string(bits[:]))
 	// decode to response type
 	err = json.NewDecoder(bytes.NewBuffer(bits)).Decode(r.response)
 	if err != nil {

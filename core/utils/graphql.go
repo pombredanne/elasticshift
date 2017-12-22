@@ -12,6 +12,7 @@ func MakeListField(listType graphql.Output, resolve graphql.FieldResolveFn) *gra
 		Args: graphql.FieldConfigArgument{
 			"limit":  &graphql.ArgumentConfig{Type: graphql.Int},
 			"offset": &graphql.ArgumentConfig{Type: graphql.Int},
+			"team":   &graphql.ArgumentConfig{Type: graphql.String},
 		},
 	}
 }

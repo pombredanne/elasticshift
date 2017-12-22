@@ -24,6 +24,7 @@ type Store interface {
 	GetTeams(limit, offset int) ([]types.Team, error)
 
 	// VCS Settings
+	GetVCS(team string) ([]types.VCS, error)
 	SaveVCS(team string, vcs *types.VCS) error
 	UpdateVCS(team string, vcs types.VCS) error
 	GetVCSByID(team, id string) (types.VCS, error)
@@ -92,12 +93,22 @@ func (r *store) SaveVCS(team string, vcs *types.VCS) error {
 	return err
 }
 
+func (r *store) GetVCS(team string) ([]types.VCS, error) {
+
+	var err error
+	var t types.Team
+	r.store.Execute(r.cname, func(c *mgo.Collection) {
+		err = c.Find(bson.M{"name": team}).One(&t)
+	})
+	return t.Accounts, err
+}
+
 func (r *store) GetVCSByID(team, id string) (types.VCS, error) {
 
 	var t types.Team
 	var err error
 	r.store.Execute(r.cname, func(c *mgo.Collection) {
-		err = c.Find(bson.M{"name": team, "accounts._id": id}).Select(bson.M{"accounts.$": 1}).One(&t)
+		err = c.Find(bson.M{"name": team, "accounts.id": id}).Select(bson.M{"accounts.$": 1}).One(&t)
 	})
 
 	if len(t.Accounts) == 0 {
@@ -111,7 +122,7 @@ func (r *store) UpdateVCS(team string, vcs types.VCS) error {
 
 	var err error
 	r.store.Execute(r.cname, func(c *mgo.Collection) {
-		err = c.Update(bson.M{"name": team, "accounts._id": vcs.ID},
+		err = c.Update(bson.M{"name": team, "accounts.id": vcs.ID},
 			bson.M{"$set": bson.M{"accounts.$.access_token": vcs.AccessToken,
 				"accounts.$.access_code":   vcs.AccessCode,
 				"accounts.$.refresh_token": vcs.RefreshToken,

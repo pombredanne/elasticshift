@@ -5,16 +5,14 @@ package server
 
 import (
 	"encoding/base64"
-	"fmt"
 	"log"
-	"net/http"
 	"net/http/pprof"
 	"strings"
 
 	"github.com/Sirupsen/logrus"
+	"github.com/gorilla/mux"
 	"github.com/graphql-go/graphql"
 	"github.com/graphql-go/handler"
-	"github.com/grpc-ecosystem/grpc-gateway/runtime"
 	"gitlab.com/conspico/elasticshift/api"
 	"gitlab.com/conspico/elasticshift/api/dex"
 	"gitlab.com/conspico/elasticshift/core/store"
@@ -43,16 +41,16 @@ const (
 
 // Server ..
 type Server struct {
-	Logger logrus.FieldLogger
+	Logger logrus.Logger
 	Store  store.Store
-	Router *http.ServeMux
+	Router *mux.Router
 	Dex    dex.DexClient
 }
 
 // Config ..
 type Config struct {
 	Store    store.Config
-	Logger   logrus.FieldLogger
+	Logger   logrus.Logger
 	Session  *mgo.Session
 	Identity Identity
 }
@@ -73,11 +71,7 @@ func New(ctx context.Context, c Config) (*Server, error) {
 
 	s := &Server{}
 
-	if c.Logger == nil {
-		return nil, fmt.Errorf("No logger found")
-	}
 	s.Logger = c.Logger
-
 	s.Store = store.New(c.Store.Name, c.Session)
 
 	// d, err := newDexClient(ctx, c.Identity)
@@ -86,8 +80,8 @@ func New(ctx context.Context, c Config) (*Server, error) {
 	// }
 	// s.Dex = d
 
-	//r := mux.NewRouter()
-	r := http.NewServeMux()
+	r := mux.NewRouter()
+	//r := http.NewServeMux()
 
 	// pprof
 	r.HandleFunc("/debug/pprof", pprof.Index)
@@ -97,6 +91,9 @@ func New(ctx context.Context, c Config) (*Server, error) {
 	r.Handle("/debug/goroutine", pprof.Handler("goroutine"))
 	r.Handle("/debug/threadcreate", pprof.Handler("threadcreate"))
 	r.Handle("/debug/block", pprof.Handler("block"))
+
+	// initialize oauth2 providers
+	RegisterOauth2Providers(r, s.Logger, s.Store)
 
 	// initialize graphql based services
 	RegisterGraphQLServices(r, s.Logger, s.Store)
@@ -110,10 +107,20 @@ func New(ctx context.Context, c Config) (*Server, error) {
 	return s, nil
 }
 
-func RegisterGraphQLServices(r *http.ServeMux, logger logrus.FieldLogger, s core.Store) {
+func RegisterOauth2Providers(r *mux.Router, logger logrus.Logger, s core.Store) {
+
+	teamStore := team.NewStore(s)
+	sysconfStore := sysconf.NewStore(s)
+	vcsServ := vcs.NewService(logger, s, teamStore, sysconfStore)
+
+	r.HandleFunc("/{team}/link/{provider}", vcsServ.Authorize)
+	r.HandleFunc("/link/{provider}/callback", vcsServ.Authorized)
+}
+
+func RegisterGraphQLServices(r *mux.Router, logger logrus.Logger, s core.Store) {
 
 	// initialize schema
-	queryFields := graphql.Fields{}
+	queries := graphql.Fields{}
 	mutations := graphql.Fields{}
 
 	// data store
@@ -123,20 +130,20 @@ func RegisterGraphQLServices(r *http.ServeMux, logger logrus.FieldLogger, s core
 
 	// team fields
 	teamQ, teamM := team.InitSchema(logger, teamStore)
-	appendFields(queryFields, teamQ)
+	appendFields(queries, teamQ)
 	appendFields(mutations, teamM)
 
 	// vcs fields
 	vcsQ, vcsM := vcs.InitSchema(logger, vcsStore, teamStore)
-	appendFields(queryFields, vcsQ)
+	appendFields(queries, vcsQ)
 	appendFields(mutations, vcsM)
 
 	// vcs fields
 	sysconfQ, sysconfM := sysconf.InitSchema(logger, sysconfStore)
-	appendFields(queryFields, sysconfQ)
+	appendFields(queries, sysconfQ)
 	appendFields(mutations, sysconfM)
 
-	rootQuery := graphql.ObjectConfig{Name: "RootQuery", Fields: queryFields}
+	rootQuery := graphql.ObjectConfig{Name: "RootQuery", Fields: queries}
 	rootMutation := graphql.ObjectConfig{Name: "RootMutation", Fields: mutations}
 
 	schemaConfig := graphql.SchemaConfig{
@@ -173,19 +180,20 @@ func RegisterGRPCServices(grpcServer *grpc.Server, s *Server) {
 }
 
 // Registers the exposed http services
-func RegisterHTTPServices(ctx context.Context, router *runtime.ServeMux, grpcAddress string, dialopts []grpc.DialOption) error {
+func RegisterHTTPServices(ctx context.Context, router *mux.Router, grpcAddress string, dialopts []grpc.DialOption) error {
 
-	err := api.RegisterUserHandlerFromEndpoint(ctx, router, grpcAddress, dialopts)
-	if err != nil {
-		return fmt.Errorf("Registering User handler failed : %v", err)
-	}
+	return nil
+	// err := api.RegisterUserHandlerFromEndpoint(ctx, router, grpcAddress, dialopts)
+	// if err != nil {
+	// 	return fmt.Errorf("Registering User handler failed : %v", err)
+	// }
 
-	err = api.RegisterClientHandlerFromEndpoint(ctx, router, grpcAddress, dialopts)
-	if err != nil {
-		return fmt.Errorf("Registering Client handler failed : %v", err)
-	}
+	// err = api.RegisterClientHandlerFromEndpoint(ctx, router, grpcAddress, dialopts)
+	// if err != nil {
+	// 	return fmt.Errorf("Registering Client handler failed : %v", err)
+	// }
 
-	return err
+	// return err
 }
 
 //func newDexClient(ctx context.Context, c Dex) (dex.DexClient, error) {

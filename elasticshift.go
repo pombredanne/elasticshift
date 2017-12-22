@@ -17,7 +17,7 @@ import (
 
 	"github.com/Sirupsen/logrus"
 	"github.com/gorilla/handlers"
-	"github.com/grpc-ecosystem/grpc-gateway/runtime"
+	"github.com/gorilla/mux"
 	"github.com/justinas/alice"
 	"gitlab.com/conspico/elasticshift/core/server"
 	"gitlab.com/conspico/elasticshift/core/store"
@@ -263,14 +263,14 @@ func elasticshift() error {
 
 			dialopts := []grpc.DialOption{grpc.WithInsecure()}
 
-			mux := runtime.NewServeMux()
+			router := mux.NewRouter()
 
-			err := server.RegisterHTTPServices(ctx, mux, c.Web.GRPC, dialopts)
+			err := server.RegisterHTTPServices(ctx, router, c.Web.GRPC, dialopts)
 			if err != nil {
 				return fmt.Errorf("Error when registering services.. : %v", err)
 			}
 
-			s.Router.Handle("/", mux)
+			s.Router.Handle("/", router)
 
 			serv = &http.Server{Addr: c.Web.HTTP, Handler: publicChain.Then(s.Router)}
 
@@ -318,7 +318,7 @@ func (f *utcFormatter) Format(e *logrus.Entry) ([]byte, error) {
 	return f.f.Format(e)
 }
 
-func newLogger(level string, format string) (logrus.FieldLogger, error) {
+func newLogger(level string, format string) (logrus.Logger, error) {
 	var logLevel logrus.Level
 	switch strings.ToLower(level) {
 	case "debug":
@@ -328,7 +328,7 @@ func newLogger(level string, format string) (logrus.FieldLogger, error) {
 	case "error":
 		logLevel = logrus.ErrorLevel
 	default:
-		return nil, fmt.Errorf("log level is not one of the supported values (%s): %s", strings.Join(logLevels, ", "), level)
+		return logrus.Logger{}, fmt.Errorf("log level is not one of the supported values (%s): %s", strings.Join(logLevels, ", "), level)
 	}
 
 	var formatter utcFormatter
@@ -338,10 +338,10 @@ func newLogger(level string, format string) (logrus.FieldLogger, error) {
 	case "json":
 		formatter.f = &logrus.JSONFormatter{}
 	default:
-		return nil, fmt.Errorf("log format is not one of the supported values (%s): %s", strings.Join(logFormats, ", "), format)
+		return logrus.Logger{}, fmt.Errorf("log format is not one of the supported values (%s): %s", strings.Join(logFormats, ", "), format)
 	}
 
-	return &logrus.Logger{
+	return logrus.Logger{
 		Out:       os.Stderr,
 		Formatter: &formatter,
 		Level:     logLevel,

@@ -28,18 +28,23 @@ var (
 type resolver struct {
 	store     Store
 	teamStore team.Store
-	logger    logrus.FieldLogger
+	logger    logrus.Logger
 }
 
 func (r resolver) FetchVCSByTeamID(params graphql.ResolveParams) (interface{}, error) {
 
-	teamName, _ := params.Args["teamname"].(string)
-	t, err := r.teamStore.GetTeam("", teamName)
-	if err != nil {
-		return nil, err
-	}
+	teamName, _ := params.Args["team"].(string)
+	r.logger.Infoln("Fetch vcs by team id: ", teamName)
 
-	return t.Accounts, nil
+	result, err := r.teamStore.GetVCS(teamName)
+	r.logger.Infoln("VCS Accounts: ", result)
+
+	// res := types.VCSList{}
+	var res types.VCSList
+	res.Nodes = result
+	res.Count = len(res.Nodes)
+
+	return &res, err
 }
 
 func (r resolver) FetchVCS(params graphql.ResolveParams) (interface{}, error) {

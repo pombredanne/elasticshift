@@ -28,13 +28,13 @@ var (
 )
 
 type server struct {
-	logger logrus.FieldLogger
+	logger logrus.Logger
 	dex    dex.DexClient
 }
 
 // NewServer ..
 // Implementation of api.UserServer
-func NewServer(logger logrus.FieldLogger, dex dex.DexClient) api.UserServer {
+func NewServer(logger logrus.Logger, dex dex.DexClient) api.UserServer {
 	return &server{
 		logger: logger,
 		dex:    dex,

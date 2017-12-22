@@ -5,6 +5,7 @@ package sysconf
 
 import (
 	"errors"
+	"fmt"
 
 	"github.com/Sirupsen/logrus"
 	"github.com/graphql-go/graphql"
@@ -17,7 +18,7 @@ var (
 
 type resolver struct {
 	store  Store
-	logger logrus.FieldLogger
+	logger logrus.Logger
 }
 
 func (r *resolver) CreateVCSSysConf(params graphql.ResolveParams) (interface{}, error) {
@@ -49,7 +50,9 @@ func (r *resolver) FetchVCSSysConfByName(params graphql.ResolveParams) (interfac
 	if err != nil {
 		return nil, err
 	}
-	return &res, nil
+	fmt.Println("Result:", res)
+	fmt.Println("Len", len(res))
+	return res, nil
 }
 
 func (r *resolver) FetchVCSSysConf(params graphql.ResolveParams) (interface{}, error) {

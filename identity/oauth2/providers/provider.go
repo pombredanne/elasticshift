@@ -1,5 +1,5 @@
 /*
-Copyright 2015 The Elasticshift Authors.
+Copyright 2017 The Elasticshift Authors.
 */
 package providers
 
@@ -7,6 +7,7 @@ import (
 	"fmt"
 	"time"
 
+	"gitlab.com/conspico/elasticshift/api/types"
 	"golang.org/x/oauth2"
 )
 
@@ -17,6 +18,22 @@ const (
 	BitBucketType = 3
 	SvnType       = 4
 	TfsType       = 5
+)
+
+// Account owner type
+const (
+	OwnerTypeUser = "user"
+	OwnerTypeOrg  = "org"
+)
+
+// True or False
+const (
+	True  = 1
+	False = 0
+)
+
+var (
+	errNoProviderFound = "No provider found :"
 )
 
 // Token ..
@@ -45,11 +62,11 @@ type Provider interface {
 
 	Authorize(baseURL string) string
 
-	Authorized(code string) (VCS, error)
+	Authorized(id, code string) (types.VCS, error)
 
 	RefreshToken(token string) (*oauth2.Token, error)
 
-	GetRepos(token, accountName string, owner int) ([]Repo, error)
+	GetRepos(token, accountName string, owner string) ([]types.Repository, error)
 
 	CreateHook(token, owner, repo string) error
 }
@@ -59,22 +76,34 @@ type Providers struct {
 	Providers map[string]Provider
 }
 
+func New() Providers {
+	return Providers{make(map[string]Provider)}
+}
+
 // NewProviders ...
-func NewProviders(pvider ...Provider) *Providers {
+func NewProviders(pvider ...Provider) Providers {
 
 	var prov = make(map[string]Provider)
 	for _, p := range pvider {
 		prov[p.Name()] = p
 	}
-	return &Providers{prov}
+	return Providers{prov}
+}
+
+// Set the provider for the given name
+func (prov Providers) Set(name string, p Provider) {
+	prov.Providers[name] = p
 }
 
 // Get the provider by namee
 func (prov Providers) Get(name string) (Provider, error) {
 
-	p := prov.Providers[name]
-	if p == nil {
-		return nil, fmt.Errorf(errNoProviderFound, name)
+	fmt.Println("Providers map: ", prov.Providers)
+	if p, ok := prov.Providers[name]; ok {
+		fmt.Println("OK : ", ok)
+		fmt.Println("Inside Provider: ", p)
+		return p, nil
 	}
-	return p, nil
+
+	return nil, fmt.Errorf(errNoProviderFound, name)
 }

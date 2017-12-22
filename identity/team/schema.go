@@ -9,7 +9,7 @@ import (
 	"gitlab.com/conspico/elasticshift/api/types"
 )
 
-func InitSchema(logger logrus.FieldLogger, s Store) (queries graphql.Fields, mutations graphql.Fields) {
+func InitSchema(logger logrus.Logger, s Store) (queries graphql.Fields, mutations graphql.Fields) {
 
 	r := &resolver{
 		store:  s,

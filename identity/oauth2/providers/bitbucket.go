@@ -7,6 +7,7 @@ import (
 
 	"time"
 
+	"gitlab.com/conspico/elasticshift/api/types"
 	"gitlab.com/conspico/elasticshift/core/dispatch"
 
 	"golang.org/x/oauth2"
@@ -16,7 +17,7 @@ import (
 
 // Bitbucket URL ...
 const (
-	BitBucketProviderName   = "bitbucket"
+	BitbucketProviderName   = "bitbucket"
 	BitbucketBaseURLV2      = "https://api.bitbucket.org/2.0"
 	BitbucketProfileURL     = BitbucketBaseURLV2 + "/user"
 	BitbucketGetUserRepoURL = BitbucketBaseURLV2 + "/repositories/:username"
@@ -25,13 +26,14 @@ const (
 // Bitbucket ...
 type Bitbucket struct {
 	CallbackURL string
+	HookURL     string
 	Config      *oauth2.Config
-	logger      *logrus.Logger
+	logger      logrus.Logger
 }
 
 // BitbucketProvider ...
 // Creates a new Github provider
-func BitbucketProvider(logger *logrus.Logger, clientID, secret, callbackURL string) *Bitbucket {
+func BitbucketProvider(logger logrus.Logger, clientID, secret, callbackURL, HookURL string) *Bitbucket {
 
 	conf := &oauth2.Config{
 		ClientID:     clientID,
@@ -42,6 +44,7 @@ func BitbucketProvider(logger *logrus.Logger, clientID, secret, callbackURL stri
 
 	return &Bitbucket{
 		callbackURL,
+		HookURL,
 		conf,
 		logger,
 	}
@@ -49,7 +52,7 @@ func BitbucketProvider(logger *logrus.Logger, clientID, secret, callbackURL stri
 
 // Name of the provider
 func (b *Bitbucket) Name() string {
-	return BitBucketProviderName
+	return BitbucketProviderName
 }
 
 // Authorize ...
@@ -63,10 +66,10 @@ func (b *Bitbucket) Authorize(baseURL string) string {
 
 // Authorized ...
 // Finishes the authorize
-func (b *Bitbucket) Authorized(code string) (VCS, error) {
+func (b *Bitbucket) Authorized(id, code string) (types.VCS, error) {
 
 	tok, err := b.Config.Exchange(oauth2.NoContext, code)
-	u := VCS{}
+	u := types.VCS{}
 	// if err != nil {
 	// 	return u, stacktrace.Propagate(err, "Exchange token after bitbucket auth failed")
 	// }
@@ -77,8 +80,7 @@ func (b *Bitbucket) Authorized(code string) (VCS, error) {
 	if !tok.Expiry.IsZero() { // zero never expires
 		u.TokenExpiry = tok.Expiry
 	}
-	u.TokenType = tok.TokenType
-	u.Type = BitBucketType
+	u.Kind = BitBucketType
 
 	us := struct {
 		UUID  string
@@ -103,7 +105,7 @@ func (b *Bitbucket) Authorized(code string) (VCS, error) {
 
 	u.AvatarURL = us.Links.Avatar.Href
 	u.Name = us.Name
-	u.VcsID = us.UUID
+	u.ID = us.UUID
 	return u, err
 }
 
@@ -142,7 +144,7 @@ func (b *Bitbucket) RefreshToken(token string) (*oauth2.Token, error) {
 
 // GetRepos ..
 // returns the list of repositories
-func (b *Bitbucket) GetRepos(token, accountName string, ownerType int) ([]Repo, error) {
+func (b *Bitbucket) GetRepos(token, accountName string, ownerType string) ([]types.Repository, error) {
 
 	r := dispatch.NewGetRequestMaker(BitbucketGetUserRepoURL)
 	r.SetLogger(b.logger)
@@ -176,10 +178,10 @@ func (b *Bitbucket) GetRepos(token, accountName string, ownerType int) ([]Repo, 
 	}{}
 	err := r.Scan(&rp).Dispatch()
 
-	repos := []Repo{}
+	repos := []types.Repository{}
 	for _, rpo := range rp.Values {
 
-		repo := &Repo{
+		repo := &types.Repository{
 			RepoID:      rpo.UUID,
 			Name:        rpo.Name,
 			Language:    rpo.Language,
@@ -187,7 +189,7 @@ func (b *Bitbucket) GetRepos(token, accountName string, ownerType int) ([]Repo, 
 			Description: rpo.Description,
 		}
 		if rpo.Private {
-			repo.Private = True
+			repo.Private = true
 		}
 
 		repos = append(repos, *repo)

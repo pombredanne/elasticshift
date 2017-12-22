@@ -25,7 +25,7 @@ var (
 
 type resolver struct {
 	store  Store
-	logger logrus.FieldLogger
+	logger logrus.Logger
 }
 
 func (r *resolver) CreateTeam(params graphql.ResolveParams) (interface{}, error) {

@@ -4,12 +4,15 @@
 package providers
 
 import (
+	"fmt"
+
 	"github.com/Sirupsen/logrus"
 
 	"net/url"
 
 	"time"
 
+	"gitlab.com/conspico/elasticshift/api/types"
 	"gitlab.com/conspico/elasticshift/core/dispatch"
 
 	"golang.org/x/oauth2"
@@ -31,13 +34,14 @@ const (
 // Gitlab ...
 type Gitlab struct {
 	CallbackURL string
+	HookURL     string
 	Config      *oauth2.Config
-	logger      *logrus.Logger
+	logger      logrus.Logger
 }
 
 // GitlabProvider ...
 // Creates a new Gitlab provider
-func GitlabProvider(logger *logrus.Logger, clientID, secret, callbackURL string) *Gitlab {
+func GitlabProvider(logger logrus.Logger, clientID, secret, callbackURL, hookURL string) *Gitlab {
 
 	conf := &oauth2.Config{
 		ClientID:     clientID,
@@ -51,6 +55,7 @@ func GitlabProvider(logger *logrus.Logger, clientID, secret, callbackURL string)
 
 	return &Gitlab{
 		callbackURL,
+		hookURL,
 		conf,
 		logger,
 	}
@@ -73,7 +78,7 @@ func (g *Gitlab) Authorize(baseURL string) string {
 
 // Authorized ...
 // Finishes the authorize
-func (g *Gitlab) Authorized(code string) (VCS, error) {
+func (g *Gitlab) Authorized(id, code string) (types.VCS, error) {
 
 	//tok, err := g.Config.Exchange(oauth2.NoContext, code)
 	// Authorize request
@@ -96,17 +101,16 @@ func (g *Gitlab) Authorized(code string) (VCS, error) {
 	var tok Token
 	err := r.Scan(&tok).Dispatch()
 
-	u := VCS{}
-	// if err != nil {
-	// 	return u, stacktrace.Propagate(err, "Exchange token failed")
-	// }
+	u := types.VCS{}
+	if err != nil {
+		return u, fmt.Errorf("Exchange token failed: ", err)
+	}
 
 	u.AccessCode = code
 	u.RefreshToken = tok.RefreshToken
 	u.AccessToken = tok.AccessToken
 	u.TokenExpiry = time.Now().Add(time.Duration(tok.ExpiresIn) * time.Second)
-	u.TokenType = tok.TokenType
-	u.Type = GitlabType
+	u.Kind = GitlabType
 
 	g.logger.Warn("Token = ", tok)
 	// Get user profile
@@ -130,7 +134,7 @@ func (g *Gitlab) Authorized(code string) (VCS, error) {
 
 	u.AvatarURL = us.AvatarURL
 	u.Name = us.Name
-	u.VcsID = strconv.Itoa(us.ID)
+	u.ID = strconv.Itoa(us.ID)
 	return u, err
 }
 
@@ -177,7 +181,7 @@ func (g *Gitlab) RefreshToken(token string) (*oauth2.Token, error) {
 
 // GetRepos ..
 // returns the list of repositories
-func (g *Gitlab) GetRepos(token, accountName string, ownerType int) ([]Repo, error) {
+func (g *Gitlab) GetRepos(token, accountName string, ownerType string) ([]types.Repository, error) {
 
 	r := dispatch.NewGetRequestMaker(GitlabGetUserRepoURL)
 	r.SetLogger(g.logger)
@@ -200,10 +204,10 @@ func (g *Gitlab) GetRepos(token, accountName string, ownerType int) ([]Repo, err
 	}{}
 	err := r.Scan(&rp).Dispatch()
 
-	repos := []Repo{}
+	repos := []types.Repository{}
 	for _, rpo := range rp {
 
-		repo := &Repo{
+		repo := &types.Repository{
 			RepoID:        strconv.Itoa(rpo.ID),
 			Name:          rpo.Name,
 			Link:          rpo.WebURL,
@@ -211,7 +215,7 @@ func (g *Gitlab) GetRepos(token, accountName string, ownerType int) ([]Repo, err
 			DefaultBranch: rpo.DefaultBranch,
 		}
 		if rpo.Public {
-			repo.Private = False
+			repo.Private = false
 		}
 
 		repos = append(repos, *repo)

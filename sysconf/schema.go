@@ -9,7 +9,7 @@ import (
 	"gitlab.com/conspico/elasticshift/api/types"
 )
 
-func InitSchema(logger logrus.FieldLogger, s Store) (queries graphql.Fields, mutations graphql.Fields) {
+func InitSchema(logger logrus.Logger, s Store) (queries graphql.Fields, mutations graphql.Fields) {
 
 	r := &resolver{
 		store:  s,
@@ -21,7 +21,7 @@ func InitSchema(logger logrus.FieldLogger, s Store) (queries graphql.Fields, mut
 			Type:        graphql.ID,
 			Description: "Represents the system config ID",
 			Resolve: func(p graphql.ResolveParams) (interface{}, error) {
-				if t, ok := p.Source.(*types.Team); ok {
+				if t, ok := p.Source.(*types.VCSSysConf); ok {
 					return t.ID.Hex(), nil
 				}
 				return nil, nil
@@ -32,7 +32,7 @@ func InitSchema(logger logrus.FieldLogger, s Store) (queries graphql.Fields, mut
 			Type:        graphql.String,
 			Description: "Name of the system config",
 			Resolve: func(p graphql.ResolveParams) (interface{}, error) {
-				if t, ok := p.Source.(*types.Team); ok {
+				if t, ok := p.Source.(*types.VCSSysConf); ok {
 					return t.Name, nil
 				}
 				return nil, nil
@@ -43,8 +43,8 @@ func InitSchema(logger logrus.FieldLogger, s Store) (queries graphql.Fields, mut
 			Type:        graphql.String,
 			Description: "Type of the system configuration",
 			Resolve: func(p graphql.ResolveParams) (interface{}, error) {
-				if t, ok := p.Source.(*types.Team); ok {
-					return t.Display, nil
+				if t, ok := p.Source.(*types.VCSSysConf); ok {
+					return t.Kind, nil
 				}
 				return nil, nil
 			},
@@ -54,8 +54,8 @@ func InitSchema(logger logrus.FieldLogger, s Store) (queries graphql.Fields, mut
 			Type:        graphql.String,
 			Description: "A key for the elasticshift application",
 			Resolve: func(p graphql.ResolveParams) (interface{}, error) {
-				if t, ok := p.Source.(*types.Team); ok {
-					return t.Accounts, nil
+				if t, ok := p.Source.(*types.VCSSysConf); ok {
+					return t.Key, nil
 				}
 				return nil, nil
 			},
@@ -65,8 +65,8 @@ func InitSchema(logger logrus.FieldLogger, s Store) (queries graphql.Fields, mut
 			Type:        graphql.String,
 			Description: "The secret for the elasticshift application",
 			Resolve: func(p graphql.ResolveParams) (interface{}, error) {
-				if t, ok := p.Source.(*types.Team); ok {
-					return t.Accounts, nil
+				if t, ok := p.Source.(*types.VCSSysConf); ok {
+					return t.Secret, nil
 				}
 				return nil, nil
 			},
@@ -76,8 +76,8 @@ func InitSchema(logger logrus.FieldLogger, s Store) (queries graphql.Fields, mut
 			Type:        graphql.String,
 			Description: "The callback url for the elasticshift application",
 			Resolve: func(p graphql.ResolveParams) (interface{}, error) {
-				if t, ok := p.Source.(*types.Team); ok {
-					return t.Accounts, nil
+				if t, ok := p.Source.(*types.VCSSysConf); ok {
+					return t.CallbackURL, nil
 				}
 				return nil, nil
 			},
@@ -93,8 +93,8 @@ func InitSchema(logger logrus.FieldLogger, s Store) (queries graphql.Fields, mut
 	)
 
 	queries = graphql.Fields{
-		"vcs": &graphql.Field{
-			Type: vcsSysconfType,
+		"VCSSysConf": &graphql.Field{
+			Type: graphql.NewList(vcsSysconfType),
 			Args: graphql.FieldConfigArgument{
 				"name": &graphql.ArgumentConfig{
 					Type:        graphql.String,

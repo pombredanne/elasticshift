@@ -41,6 +41,6 @@ func (s *store) GetVCSByID(id string) (types.VCS, error) {
 
 func (s *store) UpdateVCS(vcs types.VCS) error {
 
-	var err error
+	_, err := s.store.Upsert(s.cname, bson.M{"_id": vcs.ID}, vcs)
 	return err
 }

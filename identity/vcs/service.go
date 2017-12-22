@@ -1,143 +1,228 @@
 package vcs
 
-// import (
-// 	"fmt"
-// 	"net/http"
-// 	"strings"
-// 	"time"
+import (
+	"fmt"
+	"net/http"
+	"strings"
+	"time"
 
-// 	"bytes"
+	"bytes"
 
-// 	"encoding/base64"
+	"encoding/base64"
 
-// 	"github.com/Sirupsen/logrus"
-// 	"gitlab.com/conspico/elasticshift/core/utils"
-// )
+	"github.com/Sirupsen/logrus"
+	"github.com/gorilla/mux"
+	"gitlab.com/conspico/elasticshift/api/types"
+	core "gitlab.com/conspico/elasticshift/core/store"
+	"gitlab.com/conspico/elasticshift/identity/oauth2/providers"
+	"gitlab.com/conspico/elasticshift/identity/team"
+	"gitlab.com/conspico/elasticshift/sysconf"
+)
 
-// // expiryDelta determines how earlier a token should be considered
-// const expiryDelta = 10 * time.Second
+var (
 
-// // VCS account owner type
-// const (
-// 	OwnerTypeUser = 1
-// 	OwnerTypeOrg  = 2
-// )
+	// VCS
+	errNoProviderFound         = "No provider found for %s"
+	errGetUpdatedFokenFailed   = "Failed to get updated token %s"
+	errGettingRepositories     = "Failed to get repositories for %s"
+	errVCSAccountAlreadyLinked = "VCS account already linked"
+)
 
-// // True or False
-// const (
-// 	True  = 1
-// 	False = 0
-// )
+// expiryDelta determines how earlier a token should be considered
+const expiryDelta = 10 * time.Second
 
-// // Constants for performing encode decode
-// const (
-// 	EQUAL        = "="
-// 	DOUBLEEQUALS = "=="
-// 	DOT0         = ".0"
-// 	DOT1         = ".1"
-// 	DOT2         = ".2"
-// )
+// VCS account owner type
+const (
+	OwnerTypeUser = 1
+	OwnerTypeOrg  = 2
+)
 
-// type vcsService struct {
-// 	vcsDS        VCSDatastore
-// 	teamDS       TeamDatastore
-// 	repoDS       RepoDatastore
-// 	vcsProviders *Providers
-// 	config       Config
-// 	logger       *logrus.Logger
-// }
+// True or False
+const (
+	True  = 1
+	False = 0
+)
 
-// // NewVCSService ..
-// func NewVCSService(ctx AppContext) VCSService {
+// Constants for performing encode decode
+const (
+	EQUAL        = "="
+	DOUBLEEQUALS = "=="
+	DOT0         = ".0"
+	DOT1         = ".1"
+	DOT2         = ".2"
+)
 
-// 	conf := ctx.Config
-// 	providers := NewProviders(
-// 		GithubProvider(ctx.Logger, conf.Github.Key, conf.Github.Secret, conf.Github.Callback, conf.Github.HookURL),
-// 		GitlabProvider(ctx.Logger, conf.Gitlab.Key, conf.Gitlab.Secret, conf.Gitlab.Callback),
-// 		BitbucketProvider(ctx.Logger, conf.Bitbucket.Key, conf.Bitbucket.Secret, conf.Bitbucket.Callback),
-// 	)
+// Common constants
+const (
+	SLASH     = "/"
+	SEMICOLON = ";"
+)
 
-// 	return &vcsService{
-// 		vcsProviders: providers,
-// 		vcsDS:        ctx.VCSDatastore,
-// 		teamDS:       ctx.TeamDatastore,
-// 		repoDS:       ctx.RepoDatastore,
-// 		config:       conf,
-// 		logger:       ctx.Logger,
-// 	}
-// }
+type vcsService struct {
+	store        Store
+	teamStore    team.Store
+	sysconfStore sysconf.Store
+	// repoDS       RepoDatastore
+	vcsProviders providers.Providers
+	logger       logrus.Logger
+}
 
-// func (s vcsService) Authorize(teamID, provider string, r *http.Request) (AuthorizeResponse, error) {
+// VCSService ..
+type VCSService interface {
+	Authorize(w http.ResponseWriter, r *http.Request)
+	Authorized(w http.ResponseWriter, r *http.Request)
+	// GetVCS(teamID string) (types.VCS, error)
+	// SyncVCS(teamID, userName, provider string) (bool, error)
+}
 
-// 	p, err := s.vcsProviders.Get(provider)
-// 	if err != nil {
-// 		return AuthorizeResponse{}, fmt.Errorf("Getting provider %s failed: %v", provider, err)
-// 	}
+// NewVCSService ..
+func NewService(logger logrus.Logger, s core.Store, teamStore team.Store, sysconfStore sysconf.Store) VCSService {
 
-// 	// Get the base URL
-// 	var buf bytes.Buffer
-// 	buf.WriteString(teamID)
-// 	buf.WriteString(SEMICOLON)
-// 	buf.WriteString(SLASH)
-// 	buf.WriteString(SLASH)
-// 	buf.WriteString(r.Host)
+	this := &vcsService{
+		store:        NewStore(s),
+		teamStore:    teamStore,
+		sysconfStore: sysconfStore,
+		logger:       logger,
+		vcsProviders: providers.New(),
+	}
 
-// 	url := p.Authorize(s.encode(buf.String()))
+	// initialize the providers
+	this.initProviders()
+	return this
+}
 
-// 	return AuthorizeResponse{Err: nil, URL: url, Request: r}, nil
-// }
+// Initialize the registered providers
+func (s vcsService) initProviders() {
 
-// // Authorized ..
-// // Invoked when authorization finished by oauth app
-// func (s vcsService) Authorized(id, provider, code string, r *http.Request) (AuthorizeResponse, error) {
+	vcsConf, err := s.sysconfStore.GetVCSSysConf()
+	if err != nil {
+		panic(err)
+	}
 
-// 	p, err := s.vcsProviders.Get(provider)
-// 	if err != nil {
-// 		return AuthorizeResponse{}, fmt.Errorf("Getting provider %s failed: %v", provider, err)
-// 	}
+	// s.vcsProviders = providers.New()
+	for _, conf := range vcsConf {
 
-// 	u, err := p.Authorized(code)
-// 	if err != nil {
-// 		return AuthorizeResponse{}, fmt.Errorf("Finalize the authorization failed : %v", err)
-// 	}
+		// fmt.Println(conf)
+		var prov providers.Provider
+		switch conf.Name {
+		case providers.GithubProviderName:
+			prov = providers.GithubProvider(s.logger, conf.Key, conf.Secret, conf.CallbackURL, conf.HookURL)
+		case providers.GitlabProviderName:
+			prov = providers.GitlabProvider(s.logger, conf.Key, conf.Secret, conf.CallbackURL, conf.HookURL)
+		case providers.BitbucketProviderName:
+			prov = providers.BitbucketProvider(s.logger, conf.Key, conf.Secret, conf.CallbackURL, conf.HookURL)
+		}
 
-// 	unescID := s.decode(id)
-// 	escID := strings.Split(unescID, SEMICOLON)
+		if prov != nil {
+			s.vcsProviders.Set(conf.Name, prov)
+		}
+	}
+	fmt.Println("Init prov:", s.vcsProviders.Providers)
+}
 
-// 	// persist user
-// 	u.TeamID = escID[0]
+func (s vcsService) Authorize(w http.ResponseWriter, r *http.Request) {
 
-// 	acc, err := s.vcsDS.GetByProviderVCSID(u.TeamID, u.VcsID)
-// 	if strings.EqualFold(acc.VcsID, u.VcsID) {
+	fmt.Println("Authorize", r.URL.Path)
 
-// 		updvcs := VCS{}
-// 		updvcs.UpdatedDt = time.Now()
-// 		updvcs.AccessToken = u.AccessToken
-// 		updvcs.AccessCode = u.AccessCode
-// 		updvcs.RefreshToken = u.RefreshToken
-// 		updvcs.OwnerType = u.OwnerType
-// 		updvcs.TokenExpiry = u.TokenExpiry
+	team := mux.Vars(r)["team"]
+	fmt.Println("Team: ", team)
 
-// 		s.vcsDS.Update(&acc, updvcs)
+	exist, err := s.teamStore.CheckExists(team)
+	if err != nil {
+		http.Error(w, fmt.Sprintf("Failed to fetch the team: %s, error: %v", team, err), http.StatusBadRequest)
+		return
+	}
 
-// 		return AuthorizeResponse{Conflict: true, Err: errVCSAccountAlreadyLinked, Request: r}, nil
-// 	}
+	if !exist {
+		http.Error(w, fmt.Sprintf("Team '%s' doesn't exist, please provide the valid name", team), http.StatusBadRequest)
+		return
+	}
 
-// 	u.ID, _ = util.NewUUID()
-// 	u.CreatedDt = time.Now()
-// 	u.UpdatedDt = time.Now()
+	provider := mux.Vars(r)["provider"]
+	fmt.Println("Provider: ", provider)
 
-// 	err = s.vcsDS.Save(&u)
+	p, err := s.vcsProviders.Get(provider)
+	fmt.Println("Fetched Provider: ", p)
+	if err != nil {
+		http.Error(w, fmt.Sprintf("Getting provider %s failed: %v", provider, err), http.StatusBadRequest)
+		return
+	}
 
-// 	if err == nil {
+	s.logger.Infoln(p)
 
-// 		// TODO sync the repo and setup hook reqeust for the repo
-// 		go p.CreateHook(u.AccessCode, u.Name, u.OwnerType)
-// 	}
+	var buf bytes.Buffer
+	buf.WriteString(team)
+	buf.WriteString(SEMICOLON)
+	buf.WriteString(SLASH)
+	buf.WriteString(SLASH)
+	buf.WriteString(r.Host)
 
-// 	url := escID[1] + "/api/vcs"
-// 	return AuthorizeResponse{Err: nil, URL: url, Request: r}, err
-// }
+	url := p.Authorize(s.encode(buf.String()))
+
+	http.Redirect(w, r, url, http.StatusTemporaryRedirect)
+}
+
+// Authorized ..
+// Invoked when authorization finished by oauth app
+func (s vcsService) Authorized(w http.ResponseWriter, r *http.Request) {
+
+	provider := mux.Vars(r)["provider"]
+
+	fmt.Println("Authorized Provider: ", provider)
+	p, err := s.vcsProviders.Get(provider)
+	if err != nil {
+		http.Error(w, fmt.Sprintf("Getting provider %s failed: %v", provider, err), http.StatusBadRequest)
+	}
+
+	id := r.FormValue("id")
+	code := r.FormValue("code")
+	u, err := p.Authorized(id, code)
+	if err != nil {
+		http.Error(w, fmt.Sprintf("Finalize the authorization failed : %v", err), http.StatusBadRequest)
+	}
+
+	unescID := s.decode(id)
+	escID := strings.Split(unescID, SEMICOLON)
+
+	// persist user
+	team := escID[0]
+
+	fmt.Println("Team param after authorized: ", team)
+
+	acc, err := s.teamStore.GetVCSByID(team, u.ID)
+	fmt.Println("VCS=", acc)
+	if strings.EqualFold(acc.ID, u.ID) {
+
+		// updvcs.UpdatedDt = time.Now()
+		acc.AccessToken = u.AccessToken
+		acc.AccessCode = u.AccessCode
+		acc.RefreshToken = u.RefreshToken
+		acc.OwnerType = u.OwnerType
+		acc.TokenExpiry = u.TokenExpiry
+
+		s.teamStore.UpdateVCS(team, acc)
+
+		http.Error(w, errVCSAccountAlreadyLinked, http.StatusConflict)
+	}
+
+	// u.ID = utils.NewUUID()
+	// u.CreatedDt = time.Now()
+	// u.UpdatedDt = time.Now()
+
+	err = s.teamStore.SaveVCS(team, &u)
+	if err != nil {
+		s.logger.Errorln("SAVE VCS: ", err)
+	}
+
+	if err == nil {
+
+		// TODO sync the repo and setup hook reqeust for the repo
+		// go p.CreateHook(u.AccessCode, u.Name, u.OwnerType)
+	}
+
+	url := escID[1] + "/sysconf/vcs"
+	http.Redirect(w, r, url, http.StatusTemporaryRedirect)
+}
 
 // func (s vcsService) GetVCS(teamID string) (GetVCSResponse, error) {
 
@@ -270,82 +355,81 @@ package vcs
 // 	return nil
 // }
 
-// // Gets the valid token
-// // Checks whether the token is expired.
-// // Expired token will get refreshed.
-// func (s vcsService) getToken(a VCS) (string, error) {
+// Gets the valid token
+// Checks whether the token is expired.
+// Expired token will get refreshed.
+func (s vcsService) getToken(team string, a types.VCS) (string, error) {
 
-// 	// Never expire type token
-// 	if a.RefreshToken == "" {
-// 		return a.AccessToken, nil
-// 	}
+	// Never expire type token
+	if a.RefreshToken == "" {
+		return a.AccessToken, nil
+	}
 
-// 	// Token that requires frequent refresh
-// 	// check if the token is expired
-// 	if !a.TokenExpiry.Add(-expiryDelta).Before(time.Now()) {
-// 		return a.AccessToken, nil
-// 	}
+	// Token that requires frequent refresh
+	// check if the token is expired
+	if !a.TokenExpiry.Add(-expiryDelta).Before(time.Now()) {
+		return a.AccessToken, nil
+	}
 
-// 	p, err := s.getProvider(a.Type)
-// 	if err != nil {
-// 		return "", fmt.Errorf(errNoProviderFound, err)
-// 	}
+	p, err := s.getProvider(a.Kind)
+	if err != nil {
+		return "", fmt.Errorf(errNoProviderFound, err)
+	}
 
-// 	// Refresh the token
-// 	tok, err := p.RefreshToken(a.RefreshToken)
+	// Refresh the token
+	tok, err := p.RefreshToken(a.RefreshToken)
 
-// 	// persist the updated token information
-// 	err = s.vcsDS.Update(&a, VCS{
-// 		AccessToken:  tok.AccessToken,
-// 		TokenExpiry:  tok.Expiry,
-// 		RefreshToken: tok.RefreshToken,
-// 		TokenType:    tok.TokenType,
-// 	})
+	a.AccessToken = tok.AccessToken
+	a.TokenExpiry = tok.Expiry
+	a.RefreshToken = tok.RefreshToken
 
-// 	if err != nil {
-// 		return "", fmt.Errorf("Failed to update VCS after token refreshed.", err)
-// 	}
-// 	return tok.AccessToken, nil
-// }
+	// persist the updated token information
+	err = s.teamStore.UpdateVCS(team, a)
 
-// // Gets the provider by type
-// func (s vcsService) getProvider(vcsType int) (Provider, error) {
+	if err != nil {
+		return "", fmt.Errorf("Failed to update VCS after token refreshed.", err)
+	}
+	return tok.AccessToken, nil
+}
 
-// 	var name string
-// 	switch vcsType {
-// 	case GithubType:
-// 		name = GithubProviderName
-// 	case BitBucketType:
-// 		name = BitBucketProviderName
-// 	case GitlabType:
-// 		name = GitlabProviderName
-// 	}
+// Gets the provider by type
+func (s vcsService) getProvider(vcsType int) (providers.Provider, error) {
 
-// 	return s.vcsProviders.Get(name)
-// }
+	var name string
+	switch vcsType {
+	case providers.GithubType:
+		name = providers.GithubProviderName
+	case providers.BitBucketType:
+		name = providers.BitbucketProviderName
+	case providers.GitlabType:
+		name = providers.GitlabProviderName
+	}
 
-// func (s vcsService) encode(id string) string {
+	return s.vcsProviders.Get(name)
+}
 
-// 	eid := base64.URLEncoding.EncodeToString([]byte(id))
-// 	if strings.Contains(eid, DOUBLEEQUALS) {
-// 		eid = strings.TrimRight(eid, DOUBLEEQUALS) + DOT2
-// 	} else if strings.Contains(eid, EQUAL) {
-// 		eid = strings.TrimRight(eid, EQUAL) + DOT1
-// 	} else {
-// 		eid = eid + DOT0
-// 	}
-// 	return eid
-// }
+func (s vcsService) encode(id string) string {
 
-// func (s vcsService) decode(id string) string {
+	eid := base64.URLEncoding.EncodeToString([]byte(id))
+	if strings.Contains(eid, DOUBLEEQUALS) {
+		eid = strings.TrimRight(eid, DOUBLEEQUALS) + DOT2
+	} else if strings.Contains(eid, EQUAL) {
+		eid = strings.TrimRight(eid, EQUAL) + DOT1
+	} else {
+		eid = eid + DOT0
+	}
+	return eid
+}
 
-// 	if strings.Contains(id, DOT2) {
-// 		id = strings.TrimRight(id, DOT2) + DOUBLEEQUALS
-// 	} else if strings.Contains(id, DOT1) {
-// 		id = strings.TrimRight(id, DOT1) + EQUAL
-// 	} else {
-// 		id = strings.TrimRight(id, DOT0)
-// 	}
-// 	did, _ := base64.URLEncoding.DecodeString(id)
-// 	return string(did[:])
-// }
+func (s vcsService) decode(id string) string {
+
+	if strings.Contains(id, DOT2) {
+		id = strings.TrimRight(id, DOT2) + DOUBLEEQUALS
+	} else if strings.Contains(id, DOT1) {
+		id = strings.TrimRight(id, DOT1) + EQUAL
+	} else {
+		id = strings.TrimRight(id, DOT0)
+	}
+	did, _ := base64.URLEncoding.DecodeString(id)
+	return string(did[:])
+}

@@ -31,7 +31,7 @@ type Config struct {
 
 // Connect ..
 // Open the database connection and returns the session
-func Connect(logger logrus.FieldLogger, cfg Config) (*mgo.Session, error) {
+func Connect(logger logrus.Logger, cfg Config) (*mgo.Session, error) {
 
 	// DB Initialization
 	var session *mgo.Session
@@ -83,7 +83,7 @@ func Connect(logger logrus.FieldLogger, cfg Config) (*mgo.Session, error) {
 // Launches a separate go routine to perform below operations.
 // 1. Ping the db session to ensure the conenction is live
 // 2. Retries to conenect with database if connectivity broke.
-func autoReconnect(logger logrus.FieldLogger, cfg Config, session *mgo.Session) {
+func autoReconnect(logger logrus.Logger, cfg Config, session *mgo.Session) {
 
 	go func() {
 

@@ -24,13 +24,13 @@ type Client struct {
 type VCSSysConf struct {
 	// common fields for any sys config
 	ID   bson.ObjectId `bson:"_id,omitempty"`
-	Name string        `bson:"name"`
-	Kind string        `bson:"kind"`
+	Name string        `bson:"name,omitempty"`
+	Kind string        `bson:"kind,omitempty"`
 
-	Key         string `bson:"key"`
-	Secret      string `bson:"secret"`
-	CallbackURL string `bson:"callback_url"`
-	HookURL     string `bson:"hook_url"`
+	Key         string `bson:"key,omitempty"`
+	Secret      string `bson:"secret,omitempty"`
+	CallbackURL string `bson:"callback_url,omitempty"`
+	HookURL     string `bson:"hook_url,omitempty"`
 }
 
 // Team ..
@@ -59,22 +59,22 @@ type User struct {
 // VCS contains the information common amongst most OAuth and OAuth2 providers.
 // All of the "raw" datafrom the provider can be found in the `RawData` field.
 type VCS struct {
-	ID           bson.ObjectId `json:"id" bson:"_id,omitempty"`
-	Name         string        `json:"name" bson:"name,omitempty"`
-	Kind         string        `json:"kind" bson:"kind,omitempty"`
-	OwnerType    string        `json:"owner_type" bson:"owner_type,omitempty"`
-	AvatarURL    string        `json:"avatar" bson:"avatar,omitempty"`
-	AccessCode   string        `json:"-" bson:"access_code,omitempty"`
-	AccessToken  string        `json:"-" bson:"access_token,omitempty"`
-	RefreshToken string        `json:"-" bson:"refresh_token,omitempty"`
-	TokenExpiry  time.Time     `json:"-" bson:"token_expiry,omitempty"`
+	// ID           bson.ObjectId `json:"id" bson:"_id,omitempty"`
+	ID           string    `json:"id" bson:"id,omitempty"`
+	Name         string    `json:"name" bson:"name,omitempty"`
+	Kind         int       `json:"kind" bson:"kind,omitempty"`
+	OwnerType    string    `json:"owner_type" bson:"owner_type,omitempty"`
+	AvatarURL    string    `json:"avatar" bson:"avatar,omitempty"`
+	AccessCode   string    `json:"access_code" bson:"access_code,omitempty"`
+	AccessToken  string    `json:"access_token" bson:"access_token,omitempty"`
+	RefreshToken string    `json:"refresh_token" bson:"refresh_token,omitempty"`
+	TokenExpiry  time.Time `json:"token_expiry" bson:"token_expiry,omitempty"`
 }
 
 // Repository ..
 // Represents as vcs repositories or projects
 type Repository struct {
 	ID            bson.ObjectId `json:"id" bson:"_id,omitempty"`
-	Team          string        `json:"-" bson:"team"`
 	RepoID        string        `json:"-" bson:"repo_id"`
 	VcsID         string        `json:"-" bson:"vcs_id"`
 	Name          string        `json:"name" bson:"name,omitempty"`
@@ -84,4 +84,10 @@ type Repository struct {
 	Fork          bool          `json:"fork" bson:"fork,omitempty"`
 	DefaultBranch string        `json:"default_branch" bson:"default_branch,omitempty"`
 	Language      string        `json:"language" bson:"language,omitempty"`
+	Team          string        `json:"-" bson:"team"`
+}
+
+type VCSList struct {
+	Nodes []VCS `json:"nodes"`
+	Count int   `json:"count"`
 }
