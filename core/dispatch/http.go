@@ -42,17 +42,18 @@ var (
 
 // RequestMaker ...
 type RequestMaker struct {
-	method      string
-	url         string
-	headers     map[string]string
-	pathParams  []string
-	queryParams map[string]string
-	body        interface{}
-	response    interface{}
-	username    string
-	password    string
-	contentType string
-	logger      logrus.Logger
+	method              string
+	url                 string
+	headers             map[string]string
+	pathParams          []string
+	queryParams         map[string]string
+	unescapeQueryParams bool
+	body                interface{}
+	response            interface{}
+	username            string
+	password            string
+	contentType         string
+	logger              logrus.Logger
 }
 
 // NewGetRequestMaker ..
@@ -93,6 +94,12 @@ func (r *RequestMaker) PathParams(params ...string) *RequestMaker {
 // Set a query paramter to a request
 func (r *RequestMaker) QueryParam(key, value string) *RequestMaker {
 	r.queryParams[key] = value
+	return r
+}
+
+//EncodeQueryParams
+func (r *RequestMaker) UnescapeQueryParams(unescape bool) *RequestMaker {
+	r.unescapeQueryParams = unescape
 	return r
 }
 
@@ -230,7 +237,16 @@ func (r *RequestMaker) Dispatch() error {
 		for k, v := range r.queryParams {
 			q.Add(k, v)
 		}
-		req.URL.RawQuery = q.Encode()
+
+		params := q.Encode()
+		if r.unescapeQueryParams {
+			params, err = url.QueryUnescape(params)
+			if err != nil {
+				return fmt.Errorf("Query unescape failed:", err)
+			}
+		}
+
+		req.URL.RawQuery = params
 	}
 
 	r.logger.Infoln("Making request to = ", req.URL.String())
@@ -253,7 +269,7 @@ func (r *RequestMaker) Dispatch() error {
 		return err
 	}
 
-	r.logger.Infoln("Response = ", string(bits[:]))
+	// r.logger.Infoln("Response = ", string(bits[:]))
 	// decode to response type
 	err = json.NewDecoder(bytes.NewBuffer(bits)).Decode(r.response)
 	if err != nil {

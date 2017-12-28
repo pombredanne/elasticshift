@@ -5,24 +5,29 @@ package utils
 
 import "github.com/graphql-go/graphql"
 
-func MakeListField(listType graphql.Output, resolve graphql.FieldResolveFn) *graphql.Field {
-	return &graphql.Field{
-		Type:    listType,
+func MakeListType(name string, listType graphql.Output, resolve graphql.FieldResolveFn, args graphql.FieldConfigArgument) *graphql.Field {
+
+	obj := graphql.NewObject(graphql.ObjectConfig{
+		Name: name,
+		Fields: graphql.Fields{
+			"nodes": &graphql.Field{Type: graphql.NewList(listType)},
+			"count": &graphql.Field{Type: graphql.Int},
+		},
+	})
+
+	field := &graphql.Field{
+		Type:    obj,
 		Resolve: resolve,
 		Args: graphql.FieldConfigArgument{
 			"limit":  &graphql.ArgumentConfig{Type: graphql.Int},
 			"offset": &graphql.ArgumentConfig{Type: graphql.Int},
-			"team":   &graphql.ArgumentConfig{Type: graphql.String},
 		},
 	}
-}
 
-func MakeNodeListType(name string, nodeType *graphql.Object) *graphql.Object {
-	return graphql.NewObject(graphql.ObjectConfig{
-		Name: name,
-		Fields: graphql.Fields{
-			"nodes": &graphql.Field{Type: graphql.NewList(nodeType)},
-			"count": &graphql.Field{Type: graphql.Int},
-		},
-	})
+	// Append the additional query param
+	for k, v := range args {
+		field.Args[k] = v
+	}
+
+	return field
 }

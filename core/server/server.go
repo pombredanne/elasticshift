@@ -16,12 +16,13 @@ import (
 	"gitlab.com/conspico/elasticshift/api"
 	"gitlab.com/conspico/elasticshift/api/dex"
 	"gitlab.com/conspico/elasticshift/core/store"
-	core "gitlab.com/conspico/elasticshift/core/store"
 	"gitlab.com/conspico/elasticshift/identity/client"
+	"gitlab.com/conspico/elasticshift/identity/oauth2/providers"
 	"gitlab.com/conspico/elasticshift/identity/team"
 	"gitlab.com/conspico/elasticshift/identity/user"
-	"gitlab.com/conspico/elasticshift/identity/vcs"
 	"gitlab.com/conspico/elasticshift/sysconf"
+	"gitlab.com/conspico/elasticshift/vcs"
+	"gitlab.com/conspico/elasticshift/vcs/repository"
 	"golang.org/x/net/context"
 	"google.golang.org/grpc"
 
@@ -41,10 +42,11 @@ const (
 
 // Server ..
 type Server struct {
-	Logger logrus.Logger
-	Store  store.Store
-	Router *mux.Router
-	Dex    dex.DexClient
+	Logger    logrus.Logger
+	Store     store.Store
+	Router    *mux.Router
+	Dex       dex.DexClient
+	Providers providers.Providers
 }
 
 // Config ..
@@ -81,7 +83,7 @@ func New(ctx context.Context, c Config) (*Server, error) {
 	// s.Dex = d
 
 	r := mux.NewRouter()
-	//r := http.NewServeMux()
+	s.Router = r
 
 	// pprof
 	r.HandleFunc("/debug/pprof", pprof.Index)
@@ -92,13 +94,13 @@ func New(ctx context.Context, c Config) (*Server, error) {
 	r.Handle("/debug/threadcreate", pprof.Handler("threadcreate"))
 	r.Handle("/debug/block", pprof.Handler("block"))
 
+	s.Providers = providers.New(s.Logger, sysconf.NewStore(s.Store))
+
 	// initialize oauth2 providers
-	RegisterOauth2Providers(r, s.Logger, s.Store)
+	s.registerOauth2Providers()
 
 	// initialize graphql based services
-	RegisterGraphQLServices(r, s.Logger, s.Store)
-
-	s.Router = r
+	s.registerGraphQLServices()
 
 	// err := NewAuthServer(ctx, r, c)
 	// if err != nil {
@@ -107,26 +109,29 @@ func New(ctx context.Context, c Config) (*Server, error) {
 	return s, nil
 }
 
-func RegisterOauth2Providers(r *mux.Router, logger logrus.Logger, s core.Store) {
+func (s Server) registerOauth2Providers() {
 
-	teamStore := team.NewStore(s)
-	sysconfStore := sysconf.NewStore(s)
-	vcsServ := vcs.NewService(logger, s, teamStore, sysconfStore)
+	teamStore := team.NewStore(s.Store)
+	vcsServ := vcs.NewService(s.Logger, s.Store, s.Providers, teamStore)
 
-	r.HandleFunc("/{team}/link/{provider}", vcsServ.Authorize)
-	r.HandleFunc("/link/{provider}/callback", vcsServ.Authorized)
+	s.Router.HandleFunc("/{team}/link/{provider}", vcsServ.Authorize)
+	s.Router.HandleFunc("/link/{provider}/callback", vcsServ.Authorized)
 }
 
-func RegisterGraphQLServices(r *mux.Router, logger logrus.Logger, s core.Store) {
+func (s Server) registerGraphQLServices() {
+
+	logger := s.Logger
+	r := s.Router
 
 	// initialize schema
 	queries := graphql.Fields{}
 	mutations := graphql.Fields{}
 
 	// data store
-	teamStore := team.NewStore(s)
-	vcsStore := vcs.NewStore(s)
-	sysconfStore := sysconf.NewStore(s)
+	teamStore := team.NewStore(s.Store)
+	vcsStore := vcs.NewStore(s.Store)
+	sysconfStore := sysconf.NewStore(s.Store)
+	repositoryStore := repository.NewStore(s.Store)
 
 	// team fields
 	teamQ, teamM := team.InitSchema(logger, teamStore)
@@ -134,7 +139,7 @@ func RegisterGraphQLServices(r *mux.Router, logger logrus.Logger, s core.Store) 
 	appendFields(mutations, teamM)
 
 	// vcs fields
-	vcsQ, vcsM := vcs.InitSchema(logger, vcsStore, teamStore)
+	vcsQ, vcsM := vcs.InitSchema(logger, s.Providers, vcsStore, teamStore, repositoryStore)
 	appendFields(queries, vcsQ)
 	appendFields(mutations, vcsM)
 

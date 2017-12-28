@@ -1,3 +1,6 @@
+/*
+Copyright 2017 The Elasticshift Authors.
+*/
 package dispatch_test
 
 import (

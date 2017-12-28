@@ -4,6 +4,8 @@ Copyright 2017 The Elasticshift Authors.
 package team
 
 import (
+	"fmt"
+
 	"gitlab.com/conspico/elasticshift/api/types"
 	core "gitlab.com/conspico/elasticshift/core/store"
 	mgo "gopkg.in/mgo.v2"
@@ -28,6 +30,7 @@ type Store interface {
 	SaveVCS(team string, vcs *types.VCS) error
 	UpdateVCS(team string, vcs types.VCS) error
 	GetVCSByID(team, id string) (types.VCS, error)
+	GetVCSByName(team, name, source string) (*types.VCS, error)
 }
 
 // NewStore related database operations
@@ -130,4 +133,18 @@ func (r *store) UpdateVCS(team string, vcs types.VCS) error {
 				"accounts.$.token_expiry":  vcs.TokenExpiry}})
 	})
 	return err
+}
+
+func (s *store) GetVCSByName(team, name, source string) (*types.VCS, error) {
+
+	var err error
+	var t types.Team
+	s.store.Execute(s.cname, func(c *mgo.Collection) {
+		c.Find(bson.M{"name": team, "accounts.name": name, "accounts.source": source}).Select(bson.M{"accounts.$": 1}).One(&t)
+	})
+
+	if len(t.Accounts) == 0 {
+		return nil, fmt.Errorf("Not found")
+	}
+	return &t.Accounts[0], err
 }

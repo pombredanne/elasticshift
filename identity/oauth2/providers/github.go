@@ -1,5 +1,5 @@
 /*
-Copyright 2015 The Elasticshift Authors.
+Copyright 2017 The Elasticshift Authors.
 */
 package providers
 
@@ -17,12 +17,13 @@ import (
 
 // Github related properties
 const (
-	GithubProviderName   = "github"
-	GithubBaseURL        = "https://api.github.com"
-	GithubProfileURL     = GithubBaseURL + "/user"
-	GithubGetUserRepoURL = GithubBaseURL + "/users/:user/repos"
-	GithubGetOrgRepoURL  = GithubBaseURL + "/orgs/:org/repos"
-	GithubCreateHookURL  = GithubBaseURL + "/repos/:owner/:repo/hooks"
+	GithubProviderName        = "github"
+	GithubBaseURL             = "https://api.github.com"
+	GithubProfileURL          = GithubBaseURL + "/user"
+	GithubGetUserRepoURL      = GithubBaseURL + "/users/:user/repos"
+	GithubGetOrgRepoURL       = GithubBaseURL + "/orgs/:org/repos"
+	GithubCreateHookURL       = GithubBaseURL + "/repos/:owner/:repo/hooks"
+	GithubSearchRepositoryURL = GithubBaseURL + "/search/repositories"
 )
 
 // hook events that github should invoke eshift.
@@ -59,6 +60,7 @@ type githubUser struct {
 // Creates a new Github provider
 func GithubProvider(logger logrus.Logger, clientID, secret, callbackURL, hookURL string) *Github {
 
+	logger.Warnln("Initializing GithubProvider")
 	conf := &oauth2.Config{
 		ClientID:     clientID,
 		ClientSecret: secret,
@@ -66,6 +68,7 @@ func GithubProvider(logger logrus.Logger, clientID, secret, callbackURL, hookURL
 		Endpoint:     gh.Endpoint,
 	}
 
+	logger.Warnln("oauth config initialized")
 	return &Github{
 		callbackURL,
 		hookURL,
@@ -114,6 +117,7 @@ func (g *Github) Authorized(id, code string) (types.VCS, error) {
 		Name    string `json:"name"`
 		Login   string `json:"login"`
 		Picture string `json:"avatar_url"`
+		Link    string `json:"html_url"`
 		Type    string
 	}{}
 
@@ -136,6 +140,7 @@ func (g *Github) Authorized(id, code string) (types.VCS, error) {
 	} else {
 		u.OwnerType = OwnerTypeOrg
 	}
+	u.Link = us.Link
 	u.ID = strconv.Itoa(us.VcsID)
 	return u, err
 }
@@ -223,6 +228,57 @@ func (g *Github) GetRepos(token, accountName string, ownerType string) ([]types.
 		repos = append(repos, *rp)
 	}
 	return repos, err
+}
+
+func (g *Github) Search(token, vcsName, repoName string) (types.Repository, error) {
+
+	//https://api.github.com/search/repositories?q=user:nshahm+dotfiles
+
+	r := dispatch.NewGetRequestMaker(GithubSearchRepositoryURL)
+	r.SetLogger(g.logger)
+	r.SetContentType(dispatch.JSON)
+
+	r.QueryParam("access_token", token)
+	r.QueryParam("q", "fork:true+user:"+vcsName+"+"+repoName)
+	r.UnescapeQueryParams(true)
+
+	result := struct {
+		TotalCount int `json:"total_count"`
+		Repos      []struct {
+			RepoID        int    `json:"id"`
+			Name          string `json:"name"`
+			Private       bool   `json:"private"`
+			Link          string `json:"html_url"`
+			Description   string `json:"description"`
+			Fork          bool   `json:"fork"`
+			DefaultBranch string `json:"default_branch"`
+			Language      string `json:"language"`
+			CloneURL      string `json:"clone_url"`
+		} `json:"items"`
+	}{}
+
+	err := r.Scan(&result).Dispatch()
+	if err != nil {
+		fmt.Print("Search repo:", err)
+		return types.Repository{}, err
+	}
+
+	var rp types.Repository
+	if result.TotalCount > 0 {
+		rp = types.Repository{
+			RepoID:        strconv.Itoa(result.Repos[0].RepoID),
+			Name:          result.Repos[0].Name,
+			Link:          result.Repos[0].Link,
+			Description:   result.Repos[0].Description,
+			DefaultBranch: result.Repos[0].DefaultBranch,
+			Language:      result.Repos[0].Language,
+			Private:       result.Repos[0].Private,
+			Fork:          result.Repos[0].Fork,
+			CloneURL:      result.Repos[0].CloneURL,
+		}
+	}
+
+	return rp, nil
 }
 
 // CreateHook ..

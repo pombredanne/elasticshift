@@ -1,6 +1,6 @@
-// Package esh ...
-// Author: Ghazni Nattarshah
-// Date: Nov 22, 2016
+/*
+Copyright 2017 The Elasticshift Authors.
+*/
 package providers
 
 import (
@@ -70,8 +70,8 @@ func (g *Gitlab) Name() string {
 // Provide access to esh app on accessing the github user and repos.
 // the elasticshift application to have access to github repo
 func (g *Gitlab) Authorize(baseURL string) string {
-	g.Config.RedirectURL = g.CallbackURL + "?id=" + baseURL
-	url := g.Config.AuthCodeURL("state")
+	opts := oauth2.SetAuthURLParam("redirect_uri", g.CallbackURL+"?id="+baseURL)
+	url := g.Config.AuthCodeURL("state", oauth2.AccessTypeOffline, opts)
 	g.logger.Println(url)
 	return url
 }
@@ -119,6 +119,7 @@ func (g *Gitlab) Authorized(id, code string) (types.VCS, error) {
 		Name      string `json:"username"`
 		Email     string `json:"email"`
 		AvatarURL string `json:"avatar_url"`
+		Link      string `json:"web_url"`
 	}{}
 
 	r = dispatch.NewGetRequestMaker(GitlabProfileURL)
@@ -134,6 +135,7 @@ func (g *Gitlab) Authorized(id, code string) (types.VCS, error) {
 
 	u.AvatarURL = us.AvatarURL
 	u.Name = us.Name
+	u.Link = us.Link
 	u.ID = strconv.Itoa(us.ID)
 	return u, err
 }
@@ -221,6 +223,12 @@ func (g *Gitlab) GetRepos(token, accountName string, ownerType string) ([]types.
 		repos = append(repos, *repo)
 	}
 	return repos, err
+}
+
+func (g *Gitlab) Search(token, vcsName, repoName string) (types.Repository, error) {
+
+	repo := types.Repository{}
+	return repo, nil
 }
 
 // CreateHook ..

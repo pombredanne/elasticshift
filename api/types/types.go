@@ -59,10 +59,11 @@ type User struct {
 // VCS contains the information common amongst most OAuth and OAuth2 providers.
 // All of the "raw" datafrom the provider can be found in the `RawData` field.
 type VCS struct {
-	// ID           bson.ObjectId `json:"id" bson:"_id,omitempty"`
 	ID           string    `json:"id" bson:"id,omitempty"`
 	Name         string    `json:"name" bson:"name,omitempty"`
 	Kind         string    `json:"kind" bson:"kind,omitempty"`
+	Link         string    `json:"link" bson:"link,omitempty"`
+	Source       string    `json:"source" bson:"source"`
 	OwnerType    string    `json:"owner_type" bson:"owner_type,omitempty"`
 	AvatarURL    string    `json:"avatar" bson:"avatar,omitempty"`
 	AccessCode   string    `json:"access_code" bson:"access_code,omitempty"`
@@ -83,6 +84,7 @@ type Repository struct {
 	Description   string        `json:"description" bson:"description,omitempty"`
 	Fork          bool          `json:"fork" bson:"fork,omitempty"`
 	DefaultBranch string        `json:"default_branch" bson:"default_branch,omitempty"`
+	CloneURL      string        `json:"clone_url" bson:"clone_url"`
 	Language      string        `json:"language" bson:"language,omitempty"`
 	Team          string        `json:"-" bson:"team"`
 }
@@ -90,4 +92,9 @@ type Repository struct {
 type VCSList struct {
 	Nodes []VCS `json:"nodes"`
 	Count int   `json:"count"`
+}
+
+type RepositoryList struct {
+	Nodes []Repository `json:"nodes"`
+	Count int          `json:"count"`
 }

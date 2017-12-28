@@ -7,7 +7,9 @@ import (
 	"fmt"
 	"time"
 
+	"github.com/Sirupsen/logrus"
 	"gitlab.com/conspico/elasticshift/api/types"
+	"gitlab.com/conspico/elasticshift/sysconf"
 	"golang.org/x/oauth2"
 )
 
@@ -33,7 +35,7 @@ const (
 )
 
 var (
-	errNoProviderFound = "No provider found :"
+	errNoProviderFound = "No provider found for %s : %v"
 )
 
 // Token ..
@@ -68,39 +70,39 @@ type Provider interface {
 
 	GetRepos(token, accountName string, owner string) ([]types.Repository, error)
 
+	Search(token, vcsName, repoName string) (types.Repository, error)
+
 	CreateHook(token, owner, repo string) error
 }
 
 // Providers type
 type Providers struct {
-	Providers map[string]Provider
+	logger logrus.Logger
+	store  sysconf.Store
 }
 
-func New() Providers {
-	return Providers{make(map[string]Provider)}
-}
-
-// NewProviders ...
-func NewProviders(pvider ...Provider) Providers {
-
-	var prov = make(map[string]Provider)
-	for _, p := range pvider {
-		prov[p.Name()] = p
-	}
-	return Providers{prov}
-}
-
-// Set the provider for the given name
-func (prov Providers) Set(name string, p Provider) {
-	prov.Providers[name] = p
+func New(logger logrus.Logger, store sysconf.Store) Providers {
+	return Providers{logger: logger, store: store}
 }
 
 // Get the provider by namee
-func (prov Providers) Get(name string) (Provider, error) {
+func (p Providers) Get(name string) (Provider, error) {
 
-	if p, ok := prov.Providers[name]; ok {
-		return p, nil
+	conf, err := p.store.GetVCSSysConfByName(name)
+	if err != nil {
+		return nil, fmt.Errorf(errNoProviderFound, name, err)
 	}
 
-	return nil, fmt.Errorf(errNoProviderFound, name)
+	fmt.Println("Providers.Get(): ", conf.Name)
+
+	switch conf.Name {
+	case GithubProviderName:
+		return GithubProvider(p.logger, conf.Key, conf.Secret, conf.CallbackURL, conf.HookURL), nil
+	case GitlabProviderName:
+		return GitlabProvider(p.logger, conf.Key, conf.Secret, conf.CallbackURL, conf.HookURL), nil
+	case BitbucketProviderName:
+		return BitbucketProvider(p.logger, conf.Key, conf.Secret, conf.CallbackURL, conf.HookURL), nil
+	}
+
+	return nil, fmt.Errorf("No provider found for ", name)
 }

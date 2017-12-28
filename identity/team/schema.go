@@ -85,7 +85,6 @@ func InitSchema(logger logrus.Logger, s Store) (queries graphql.Fields, mutation
 			},
 			Resolve: r.FetchByNameOrID,
 		},
-		// "teams": utils.MakeListField(utils.MakeNodeListType("TeamList", teamType), r.FetchTeams),
 	}
 
 	mutations = graphql.Fields{

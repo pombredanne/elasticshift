@@ -1,3 +1,6 @@
+/*
+Copyright 2017 The Elasticshift Authors.
+*/
 package vcs
 
 import (
@@ -12,11 +15,9 @@ import (
 
 	"github.com/Sirupsen/logrus"
 	"github.com/gorilla/mux"
-	"gitlab.com/conspico/elasticshift/api/types"
 	core "gitlab.com/conspico/elasticshift/core/store"
 	"gitlab.com/conspico/elasticshift/identity/oauth2/providers"
 	"gitlab.com/conspico/elasticshift/identity/team"
-	"gitlab.com/conspico/elasticshift/sysconf"
 )
 
 var (
@@ -30,12 +31,6 @@ var (
 
 // expiryDelta determines how earlier a token should be considered
 const expiryDelta = 10 * time.Second
-
-// VCS account owner type
-const (
-	OwnerTypeUser = 1
-	OwnerTypeOrg  = 2
-)
 
 // True or False
 const (
@@ -59,61 +54,26 @@ const (
 )
 
 type vcsService struct {
-	store        Store
-	teamStore    team.Store
-	sysconfStore sysconf.Store
-	// repoDS       RepoDatastore
-	vcsProviders providers.Providers
-	logger       logrus.Logger
+	store     Store
+	teamStore team.Store
+	logger    logrus.Logger
+	providers providers.Providers
 }
 
 // VCSService ..
 type VCSService interface {
 	Authorize(w http.ResponseWriter, r *http.Request)
 	Authorized(w http.ResponseWriter, r *http.Request)
-	// GetVCS(teamID string) (types.VCS, error)
-	// SyncVCS(teamID, userName, provider string) (bool, error)
 }
 
 // NewVCSService ..
-func NewService(logger logrus.Logger, s core.Store, teamStore team.Store, sysconfStore sysconf.Store) VCSService {
+func NewService(logger logrus.Logger, s core.Store, providers providers.Providers, teamStore team.Store) VCSService {
 
-	this := &vcsService{
-		store:        NewStore(s),
-		teamStore:    teamStore,
-		sysconfStore: sysconfStore,
-		logger:       logger,
-		vcsProviders: providers.New(),
-	}
-
-	// initialize the providers
-	this.initProviders()
-	return this
-}
-
-// Initialize the registered providers
-func (s vcsService) initProviders() {
-
-	vcsConf, err := s.sysconfStore.GetVCSSysConf()
-	if err != nil {
-		panic(err)
-	}
-
-	for _, conf := range vcsConf {
-
-		var prov providers.Provider
-		switch conf.Name {
-		case providers.GithubProviderName:
-			prov = providers.GithubProvider(s.logger, conf.Key, conf.Secret, conf.CallbackURL, conf.HookURL)
-		case providers.GitlabProviderName:
-			prov = providers.GitlabProvider(s.logger, conf.Key, conf.Secret, conf.CallbackURL, conf.HookURL)
-		case providers.BitbucketProviderName:
-			prov = providers.BitbucketProvider(s.logger, conf.Key, conf.Secret, conf.CallbackURL, conf.HookURL)
-		}
-
-		if prov != nil {
-			s.vcsProviders.Set(conf.Name, prov)
-		}
+	return &vcsService{
+		store:     NewStore(s),
+		teamStore: teamStore,
+		logger:    logger,
+		providers: providers,
 	}
 }
 
@@ -132,7 +92,7 @@ func (s vcsService) Authorize(w http.ResponseWriter, r *http.Request) {
 	}
 
 	provider := mux.Vars(r)["provider"]
-	p, err := s.vcsProviders.Get(provider)
+	p, err := s.providers.Get(provider)
 
 	if err != nil {
 		http.Error(w, fmt.Sprintf("Getting provider %s failed: %v", provider, err), http.StatusBadRequest)
@@ -156,7 +116,7 @@ func (s vcsService) Authorize(w http.ResponseWriter, r *http.Request) {
 func (s vcsService) Authorized(w http.ResponseWriter, r *http.Request) {
 
 	provider := mux.Vars(r)["provider"]
-	p, err := s.vcsProviders.Get(provider)
+	p, err := s.providers.Get(provider)
 	if err != nil {
 		http.Error(w, fmt.Sprintf("Getting provider %s failed: %v", provider, err), http.StatusBadRequest)
 	}
@@ -338,59 +298,6 @@ func (s vcsService) Authorized(w http.ResponseWriter, r *http.Request) {
 
 // 	return nil
 // }
-
-// Gets the valid token
-// Checks whether the token is expired.
-// Expired token will get refreshed.
-func (s vcsService) getToken(team string, a types.VCS) (string, error) {
-
-	// Never expire type token
-	if a.RefreshToken == "" {
-		return a.AccessToken, nil
-	}
-
-	// Token that requires frequent refresh
-	// check if the token is expired
-	if !a.TokenExpiry.Add(-expiryDelta).Before(time.Now()) {
-		return a.AccessToken, nil
-	}
-
-	p, err := s.vcsProviders.Get(a.Kind)
-	if err != nil {
-		return "", fmt.Errorf(errNoProviderFound, err)
-	}
-
-	// Refresh the token
-	tok, err := p.RefreshToken(a.RefreshToken)
-
-	a.AccessToken = tok.AccessToken
-	a.TokenExpiry = tok.Expiry
-	a.RefreshToken = tok.RefreshToken
-
-	// persist the updated token information
-	err = s.teamStore.UpdateVCS(team, a)
-
-	if err != nil {
-		return "", fmt.Errorf("Failed to update VCS after token refreshed.", err)
-	}
-	return tok.AccessToken, nil
-}
-
-// Gets the provider by type
-func (s vcsService) getProvider(vcsType int) (providers.Provider, error) {
-
-	var name string
-	switch vcsType {
-	case providers.GithubType:
-		name = providers.GithubProviderName
-	case providers.BitBucketType:
-		name = providers.BitbucketProviderName
-	case providers.GitlabType:
-		name = providers.GitlabProviderName
-	}
-
-	return s.vcsProviders.Get(name)
-}
 
 func (s vcsService) encode(id string) string {
 

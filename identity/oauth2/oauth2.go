@@ -1,5 +1,5 @@
 /*
-Copyright 2015 The Elasticshift Authors.
+Copyright 2017 The Elasticshift Authors.
 */
 package oauth2
 

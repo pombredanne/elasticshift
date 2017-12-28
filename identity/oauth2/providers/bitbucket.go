@@ -59,8 +59,9 @@ func (b *Bitbucket) Name() string {
 // Provide access to esh app on accessing the github user and repos.
 // the elasticshift application to have access to github repo
 func (b *Bitbucket) Authorize(baseURL string) string {
-	b.Config.RedirectURL = b.CallbackURL + "?id=" + baseURL
-	url := b.Config.AuthCodeURL("state", oauth2.AccessTypeOffline)
+
+	opts := oauth2.SetAuthURLParam("redirect_uri", b.CallbackURL+"?id="+baseURL)
+	url := b.Config.AuthCodeURL("state", oauth2.AccessTypeOffline, opts)
 	return url
 }
 
@@ -89,6 +90,10 @@ func (b *Bitbucket) Authorized(id, code string) (types.VCS, error) {
 			Avatar struct {
 				Href string `json:"href"`
 			}
+
+			Html struct {
+				Href string `json:"href"`
+			}
 		}
 	}{}
 
@@ -105,6 +110,7 @@ func (b *Bitbucket) Authorized(id, code string) (types.VCS, error) {
 
 	u.AvatarURL = us.Links.Avatar.Href
 	u.Name = us.Name
+	u.Link = us.Links.Html.Href
 	u.ID = us.UUID
 	return u, err
 }
@@ -195,6 +201,12 @@ func (b *Bitbucket) GetRepos(token, accountName string, ownerType string) ([]typ
 		repos = append(repos, *repo)
 	}
 	return repos, err
+}
+
+func (g *Bitbucket) Search(token, vcsName, repoName string) (types.Repository, error) {
+
+	repo := types.Repository{}
+	return repo, nil
 }
 
 // CreateHook ..
