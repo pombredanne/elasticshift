@@ -259,7 +259,6 @@ func (g *Github) Search(token, vcsName, repoName string) (types.Repository, erro
 
 	err := r.Scan(&result).Dispatch()
 	if err != nil {
-		fmt.Print("Search repo:", err)
 		return types.Repository{}, err
 	}
 

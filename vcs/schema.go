@@ -82,6 +82,11 @@ func InitSchema(logger logrus.Logger, providers providers.Providers, s Store, te
 			Description: "Version control system identifier",
 		},
 
+		"repo_id": &graphql.Field{
+			Type:        graphql.String,
+			Description: "Unique identifier belong to the repository in target scm",
+		},
+
 		"name": &graphql.Field{
 			Type:        graphql.String,
 			Description: "Name of the repository or project",

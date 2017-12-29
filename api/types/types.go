@@ -76,8 +76,8 @@ type VCS struct {
 // Represents as vcs repositories or projects
 type Repository struct {
 	ID            bson.ObjectId `json:"id" bson:"_id,omitempty"`
-	RepoID        string        `json:"-" bson:"repo_id"`
-	VcsID         string        `json:"-" bson:"vcs_id"`
+	RepoID        string        `json:"repo_id" bson:"repo_id"`
+	VcsID         string        `json:"vcs_id" bson:"vcs_id"`
 	Name          string        `json:"name" bson:"name,omitempty"`
 	Private       bool          `json:"private" bson:"private,omitempty"`
 	Link          string        `json:"link" bson:"link,omitempty"`
