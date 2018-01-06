@@ -15,6 +15,7 @@ import (
 	"github.com/graphql-go/handler"
 	"gitlab.com/conspico/elasticshift/api"
 	"gitlab.com/conspico/elasticshift/api/dex"
+	"gitlab.com/conspico/elasticshift/build"
 	"gitlab.com/conspico/elasticshift/core/store"
 	"gitlab.com/conspico/elasticshift/identity/client"
 	"gitlab.com/conspico/elasticshift/identity/oauth2/providers"
@@ -132,6 +133,7 @@ func (s Server) registerGraphQLServices() {
 	vcsStore := vcs.NewStore(s.Store)
 	sysconfStore := sysconf.NewStore(s.Store)
 	repositoryStore := repository.NewStore(s.Store)
+	buildStore := build.NewStore(s.Store)
 
 	// team fields
 	teamQ, teamM := team.InitSchema(logger, teamStore)
@@ -143,10 +145,15 @@ func (s Server) registerGraphQLServices() {
 	appendFields(queries, vcsQ)
 	appendFields(mutations, vcsM)
 
-	// vcs fields
+	// sysconf fields
 	sysconfQ, sysconfM := sysconf.InitSchema(logger, sysconfStore)
 	appendFields(queries, sysconfQ)
 	appendFields(mutations, sysconfM)
+
+	// sysconf fields
+	buildQ, buildM := build.InitSchema(logger, buildStore, repositoryStore, sysconfStore)
+	appendFields(queries, buildQ)
+	appendFields(mutations, buildM)
 
 	rootQuery := graphql.ObjectConfig{Name: "RootQuery", Fields: queries}
 	rootMutation := graphql.ObjectConfig{Name: "RootMutation", Fields: mutations}
@@ -158,7 +165,7 @@ func (s Server) registerGraphQLServices() {
 
 	schema, err := graphql.NewSchema(schemaConfig)
 	if err != nil {
-		log.Fatalf("Failed to create team schema due to errors :v", err)
+		log.Fatalf("Failed to create schema due to errors :v", err)
 	}
 
 	// initialize graphql

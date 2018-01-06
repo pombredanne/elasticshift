@@ -62,7 +62,9 @@ func (r resolver) FetchRepository(params graphql.ResolveParams) (interface{}, er
 		return nil, team.ErrTeamNameIsEmpty
 	}
 
-	result, err := r.repositoryStore.GetRepository(teamName)
+	vcsID, _ := params.Args["vcs_id"].(string)
+
+	result, err := r.repositoryStore.GetRepository(teamName, vcsID)
 
 	var res types.RepositoryList
 	res.Nodes = result
@@ -143,6 +145,7 @@ func (r resolver) AddRepository(params graphql.ResolveParams) (interface{}, erro
 
 	repo.Team = teamName
 	repo.VcsID = account.ID
+	repo.Identifier = strings.Join([]string{source, vcsName}, ":")
 
 	// Store the repository, if it doesn't exist, otherwise throw error
 	err = r.repositoryStore.SaveRepository(&repo)

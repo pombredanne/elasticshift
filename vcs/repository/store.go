@@ -22,7 +22,7 @@ type Store interface {
 	SaveRepository(repo *types.Repository) error
 	UpdateRepository(repo types.Repository) error
 	GetRepositoryByID(id string) (types.Repository, error)
-	GetRepository(team string) ([]types.Repository, error)
+	GetRepository(team, vcsID string) ([]types.Repository, error)
 }
 
 // NewStore related database operations
@@ -47,12 +47,17 @@ func (s *store) UpdateRepository(vcs types.Repository) error {
 	return err
 }
 
-func (s *store) GetRepository(team string) ([]types.Repository, error) {
+func (s *store) GetRepository(team, vcsID string) ([]types.Repository, error) {
+
+	q := bson.M{"team": team}
+	if vcsID != "" {
+		q["vcs_id"] = vcsID
+	}
 
 	var err error
 	var result []types.Repository
 	s.store.Execute(s.cname, func(c *mgo.Collection) {
-		err = c.Find(bson.M{"team": team}).All(&result)
+		err = c.Find(q).All(&result)
 	})
 	return result, err
 }

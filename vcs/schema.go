@@ -70,7 +70,7 @@ func InitSchema(logger logrus.Logger, providers providers.Providers, s Store, te
 			Type:        graphql.ID,
 			Description: "Repository identifier",
 			Resolve: func(p graphql.ResolveParams) (interface{}, error) {
-				if t, ok := p.Source.(*types.Repository); ok {
+				if t, ok := p.Source.(types.Repository); ok {
 					return t.ID.Hex(), nil
 				}
 				return nil, nil
@@ -139,16 +139,28 @@ func InitSchema(logger logrus.Logger, providers providers.Providers, s Store, te
 		},
 	)
 
-	teamArg := graphql.FieldConfigArgument{
+	vcsAdditionalArgs := graphql.FieldConfigArgument{
 		"team": &graphql.ArgumentConfig{
 			Type:        graphql.NewNonNull(graphql.String),
 			Description: "Represent the team name or ID",
 		},
 	}
 
+	repositoryAdditionalArgs := graphql.FieldConfigArgument{
+		"team": &graphql.ArgumentConfig{
+			Type:        graphql.NewNonNull(graphql.String),
+			Description: "Represent the team name",
+		},
+
+		"vcs_id": &graphql.ArgumentConfig{
+			Type:        graphql.String,
+			Description: "Represent the version control system identifier",
+		},
+	}
+
 	queries = graphql.Fields{
-		"repository": utils.MakeListType("RepositoryList", repositoryType, r.FetchRepository, teamArg),
-		"vcs":        utils.MakeListType("VCSList", vcsType, r.FetchVCS, teamArg),
+		"repository": utils.MakeListType("RepositoryList", repositoryType, r.FetchRepository, repositoryAdditionalArgs),
+		"vcs":        utils.MakeListType("VCSList", vcsType, r.FetchVCS, vcsAdditionalArgs),
 	}
 
 	mutations = graphql.Fields{
