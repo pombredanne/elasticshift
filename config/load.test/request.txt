@@ -1,2 +1,0 @@
-
-ab -p signin.json -T 'application/json' -c 10 -n 2000 http://conspico.eshift:5050/api/users/signin

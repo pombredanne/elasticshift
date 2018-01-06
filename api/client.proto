@@ -1,0 +1,49 @@
+syntax = "proto3";
+
+package api;
+
+import "google/api/annotations.proto";
+
+// ClientReq is a request to make a client.
+message InsertClientReq {
+  string id = 1;
+  string secret = 2;
+  repeated string redirect_uris = 3;
+  repeated string trusted_peers = 4;
+  bool public = 5;
+  string name = 6;
+  string logo_url = 7;
+}
+
+// InsertClientResp returns the response from creating a client.
+message InsertClientRes {
+  bool already_exists = 1;
+  string id = 2;
+  string secret = 3;
+  repeated string redirect_uris = 4;
+  repeated string trusted_peers = 5;
+  bool public = 6;
+  string name = 7;
+  string logo_url = 8;
+}
+
+// RemoveClientReq is a request to delete a client.
+message RemoveClientReq {
+  // The ID of the client.
+  string client_id = 1;
+}
+
+// RemoveClientResp determines if the. 
+message RemoveClientRes {
+  bool not_found = 1;
+}
+
+service Client {
+    rpc Create(InsertClientReq) returns (InsertClientRes) {
+        option (google.api.http) = { post : "/v1/client" body : "*" };
+    };
+
+    rpc Delete(RemoveClientReq) returns (RemoveClientRes) {
+        option (google.api.http) = { get : "/v1/client/{client_id}"};
+    };
+}

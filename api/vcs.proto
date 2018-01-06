@@ -1,0 +1,38 @@
+syntax = "proto3";
+
+package api;
+
+import "google/api/annotations.proto";
+
+message VCSAccount {
+    string ID = 1;
+    string name = 2;
+    string type = 3;
+    string owner_type = 4;
+    string avatar_url = 5;
+}
+
+message GetVCSReq {}
+
+message GetVCSRes {
+    repeated VCSAccount accounts = 1;
+}
+
+message SyncVCSReq {
+    string vcs_id = 1;
+}
+
+message SyncVCSRes {
+    string sync_completed = 1;
+}
+
+service VCS {
+
+    rpc GetVCS(GetVCSReq) returns (GetVCSRes) {
+        option (google.api.http) = { get : "/v1/vcs" };
+    };
+
+    rpc Sync(SyncVCSReq) returns (SyncVCSRes) {
+        option (google.api.http) = { get : "/v1/vcs/{vcs_id}" };
+    };
+}

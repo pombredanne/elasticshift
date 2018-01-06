@@ -1,0 +1,9 @@
+{
+  "id": "yyjw66rn2hso6wriuzlic62jiy",
+  "secret": "l77r6wixjjtgmo4iym2kmk3jcuuxetj3afnqaw5w3rnl5nu5hehu",
+  "trusted_peers": [
+    "elasticshift"
+  ],
+  "name": "elasticshift",
+  "logo_url": "http://elasticshift.com"
+}

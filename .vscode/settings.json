@@ -14,5 +14,5 @@
     "go.formatFlags": [],
     "go.goroot": "/usr/local/go",
     "go.gopath": "/Users/ghazni/sandbox/projects/go",
-    "go.gocodeAutoBuild": false
+    "go.gocodeAutoBuild": false,
 }
