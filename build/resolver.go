@@ -82,6 +82,8 @@ func (r *resolver) TriggerBuild(params graphql.ResolveParams) (interface{}, erro
 		return nil, fmt.Errorf("Failed to save build details: %v", err)
 	}
 
+	// start the container
+
 	return &b, err
 }
 
@@ -116,14 +118,17 @@ func (r *resolver) CancelBuild(params graphql.ResolveParams) (interface{}, error
 		return nil, fmt.Errorf("Build id not found")
 	}
 
-	// TODO trigger the cancel build, only if the current status is RUNNING | WAITING | STUCK
-	if types.Running == b.Status || types.Waiting == b.Status || types.Stuck == b.Status {
-
-		// Trigger the cancellation
-		//
+	if types.Cancelled == b.Status || types.Failed == b.Status || types.Success == b.Status {
+		return fmt.Sprintf("Cancelling the build is not possible, because it seems that it was already %s", b.Status.String()), nil
 	}
 
-	return fmt.Sprintf("Cancelling the build is not possible, because it seems that it was already %s", b.Status.String()), nil
+	// TODO trigger the cancel build, only if the current status is RUNNING | WAITING | STUCK
+
+	err = r.store.UpdateBuildStatus(b.ID, types.Cancelled)
+	if err != nil {
+		return nil, fmt.Errorf("Failed to cancel the build: %v", err)
+	}
+	return nil, nil
 }
 
 func (r *resolver) FetchBuildByID(params graphql.ResolveParams) (interface{}, error) {

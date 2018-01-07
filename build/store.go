@@ -21,6 +21,7 @@ type Store interface {
 	FetchBuild(team, repository_id, branch string, status types.BuildStatus) ([]types.Build, error)
 	FetchBuildByID(id string) (types.Build, error)
 	UpdateBuildLog(id bson.ObjectId, log string) error
+	UpdateBuildStatus(id bson.ObjectId, s types.BuildStatus) error
 }
 
 // NewStore ..
@@ -67,6 +68,15 @@ func (s *store) UpdateBuildLog(id bson.ObjectId, log string) error {
 	var err error
 	s.store.Execute(s.cname, func(c *mgo.Collection) {
 		err = c.Update(bson.M{"_id": id}, bson.M{"$set": bson.M{"log": log}})
+	})
+	return err
+}
+
+func (s *store) UpdateBuildStatus(id bson.ObjectId, status types.BuildStatus) error {
+
+	var err error
+	s.store.Execute(s.cname, func(c *mgo.Collection) {
+		err = c.Update(bson.M{"_id": id}, bson.M{"$set": bson.M{"status": status}})
 	})
 	return err
 }
