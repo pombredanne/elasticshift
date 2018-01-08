@@ -67,10 +67,10 @@ type VCSService interface {
 }
 
 // NewVCSService ..
-func NewService(logger logrus.Logger, s core.Store, providers providers.Providers, teamStore team.Store) VCSService {
+func NewService(logger logrus.Logger, d core.Database, providers providers.Providers, teamStore team.Store) VCSService {
 
 	return &vcsService{
-		store:     NewStore(s),
+		store:     NewStore(d),
 		teamStore: teamStore,
 		logger:    logger,
 		providers: providers,

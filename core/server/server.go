@@ -44,7 +44,7 @@ const (
 // Server ..
 type Server struct {
 	Logger    logrus.Logger
-	Store     store.Store
+	DB        store.Database
 	Router    *mux.Router
 	Dex       dex.DexClient
 	Providers providers.Providers
@@ -75,7 +75,7 @@ func New(ctx context.Context, c Config) (*Server, error) {
 	s := &Server{}
 
 	s.Logger = c.Logger
-	s.Store = store.New(c.Store.Name, c.Session)
+	s.DB = store.NewDatabase(c.Store.Name, c.Session)
 
 	// d, err := newDexClient(ctx, c.Identity)
 	// if err != nil {
@@ -95,7 +95,7 @@ func New(ctx context.Context, c Config) (*Server, error) {
 	r.Handle("/debug/threadcreate", pprof.Handler("threadcreate"))
 	r.Handle("/debug/block", pprof.Handler("block"))
 
-	s.Providers = providers.New(s.Logger, sysconf.NewStore(s.Store))
+	s.Providers = providers.New(s.Logger, sysconf.NewStore(s.DB))
 
 	// initialize oauth2 providers
 	s.registerOauth2Providers()
@@ -112,8 +112,8 @@ func New(ctx context.Context, c Config) (*Server, error) {
 
 func (s Server) registerOauth2Providers() {
 
-	teamStore := team.NewStore(s.Store)
-	vcsServ := vcs.NewService(s.Logger, s.Store, s.Providers, teamStore)
+	teamStore := team.NewStore(s.DB)
+	vcsServ := vcs.NewService(s.Logger, s.DB, s.Providers, teamStore)
 
 	s.Router.HandleFunc("/{team}/link/{provider}", vcsServ.Authorize)
 	s.Router.HandleFunc("/link/{provider}/callback", vcsServ.Authorized)
@@ -129,11 +129,11 @@ func (s Server) registerGraphQLServices() {
 	mutations := graphql.Fields{}
 
 	// data store
-	teamStore := team.NewStore(s.Store)
-	vcsStore := vcs.NewStore(s.Store)
-	sysconfStore := sysconf.NewStore(s.Store)
-	repositoryStore := repository.NewStore(s.Store)
-	buildStore := build.NewStore(s.Store)
+	teamStore := team.NewStore(s.DB)
+	vcsStore := vcs.NewStore(s.DB)
+	sysconfStore := sysconf.NewStore(s.DB)
+	repositoryStore := repository.NewStore(s.DB)
+	buildStore := build.NewStore(s.DB)
 
 	// team fields
 	teamQ, teamM := team.InitSchema(logger, teamStore)
@@ -188,7 +188,7 @@ func appendFields(fields graphql.Fields, input graphql.Fields) {
 func RegisterGRPCServices(grpcServer *grpc.Server, s *Server) {
 
 	api.RegisterUserServer(grpcServer, user.NewServer(s.Logger, s.Dex))
-	api.RegisterClientServer(grpcServer, client.NewServer(s.Store, s.Logger, s.Dex))
+	api.RegisterClientServer(grpcServer, client.NewServer(s.DB, s.Logger, s.Dex))
 }
 
 // Registers the exposed http services

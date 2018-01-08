@@ -88,7 +88,8 @@ func New(logger logrus.Logger, store sysconf.Store) Providers {
 // Get the provider by namee
 func (p Providers) Get(name string) (Provider, error) {
 
-	conf, err := p.store.GetVCSSysConfByName(name)
+	var conf types.VCSSysConf
+	err := p.store.GetSysConf(sysconf.VcsKind, name, &conf)
 	if err != nil {
 		return nil, fmt.Errorf(errNoProviderFound, name, err)
 	}

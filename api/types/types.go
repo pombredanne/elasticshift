@@ -38,6 +38,7 @@ type NFSVolumeSysConf struct {
 	Name       string        `json:"name" bson:"name"`
 	Kind       string        `bson:"kind" bson:"kind,omitempty"`
 	Server     string        `json:"server" bson:"server"`
+	Path       string        `json:"path" bson:"path"`
 	AccessMode int           `json:"access_mode" bson:"access_mode"`
 }
 

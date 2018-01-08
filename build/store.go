@@ -11,13 +11,13 @@ import (
 )
 
 type store struct {
-	store core.Store
-	cname string
+	core.Store
 }
 
 // Store provides system level config
 type Store interface {
-	SaveBuild(b *types.Build) error
+	core.Core
+
 	FetchBuild(team, repository_id, branch string, status types.BuildStatus) ([]types.Build, error)
 	FetchBuildByID(id string) (types.Build, error)
 	UpdateBuildLog(id bson.ObjectId, log string) error
@@ -25,12 +25,11 @@ type Store interface {
 }
 
 // NewStore ..
-func NewStore(s core.Store) Store {
-	return &store{s, "build"}
-}
-
-func (s *store) SaveBuild(b *types.Build) error {
-	return s.store.Insert(s.cname, b)
+func NewStore(d core.Database) Store {
+	s := &store{}
+	s.Database = d
+	s.CollectionName = "build"
+	return s
 }
 
 func (s *store) FetchBuild(team, repository_id, branch string, status types.BuildStatus) ([]types.Build, error) {
@@ -50,7 +49,7 @@ func (s *store) FetchBuild(team, repository_id, branch string, status types.Buil
 
 	var err error
 	var result []types.Build
-	s.store.Execute(s.cname, func(c *mgo.Collection) {
+	s.Execute(func(c *mgo.Collection) {
 		err = c.Find(q).All(&result)
 	})
 
@@ -59,14 +58,14 @@ func (s *store) FetchBuild(team, repository_id, branch string, status types.Buil
 
 func (s *store) FetchBuildByID(id string) (types.Build, error) {
 	var b types.Build
-	err := s.store.FindOne(s.cname, bson.M{"_id": id}, &b)
+	err := s.FindOne(bson.M{"_id": id}, &b)
 	return b, err
 }
 
 func (s *store) UpdateBuildLog(id bson.ObjectId, log string) error {
 
 	var err error
-	s.store.Execute(s.cname, func(c *mgo.Collection) {
+	s.Execute(func(c *mgo.Collection) {
 		err = c.Update(bson.M{"_id": id}, bson.M{"$set": bson.M{"log": log}})
 	})
 	return err
@@ -75,7 +74,7 @@ func (s *store) UpdateBuildLog(id bson.ObjectId, log string) error {
 func (s *store) UpdateBuildStatus(id bson.ObjectId, status types.BuildStatus) error {
 
 	var err error
-	s.store.Execute(s.cname, func(c *mgo.Collection) {
+	s.Execute(func(c *mgo.Collection) {
 		err = c.Update(bson.M{"_id": id}, bson.M{"$set": bson.M{"status": status}})
 	})
 	return err

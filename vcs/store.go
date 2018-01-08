@@ -10,37 +10,32 @@ import (
 )
 
 type store struct {
-	store core.Store // store
-	cname string     // collection name
+	core.Store // store
 }
 
 //Store related database operations
 type Store interface {
+	core.Core
 
 	// VCS Settings
-	SaveVCS(vcs *types.VCS) error
 	UpdateVCS(vcs types.VCS) error
-	GetVCSByID(id string) (types.VCS, error)
 }
 
-// NewStore related database operations
-func NewStore(s core.Store) Store {
-	return &store{store: s, cname: "vcs"}
-}
-
-func (s *store) SaveVCS(vcs *types.VCS) error {
-	return s.store.Insert(s.cname, vcs)
+func NewStore(d core.Database) Store {
+	s := &store{}
+	s.Database = d
+	s.CollectionName = "vcs"
+	return s
 }
 
 func (s *store) GetVCSByID(id string) (types.VCS, error) {
 
 	var result types.VCS
-	err := s.store.FindOne(s.cname, bson.M{"_id": bson.ObjectIdHex(id)}, &result)
+	err := s.FindByID(id, &result)
 	return result, err
 }
 
 func (s *store) UpdateVCS(vcs types.VCS) error {
-
-	_, err := s.store.Upsert(s.cname, bson.M{"_id": vcs.ID}, vcs)
+	_, err := s.Upsert(bson.M{"_id": vcs.ID}, vcs)
 	return err
 }

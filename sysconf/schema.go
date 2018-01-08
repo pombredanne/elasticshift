@@ -104,6 +104,11 @@ func InitSchema(logger logrus.Logger, s Store) (queries graphql.Fields, mutation
 			},
 		},
 
+		"name": &graphql.Field{
+			Type:        graphql.String,
+			Description: "Name of the system config",
+		},
+
 		"path": &graphql.Field{
 			Type:        graphql.String,
 			Description: "Path of the nfs share",
@@ -114,7 +119,7 @@ func InitSchema(logger logrus.Logger, s Store) (queries graphql.Fields, mutation
 			Description: "NFS server address",
 		},
 
-		"accessmode": &graphql.Field{
+		"access_mode": &graphql.Field{
 			Type:        accessModeEnum,
 			Description: "Access mode of the share",
 		},
@@ -170,13 +175,9 @@ func InitSchema(logger logrus.Logger, s Store) (queries graphql.Fields, mutation
 		"NFSVolumeSysConf": &graphql.Field{
 			Type: nfsSysconfType,
 			Args: graphql.FieldConfigArgument{
-				"server": &graphql.ArgumentConfig{
+				"name": &graphql.ArgumentConfig{
 					Type:        graphql.NewNonNull(graphql.String),
-					Description: "NFS server host or ip",
-				},
-				"accessmode": &graphql.ArgumentConfig{
-					Type:        accessModeEnum,
-					Description: "Access mode such as ReadOnly or ReadWrite",
+					Description: "Name of the system configuration",
 				},
 			},
 			Resolve: r.FetchNFSVolumeSysConfByName,

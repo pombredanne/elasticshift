@@ -29,9 +29,9 @@ type server struct {
 
 // NewServer ..
 // Implementation of api.UserServer
-func NewServer(s core.Store, logger logrus.Logger, dex dex.DexClient) api.ClientServer {
+func NewServer(d core.Database, logger logrus.Logger, dex dex.DexClient) api.ClientServer {
 	return &server{
-		store:  NewStore(s),
+		store:  NewStore(d),
 		dex:    dex,
 		logger: logger,
 	}

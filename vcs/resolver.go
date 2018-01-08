@@ -148,7 +148,7 @@ func (r resolver) AddRepository(params graphql.ResolveParams) (interface{}, erro
 	repo.Identifier = strings.Join([]string{source, vcsName}, ":")
 
 	// Store the repository, if it doesn't exist, otherwise throw error
-	err = r.repositoryStore.SaveRepository(&repo)
+	err = r.repositoryStore.Save(&repo)
 
 	return repo, err
 }

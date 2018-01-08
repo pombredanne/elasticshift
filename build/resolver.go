@@ -77,7 +77,7 @@ func (r *resolver) TriggerBuild(params graphql.ResolveParams) (interface{}, erro
 	// cache must be mounted as /elasticshift to containers
 	b.Log = filepath.Join(repo.Team, repo.Identifier, repo.Name, branch, b.ID.Hex(), logfile)
 
-	err = r.store.SaveBuild(&b)
+	err = r.store.Save(&b)
 	if err != nil {
 		return nil, fmt.Errorf("Failed to save build details: %v", err)
 	}

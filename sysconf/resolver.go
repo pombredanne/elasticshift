@@ -22,9 +22,9 @@ var (
 )
 
 const (
-	vcsKind       = "vcs"
-	genericKind   = "generic"
-	volumeNfsKind = "nfs"
+	VcsKind       = "vcs"
+	GenericKind   = "generic"
+	VolumeNfsKind = "nfs"
 )
 
 type resolver struct {
@@ -44,18 +44,18 @@ func (r *resolver) CreateVCSSysConf(params graphql.ResolveParams) (interface{}, 
 	res.Key = key
 	res.Secret = secret
 	res.CallbackURL = callbackURL
-	res.Kind = vcsKind
+	res.Kind = VcsKind
 
 	result, err := r.FetchVCSSysConfByName(params)
-	if err != nil {
+	if err != nil && !strings.EqualFold("not found", err.Error()) {
 		return nil, fmt.Errorf("Failed to create vcs sysconf", err)
 	}
 
-	if result != nil {
+	if result.(types.VCSSysConf).Name != "" {
 		return nil, errVCSAlreadyExist
 	}
 
-	err = r.store.SaveSysConf(res)
+	err = r.store.Save(res)
 	return res, err
 }
 
@@ -67,7 +67,7 @@ func (r *resolver) CreateGenericSysConf(params graphql.ResolveParams) (interface
 	res := &types.GenericSysConf{}
 	res.Name = name
 	res.Value = value
-	res.Kind = genericKind
+	res.Kind = GenericKind
 
 	result, err := r.FetchGenericSysConfByName(params)
 	if err != nil && !strings.EqualFold("not found", err.Error()) {
@@ -78,7 +78,7 @@ func (r *resolver) CreateGenericSysConf(params graphql.ResolveParams) (interface
 		return nil, errGenericAlreadyExist
 	}
 
-	err = r.store.SaveSysConf(res)
+	err = r.store.Save(res)
 	return res, err
 
 }
@@ -93,18 +93,18 @@ func (r *resolver) CreateNFSVolumeSysConf(params graphql.ResolveParams) (interfa
 	res.Name = name
 	res.Server = server
 	res.AccessMode = accessMode
-	res.Kind = volumeNfsKind
+	res.Kind = VolumeNfsKind
 
 	result, err := r.FetchNFSVolumeSysConfByName(params)
-	if err != nil {
+	if err != nil && !strings.EqualFold("not found", err.Error()) {
 		return nil, fmt.Errorf("Failed to create NFS volume sysconf", err)
 	}
 
-	if result != nil {
+	if result.(types.NFSVolumeSysConf).Name != "" {
 		return nil, errNFSVolumeAlreadyExist
 	}
 
-	err = r.store.SaveSysConf(res)
+	err = r.store.Save(res)
 	if err != nil {
 		return nil, err
 	}
@@ -118,19 +118,19 @@ func (r *resolver) FetchVCSSysConf(params graphql.ResolveParams) (interface{}, e
 
 func (r *resolver) FetchVCSSysConfByName(params graphql.ResolveParams) (interface{}, error) {
 	var result types.VCSSysConf
-	err := r.fetchSysconfByName(vcsKind, params, &result)
+	err := r.fetchSysconfByName(VcsKind, params, &result)
 	return result, err
 }
 
 func (r *resolver) FetchGenericSysConfByName(params graphql.ResolveParams) (interface{}, error) {
 	var result types.GenericSysConf
-	err := r.fetchSysconfByName(genericKind, params, &result)
+	err := r.fetchSysconfByName(GenericKind, params, &result)
 	return result, err
 }
 
 func (r *resolver) FetchNFSVolumeSysConfByName(params graphql.ResolveParams) (interface{}, error) {
 	var result types.NFSVolumeSysConf
-	err := r.fetchSysconfByName(volumeNfsKind, params, &result)
+	err := r.fetchSysconfByName(VolumeNfsKind, params, &result)
 	return result, err
 }
 
