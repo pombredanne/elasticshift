@@ -22,6 +22,8 @@ type Interface interface {
 	Execute(handleFunc func(c *mgo.Collection))
 	Save(model interface{}) error
 	Upsert(selector interface{}, model interface{}) (*mgo.ChangeInfo, error)
+	Update(selector interface{}, model interface{}) error
+	UpdateId(id interface{}, model interface{}) error
 	FindAll(query interface{}, model interface{}) error
 	FindOne(query interface{}, model interface{}) error
 	FindByID(id string, model interface{}) error
@@ -93,6 +95,26 @@ func (s *Store) Upsert(selector interface{}, model interface{}) (*mgo.ChangeInfo
 		info, err = c.Upsert(selector, model)
 	})
 	return info, err
+}
+
+// Update the collection based on the selector (query fields)
+func (s *Store) Update(selector interface{}, model interface{}) error {
+
+	var err error
+	s.Execute(func(c *mgo.Collection) {
+		err = c.Update(selector, model)
+	})
+	return err
+}
+
+// Update the collection based on the id (primary key)
+func (s *Store) UpdateId(id interface{}, model interface{}) error {
+
+	var err error
+	s.Execute(func(c *mgo.Collection) {
+		err = c.UpdateId(id, model)
+	})
+	return err
 }
 
 // FindAll the document matches the query on a collection.

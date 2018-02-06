@@ -49,6 +49,7 @@ type Server struct {
 	Router    *mux.Router
 	Dex       dex.DexClient
 	Providers providers.Providers
+	Ctx       context.Context
 }
 
 // Config ..
@@ -74,8 +75,9 @@ type Identity struct {
 func New(ctx context.Context, c Config) (*Server, error) {
 
 	s := &Server{}
-
+	s.Ctx = ctx
 	s.Logger = c.Logger
+
 	s.DB = store.NewDatabase(c.Store.Name, c.Session)
 
 	// d, err := newDexClient(ctx, c.Identity)
@@ -99,7 +101,7 @@ func New(ctx context.Context, c Config) (*Server, error) {
 	s.Providers = providers.New(s.Logger, sysconf.NewStore(s.DB))
 
 	// initialize oauth2 providers
-	s.registerOauth2Providers()
+	s.registerEndpointServices()
 
 	// initialize graphql based services
 	s.registerGraphQLServices()
@@ -111,13 +113,18 @@ func New(ctx context.Context, c Config) (*Server, error) {
 	return s, nil
 }
 
-func (s Server) registerOauth2Providers() {
+func (s Server) registerEndpointServices() {
 
 	teamStore := team.NewStore(s.DB)
 	vcsServ := vcs.NewService(s.Logger, s.DB, s.Providers, teamStore)
 
+	// Oauth2 providers
 	s.Router.HandleFunc("/{team}/link/{provider}", vcsServ.Authorize)
 	s.Router.HandleFunc("/link/{provider}/callback", vcsServ.Authorized)
+
+	// Sysconf Upload kube file
+	sysconfServ := sysconf.NewService(s.Logger, s.DB, teamStore)
+	s.Router.HandleFunc("/sysconf/upload", sysconfServ.UploadKubeConfigFile)
 }
 
 func (s Server) registerGraphQLServices() {
@@ -151,8 +158,8 @@ func (s Server) registerGraphQLServices() {
 	appendFields(queries, sysconfQ)
 	appendFields(mutations, sysconfM)
 
-	// sysconf fields
-	buildQ, buildM := build.InitSchema(logger, buildStore, repositoryStore, sysconfStore)
+	// build fields
+	buildQ, buildM := build.InitSchema(logger, s.Ctx, buildStore, repositoryStore, sysconfStore)
 	appendFields(queries, buildQ)
 	appendFields(mutations, buildM)
 

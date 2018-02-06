@@ -53,23 +53,23 @@ const (
 	SEMICOLON = ";"
 )
 
-type vcsService struct {
+type service struct {
 	store     Store
 	teamStore team.Store
 	logger    logrus.Logger
 	providers providers.Providers
 }
 
-// VCSService ..
-type VCSService interface {
+// Service ..
+type Service interface {
 	Authorize(w http.ResponseWriter, r *http.Request)
 	Authorized(w http.ResponseWriter, r *http.Request)
 }
 
 // NewVCSService ..
-func NewService(logger logrus.Logger, d stypes.Database, providers providers.Providers, teamStore team.Store) VCSService {
+func NewService(logger logrus.Logger, d stypes.Database, providers providers.Providers, teamStore team.Store) Service {
 
-	return &vcsService{
+	return &service{
 		store:     NewStore(d),
 		teamStore: teamStore,
 		logger:    logger,
@@ -77,7 +77,7 @@ func NewService(logger logrus.Logger, d stypes.Database, providers providers.Pro
 	}
 }
 
-func (s vcsService) Authorize(w http.ResponseWriter, r *http.Request) {
+func (s service) Authorize(w http.ResponseWriter, r *http.Request) {
 
 	team := mux.Vars(r)["team"]
 	exist, err := s.teamStore.CheckExists(team)
@@ -113,7 +113,7 @@ func (s vcsService) Authorize(w http.ResponseWriter, r *http.Request) {
 
 // Authorized ..
 // Invoked when authorization finished by oauth app
-func (s vcsService) Authorized(w http.ResponseWriter, r *http.Request) {
+func (s service) Authorized(w http.ResponseWriter, r *http.Request) {
 
 	provider := mux.Vars(r)["provider"]
 	p, err := s.providers.Get(provider)
@@ -299,7 +299,7 @@ func (s vcsService) Authorized(w http.ResponseWriter, r *http.Request) {
 // 	return nil
 // }
 
-func (s vcsService) encode(id string) string {
+func (s service) encode(id string) string {
 
 	eid := base64.URLEncoding.EncodeToString([]byte(id))
 	if strings.Contains(eid, DOUBLEEQUALS) {
@@ -312,7 +312,7 @@ func (s vcsService) encode(id string) string {
 	return eid
 }
 
-func (s vcsService) decode(id string) string {
+func (s service) decode(id string) string {
 
 	if strings.Contains(id, DOT2) {
 		id = strings.TrimRight(id, DOT2) + DOUBLEEQUALS

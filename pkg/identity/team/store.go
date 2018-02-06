@@ -32,6 +32,10 @@ type Store interface {
 	UpdateVCS(team string, vcs types.VCS) error
 	GetVCSByID(team, id string) (types.VCS, error)
 	GetVCSByName(team, name, source string) (*types.VCS, error)
+
+	// Kube config
+	GetKubeConfig(team string) (types.KubeConfig, error)
+	SaveKubeConfig(team string, f types.KubeConfig) error
 }
 
 // NewStore related database operations
@@ -147,4 +151,26 @@ func (s *store) GetVCSByName(team, name, source string) (*types.VCS, error) {
 		return nil, fmt.Errorf("Not found")
 	}
 	return &t.Accounts[0], err
+}
+
+func (s *store) SaveKubeConfig(team string, f types.KubeConfig) error {
+
+	var err error
+	s.Execute(func(c *mgo.Collection) {
+		err = c.Update(
+			bson.M{"name": team},
+			bson.M{"$push": bson.M{"kube_config": f}},
+		)
+	})
+	return err
+}
+
+func (r *store) GetKubeConfig(team string) (types.KubeConfig, error) {
+
+	var err error
+	var t types.Team
+	r.Execute(func(c *mgo.Collection) {
+		err = c.Find(bson.M{"name": team}).One(&t)
+	})
+	return t.KubeConfig, err
 }

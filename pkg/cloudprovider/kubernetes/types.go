@@ -35,8 +35,8 @@ type ContainerInfo struct {
 }
 
 type KubernetesClientOptions struct {
-	KubeConfigFile string
-	Namespace      string
+	KubeConfig []byte
+	Namespace  string
 }
 
 //go:generate stringer -type=PersistentVolumeProvider

@@ -21,8 +21,8 @@ build: bin/elasticshift get-golint
 
 bin/elasticshift: go-version-checker
 	@go install -x
-		GOOS=linux GOARCH=386 go build -x -o $(GOBIN)/linux_386/elasticshift
-		GOOS=darwin GOARCH=386 go build -x -o $(GOBIN)/darwin_386/elasticshift
+		GOOS=linux GOARCH=386 go build -x -o $(GOBIN)/linux_386/elasticshift ./cmd/elasticshift/elasticshift.go
+		GOOS=darwin GOARCH=386 go build -x -o $(GOBIN)/darwin_386/elasticshift ./cmd/elasticshift/elasticshift.go
 #env GOOS=linux CGO_ENABLED=0 go install -v -ldflags $(LD_FLAGS) $(REPO_PATH)
 #GOOS=linux CGO_ENABLED=0 go build -o /bin/elasticshift elasticshift.go
 #CGO_ENABLED=0 go build -o /bin/elasticshift elasticshift.go

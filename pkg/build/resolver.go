@@ -4,15 +4,18 @@ Copyright 2017 The Elasticshift Authors.
 package build
 
 import (
+	"context"
 	"errors"
 	"fmt"
-	"path/filepath"
 	"strings"
 	"time"
 
 	"github.com/Sirupsen/logrus"
+	"github.com/docker/docker/api/types/container"
+	"github.com/docker/docker/api/types/strslice"
 	"github.com/graphql-go/graphql"
 	"gitlab.com/conspico/elasticshift/api/types"
+	"gitlab.com/conspico/elasticshift/pkg/cloudprovider/docker"
 	"gitlab.com/conspico/elasticshift/pkg/sysconf"
 	"gitlab.com/conspico/elasticshift/pkg/vcs/repository"
 	"gopkg.in/mgo.v2/bson"
@@ -26,11 +29,57 @@ var (
 	logfile = "logfile"
 )
 
+const (
+	LogType_Embedded = "Embedded"
+	LogType_NFS      = "NFS"
+)
+
 type resolver struct {
 	store           Store
 	repositoryStore repository.Store
 	sysconfStore    sysconf.Store
 	logger          logrus.Logger
+	Ctx             context.Context
+	BuildQueue      chan types.Build
+}
+
+func (r *resolver) ContainerLauncher() {
+
+	for b := range r.BuildQueue {
+
+		go func(b types.Build) {
+
+			// start the container
+			// TODO select the default orchestration, by config
+			opts := &docker.ClientOptions{}
+			opts.Host = docker.DefaultHost
+			opts.Ctx = r.Ctx
+
+			cli, err := docker.NewClient(opts)
+			if err != nil {
+				r.SLog(b.ID, fmt.Sprintf("Failed to connect to docker daemon: %v", err))
+			}
+
+			c := &container.Config{
+				Image: "alpine",
+
+				// Cmd:   []string{"/bin/sh"},
+				Entrypoint: strslice.StrSlice{"/bin/sh"},
+			}
+			containerID, err := cli.CreateContainer(c, b.ID.Hex())
+			if err != nil {
+				str := fmt.Sprintf("Unable to create the container %v", err)
+				r.SLog(b.ID, str)
+			}
+
+			fmt.Println("Container ID =", containerID)
+			err = r.store.UpdateContainerID(b.ID, containerID)
+			if err != nil {
+				r.logger.Errorln("Failed to update the container id: ", containerID)
+			}
+
+		}(b)
+	}
 }
 
 func (r *resolver) TriggerBuild(params graphql.ResolveParams) (interface{}, error) {
@@ -50,14 +99,14 @@ func (r *resolver) TriggerBuild(params graphql.ResolveParams) (interface{}, erro
 		branch = repo.DefaultBranch
 	}
 
-	status := types.Running
-	rb, err := r.store.FetchBuild(repo.Team, repository_id, branch, types.Running)
+	status := types.BuildStatus_Running
+	rb, err := r.store.FetchBuild(repo.Team, repository_id, branch, types.BuildStatus_Running)
 	if err != nil {
 		return nil, fmt.Errorf("Failed to validate if there are any build running", err)
 	}
 
 	if len(rb) > 0 {
-		status = types.Waiting
+		status = types.BuildStatus_Waiting
 	}
 
 	b := types.Build{}
@@ -69,22 +118,32 @@ func (r *resolver) TriggerBuild(params graphql.ResolveParams) (interface{}, erro
 	b.StartedAt = time.Now()
 	b.Team = repo.Team
 	b.Branch = branch
+	b.LogType = LogType_Embedded
 
-	// Build file path
+	// Build file path - (for NFS)
 	// <cache>/team-id/vcs-id/repository-id/branch-name/build-id/log
 	// <cache>/team-id/vcs-id/repository-id/branch-name/build-id/reports
 	// <cache>/team-id/vcs-id/repository-id/branch-name/build-id/archive.zip
 	// cache must be mounted as /elasticshift to containers
-	b.Log = filepath.Join(repo.Team, repo.Identifier, repo.Name, branch, b.ID.Hex(), logfile)
+	// b.Log = filepath.Join(repo.Team, repo.Identifier, repo.Name, branch, b.ID.Hex(), logfile)
 
 	err = r.store.Save(&b)
 	if err != nil {
 		return nil, fmt.Errorf("Failed to save build details: %v", err)
 	}
 
-	// start the container
+	// Pass the build data to builder
+	r.BuildQueue <- b
 
-	return &b, err
+	return b, err
+}
+
+func (r *resolver) SLog(id interface{}, log string) error {
+	return r.Log(id, types.Log{Time: time.Now(), Data: log})
+}
+
+func (r *resolver) Log(id interface{}, log types.Log) error {
+	return r.store.UpdateId(id, bson.M{"$push": bson.M{"log": log}})
 }
 
 func (r *resolver) FetchBuild(params graphql.ResolveParams) (interface{}, error) {
@@ -118,13 +177,13 @@ func (r *resolver) CancelBuild(params graphql.ResolveParams) (interface{}, error
 		return nil, fmt.Errorf("Build id not found")
 	}
 
-	if types.Cancelled == b.Status || types.Failed == b.Status || types.Success == b.Status {
+	if types.BuildStatus_Cancelled == b.Status || types.BuildStatus_Failed == b.Status || types.BuildStatus_Success == b.Status {
 		return fmt.Sprintf("Cancelling the build is not possible, because it seems that it was already %s", b.Status.String()), nil
 	}
 
 	// TODO trigger the cancel build, only if the current status is RUNNING | WAITING | STUCK
 
-	err = r.store.UpdateBuildStatus(b.ID, types.Cancelled)
+	err = r.store.UpdateBuildStatus(b.ID, types.BuildStatus_Cancelled)
 	if err != nil {
 		return nil, fmt.Errorf("Failed to cancel the build: %v", err)
 	}

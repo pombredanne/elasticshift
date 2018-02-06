@@ -4,6 +4,7 @@ Copyright 2017 The Elasticshift Authors.
 package types
 
 import (
+	"encoding/base64"
 	"time"
 
 	"gopkg.in/mgo.v2/bson"
@@ -57,10 +58,11 @@ type VCSSysConf struct {
 
 // Team ..
 type Team struct {
-	ID       bson.ObjectId `bson:"_id,omitempty"`
-	Name     string        `bson:"name"`
-	Display  string        `bson:"display,omitempty"`
-	Accounts []VCS         `bson:"accounts"`
+	ID         bson.ObjectId `bson:"_id,omitempty"`
+	Name       string        `bson:"name"`
+	Display    string        `bson:"display,omitempty"`
+	Accounts   []VCS         `bson:"accounts"`
+	KubeConfig KubeConfig    `json:"-" bson:"kube_config"`
 }
 
 // User ..
@@ -127,11 +129,11 @@ type BuildStatus int
 
 const (
 	Stuck BuildStatus = iota + 1
-	Running
-	Success
-	Failed
-	Cancelled
-	Waiting
+	BuildStatus_Running
+	BuildStatus_Success
+	BuildStatus_Failed
+	BuildStatus_Cancelled
+	BuildStatus_Waiting
 )
 
 func (b *BuildStatus) SetBSON(raw bson.Raw) error {
@@ -146,12 +148,18 @@ func (b *BuildStatus) SetBSON(raw bson.Raw) error {
 	return nil
 }
 
+type Log struct {
+	Time time.Time `json:"time" bson:"time"`
+	Data string    `json:"data" bson:"data"`
+}
+
 type Build struct {
 	ID           bson.ObjectId `json:"id" bson:"_id,omitempty"`
 	RepositoryID string        `json:"repository_id" bson:"repository_id"`
 	VcsID        string        `json:"vcs_id" bson:"vcs_id"`
 	ContainerID  string        `json:"container_id" bson:"container_id"`
-	Log          string        `json:"log" bson:"log"`
+	Log          []Log         `json:"-" bson:"log"`
+	LogType      string        `json:"-" bson:"log_type"`
 	StartedAt    time.Time     `json:"started_at" bson:"started_at"`
 	EndedAt      time.Time     `json:"ended_at" bson:"ended_at"`
 	TriggeredBy  string        `json:"triggered_by" bson:"triggered_by"`
@@ -177,4 +185,23 @@ type Container struct {
 	StoppedAt       time.Time     `json:"stopped_at" bson:"stopped_at"`
 	Duration        string        `json:"duration" bson:"duration"`
 	Kind            string        `json:"kind" bson:"kind"`
+}
+
+type KubeConfig []byte
+
+func (f KubeConfig) GetBSON() (interface{}, error) {
+	return base64.StdEncoding.EncodeToString([]byte(f)), nil
+}
+
+func (f *KubeConfig) SetBSON(raw bson.Raw) error {
+
+	var data string
+	var err error
+
+	if err = raw.Unmarshal(&data); err != nil {
+		return err
+	}
+
+	*f, err = base64.StdEncoding.DecodeString(data)
+	return err
 }

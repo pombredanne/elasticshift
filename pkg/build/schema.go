@@ -4,6 +4,8 @@ Copyright 2017 The Elasticshift Authors.
 package build
 
 import (
+	"context"
+
 	"github.com/Sirupsen/logrus"
 	"github.com/graphql-go/graphql"
 	"gitlab.com/conspico/elasticshift/api/types"
@@ -12,14 +14,19 @@ import (
 	"gitlab.com/conspico/elasticshift/pkg/vcs/repository"
 )
 
-func InitSchema(logger logrus.Logger, s Store, repositoryStore repository.Store, sysconfStore sysconf.Store) (queries graphql.Fields, mutations graphql.Fields) {
+func InitSchema(logger logrus.Logger, ctx context.Context, s Store, repositoryStore repository.Store, sysconfStore sysconf.Store) (queries graphql.Fields, mutations graphql.Fields) {
 
 	r := &resolver{
 		store:           s,
 		repositoryStore: repositoryStore,
 		sysconfStore:    sysconfStore,
 		logger:          logger,
+		Ctx:             ctx,
+		BuildQueue:      make(chan types.Build),
 	}
+
+	// Launch a background process to launch container after build trigger.
+	go r.ContainerLauncher()
 
 	buildStatusEnum := graphql.NewEnum(graphql.EnumConfig{
 		Name: "BuildStatus",

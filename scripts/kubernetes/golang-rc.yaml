@@ -1,0 +1,29 @@
+# This pod mounts the nfs volume claim into /elasticshift and
+# serves a simple web page.
+
+apiVersion: v1
+kind: ReplicationController
+metadata:
+  name: golang-rc
+spec:
+  replicas: 1
+  selector:
+    role: golang-builder
+  template:
+    metadata:
+      labels:
+        role: golang-builder
+    spec:
+      containers:
+      - name: golang
+        image: golang
+        command:
+          - /bin/bash
+        volumeMounts:
+            # name must match the volume name below
+            - name: myvol
+              mountPath: "/elasticshift"
+      volumes:
+      - name: myvol
+        persistentVolumeClaim:
+          claimName: nfsc

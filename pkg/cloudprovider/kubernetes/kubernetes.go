@@ -6,7 +6,6 @@ package kubernetes
 import (
 	"bytes"
 	"encoding/json"
-	"errors"
 	"fmt"
 	"os"
 
@@ -17,7 +16,9 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/client-go/kubernetes"
+	restclient "k8s.io/client-go/rest"
 	"k8s.io/client-go/tools/clientcmd"
+	clientcmdapi "k8s.io/client-go/tools/clientcmd/api"
 )
 
 type kubernetesClient struct {
@@ -39,15 +40,15 @@ type KubernetesClient interface {
 
 func NewKubernetesClient(o *KubernetesClientOptions) (KubernetesClient, error) {
 
-	if o.KubeConfigFile == "" {
-		errors.New("Kubernetes config file required to proceed further")
-	}
+	// if o.KubeConfigFile == "" {
+	// 	errors.New("Kubernetes config file required to proceed further")
+	// }
 
-	f, err := os.Open(o.KubeConfigFile)
-	if err != nil {
-		return nil, fmt.Errorf("Failed to open Kubernetes config file %s : %v", o.KubeConfigFile, err)
-	}
-	defer f.Close()
+	// f, err := os.Open(o.KubeConfigFile)
+	// if err != nil {
+	// 	return nil, fmt.Errorf("Failed to open Kubernetes config file %s : %v", o.KubeConfigFile, err)
+	// }
+	// defer f.Close()
 
 	//if home := homedir.HomeDir(); home != "" {
 	//kubeconfig = flag.String("kubeconfig", filepath.Join(home, ".kube", "config"), "(optional) absolute path to the kubeconfig file")
@@ -55,9 +56,11 @@ func NewKubernetesClient(o *KubernetesClientOptions) (KubernetesClient, error) {
 	//kubeconfig = flag.String("kubeconfig", "", "absolute path to the kubeconfig file")
 	//}
 	//flag.Parse()
-	config, err := clientcmd.BuildConfigFromFlags("", o.KubeConfigFile)
+	// configF, err := clientcmd.BuildConfigFromFlags("", o.KubeConfigFile)
+
+	config, err := BuildConfigFromEncodedString(o.KubeConfig)
 	if err != nil {
-		return nil, err
+		fmt.Println(config)
 	}
 
 	clientset, err := kubernetes.NewForConfig(config)
@@ -67,6 +70,23 @@ func NewKubernetesClient(o *KubernetesClientOptions) (KubernetesClient, error) {
 
 	return &kubernetesClient{Kube: clientset}, nil
 
+}
+
+func BuildConfigFromEncodedString(kubeconfig []byte) (*restclient.Config, error) {
+
+	// data, err := base64.StdEncoding.DecodeString(KubeConfig)
+	// if err != nil {
+	// 	return nil, err
+	// }
+
+	config, err := clientcmd.Load(kubeconfig)
+	if err != nil {
+		return nil, err
+	}
+
+	return clientcmd.NewNonInteractiveDeferredLoadingClientConfig(
+		config,
+		&clientcmd.ConfigOverrides{ClusterInfo: clientcmdapi.Cluster{Server: ""}}).ClientConfig()
 }
 
 func (kc *kubernetesClient) CreateContainer(opts *CreateContainerOptions) (*ContainerInfo, error) {
