@@ -88,3 +88,6 @@ $RECYCLE.BIN/
 *.lnk
 
 # End of https://www.gitignore.io/api/go,linux,macos,windows
+elasticshift
+vendor/github.com/petar/GoLLRB/doc/Sedgewick-LLRB.pdf
+vendor/github.com/petar/GoLLRB/doc/Sedgewick-Talk-Penn2008.pdf
