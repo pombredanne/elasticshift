@@ -1,0 +1,46 @@
+syntax = "proto3";
+
+import "google/protobuf/timestamp.proto";
+
+package api;
+
+
+message RegisterReq {
+	string build_id = 1;
+	string container_id = 2;
+	string privatekey = 3;
+}
+
+message RegisterRes {
+	bool registered = 1;
+}
+
+message LogShipReq {
+	string build_id = 1;
+	google.protobuf.Timestamp time = 2;
+	string log = 3;
+}
+
+message LogShipRes {
+}
+
+message GetProjectReq {
+	string build_id = 1;
+}
+
+message GetProjectRes {
+	string repository_id = 1;
+	string vcs_id = 2;
+	string branch = 3;
+	string name = 4;
+	string clone_url = 5;
+	string language = 6;
+	string accesstoken = 7;
+}
+
+service Shift {
+
+	rpc Register(RegisterReq) returns (RegisterRes){};
+	rpc LogShip(stream LogShipReq) returns (LogShipRes){};
+	rpc GetProject(GetProjectReq) returns (GetProjectRes){};
+}

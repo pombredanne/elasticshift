@@ -1,0 +1,40 @@
+syntax = "proto3";
+
+package api;
+
+
+message TopReq {
+	string command_filter = 1;
+}
+
+message TopRes {
+	string pid = 1;
+	string cpu = 2;
+	string command = 3;
+	string memory = 4;
+	string lifetime = 5;
+}
+
+message KillTaskReq {
+	string pid = 1;
+}
+
+message KillTaskRes {
+	string success = 1;
+	string err = 2;
+}
+
+message StopBuildReq {
+	string build_id = 1;
+}
+
+message StopBuildRes {
+	string success = 1;
+}
+
+service Work {
+
+	rpc Top(TopReq) returns (stream TopRes){};
+	rpc KillTask(KillTaskReq) returns (KillTaskRes){};
+	rpc StopBuild(StopBuildReq) returns (StopBuildReq){};
+}

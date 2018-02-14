@@ -12,7 +12,6 @@ import (
 
 	"github.com/Sirupsen/logrus"
 	"github.com/docker/docker/api/types/container"
-	"github.com/docker/docker/api/types/strslice"
 	"github.com/graphql-go/graphql"
 	"gitlab.com/conspico/elasticshift/api/types"
 	"gitlab.com/conspico/elasticshift/pkg/cloudprovider/docker"
@@ -60,11 +59,19 @@ func (r *resolver) ContainerLauncher() {
 				r.SLog(b.ID, fmt.Sprintf("Failed to connect to docker daemon: %v", err))
 			}
 
+			env := []string{
+				"SHIFT_HOST=127.0.0.1",
+				"SHIFT_PORT=5050",
+				"SHIFT_LOGGER=" + LogType_Embedded,
+				"SHIFT_BUILDID=" + b.ID.Hex(),
+			}
+
 			c := &container.Config{
 				Image: "alpine",
 
 				// Cmd:   []string{"/bin/sh"},
-				Entrypoint: strslice.StrSlice{"/bin/sh"},
+				// Entrypoint: strslice.StrSlice{"/bin/sh"},
+				Env: env,
 			}
 			containerID, err := cli.CreateContainer(c, b.ID.Hex())
 			if err != nil {

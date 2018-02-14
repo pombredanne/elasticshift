@@ -143,13 +143,10 @@
   branch = "master"
   name = "github.com/golang/protobuf"
   packages = [
-    "jsonpb",
     "proto",
-    "protoc-gen-go/descriptor",
     "ptypes",
     "ptypes/any",
     "ptypes/duration",
-    "ptypes/struct",
     "ptypes/timestamp"
   ]
   revision = "1e59b77b52bf8e4b449a57e6f79f21226d571845"
@@ -226,16 +223,6 @@
     "diskcache"
   ]
   revision = "2bcd89a1743fd4b373f7370ce8ddc14dfbd18229"
-
-[[projects]]
-  name = "github.com/grpc-ecosystem/grpc-gateway"
-  packages = [
-    "runtime",
-    "runtime/internal",
-    "utilities"
-  ]
-  revision = "8cc3a55af3bcf171a1c23a90c4df9cf591706104"
-  version = "v1.3.0"
 
 [[projects]]
   branch = "master"
@@ -415,10 +402,7 @@
 [[projects]]
   branch = "master"
   name = "google.golang.org/genproto"
-  packages = [
-    "googleapis/api/annotations",
-    "googleapis/rpc/status"
-  ]
+  packages = ["googleapis/rpc/status"]
   revision = "7f0da29060c682909f650ad8ed4e515bd74fa12a"
 
 [[projects]]
@@ -622,6 +606,6 @@
 [solve-meta]
   analyzer-name = "dep"
   analyzer-version = 1
-  inputs-digest = "8af2849a58c47ad3e646b66cd943a6bba1b5863ccba33742eac037cbe4ce080f"
+  inputs-digest = "3b35e8ae67ebfe90a99a0d9119625f3a6fe7f41cd43b82ed31b7818dc11380eb"
   solver-name = "gps-cdcl"
   solver-version = 1

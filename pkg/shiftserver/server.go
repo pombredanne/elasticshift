@@ -16,10 +16,9 @@ import (
 	"gitlab.com/conspico/elasticshift/api"
 	"gitlab.com/conspico/elasticshift/api/dex"
 	"gitlab.com/conspico/elasticshift/pkg/build"
-	"gitlab.com/conspico/elasticshift/pkg/identity/client"
 	"gitlab.com/conspico/elasticshift/pkg/identity/oauth2/providers"
 	"gitlab.com/conspico/elasticshift/pkg/identity/team"
-	"gitlab.com/conspico/elasticshift/pkg/identity/user"
+	"gitlab.com/conspico/elasticshift/pkg/shift"
 	"gitlab.com/conspico/elasticshift/pkg/store"
 	stypes "gitlab.com/conspico/elasticshift/pkg/store/types"
 	"gitlab.com/conspico/elasticshift/pkg/sysconf"
@@ -50,6 +49,12 @@ type Server struct {
 	Dex       dex.DexClient
 	Providers providers.Providers
 	Ctx       context.Context
+
+	TeamStore       team.Store
+	VCSStore        vcs.Store
+	SysConfStore    sysconf.Store
+	BuildStore      build.Store
+	RepositoryStore repository.Store
 }
 
 // Config ..
@@ -138,10 +143,19 @@ func (s Server) registerGraphQLServices() {
 
 	// data store
 	teamStore := team.NewStore(s.DB)
+	s.TeamStore = teamStore
+
 	vcsStore := vcs.NewStore(s.DB)
+	s.VCSStore = vcsStore
+
 	sysconfStore := sysconf.NewStore(s.DB)
+	s.SysConfStore = sysconfStore
+
 	repositoryStore := repository.NewStore(s.DB)
+	s.RepositoryStore = repositoryStore
+
 	buildStore := build.NewStore(s.DB)
+	s.BuildStore = buildStore
 
 	// team fields
 	teamQ, teamM := team.InitSchema(logger, teamStore)
@@ -193,27 +207,14 @@ func appendFields(fields graphql.Fields, input graphql.Fields) {
 	}
 }
 
+// Registers the GRPC services
 func RegisterGRPCServices(grpcServer *grpc.Server, s *Server) {
-
-	api.RegisterUserServer(grpcServer, user.NewServer(s.Logger, s.Dex))
-	api.RegisterClientServer(grpcServer, client.NewServer(s.DB, s.Logger, s.Dex))
+	api.RegisterShiftServer(grpcServer, shift.NewServer(s.Logger, s.Ctx, s.BuildStore, s.RepositoryStore))
 }
 
 // Registers the exposed http services
 func RegisterHTTPServices(ctx context.Context, router *mux.Router, grpcAddress string, dialopts []grpc.DialOption) error {
-
 	return nil
-	// err := api.RegisterUserHandlerFromEndpoint(ctx, router, grpcAddress, dialopts)
-	// if err != nil {
-	// 	return fmt.Errorf("Registering User handler failed : %v", err)
-	// }
-
-	// err = api.RegisterClientHandlerFromEndpoint(ctx, router, grpcAddress, dialopts)
-	// if err != nil {
-	// 	return fmt.Errorf("Registering Client handler failed : %v", err)
-	// }
-
-	// return err
 }
 
 //func newDexClient(ctx context.Context, c Dex) (dex.DexClient, error) {

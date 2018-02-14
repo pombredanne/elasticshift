@@ -20,9 +20,16 @@ LD_FLAGS="-w -X $(REPO_PATH)/version.Version=$(VERSION)"
 build: bin/elasticshift get-golint
 
 bin/elasticshift: go-version-checker
-	@go install -x
-		GOOS=linux GOARCH=386 go build -x -o $(GOBIN)/linux_386/elasticshift ./cmd/elasticshift/elasticshift.go
-		GOOS=darwin GOARCH=386 go build -x -o $(GOBIN)/darwin_386/elasticshift ./cmd/elasticshift/elasticshift.go
+#	@go install -x
+		CGO_ENABLED=0 GOOS=darwin GOARCH=386 go build -o $(GOBIN)/darwin_386/elasticshift -a -tags netgo -ldflags '-w' ./cmd/elasticshift/elasticshift.go
+		CGO_ENABLED=0 GOOS=linux GOARCH=386 go build -o $(GOBIN)/linux_386/elasticshift -a -tags netgo -ldflags '-w' ./cmd/elasticshift/elasticshift.go
+		CGO_ENABLED=0 GOOS=darwin GOARCH=amd64 go build -o $(GOBIN)/darwin_amd64/elasticshift -a -tags netgo -ldflags '-w' ./cmd/elasticshift/elasticshift.go
+		CGO_ENABLED=0 GOOS=linux GOARCH=amd64 go build -o $(GOBIN)/linux_amd64/elasticshift -a -tags netgo -ldflags '-w' ./cmd/elasticshift/elasticshift.go
+		CGO_ENABLED=0 GOOS=darwin GOARCH=386 go build -o $(GOBIN)/darwin_386/worker -a -tags netgo -ldflags '-w' ./cmd/worker/worker.go
+		CGO_ENABLED=0 GOOS=linux GOARCH=386 go build -o $(GOBIN)/linux_386/worker -a -tags netgo -ldflags '-w' ./cmd/worker/worker.go
+		CGO_ENABLED=0 GOOS=darwin GOARCH=amd64 go build -o $(GOBIN)/darwin_amd64/worker -a -tags netgo -ldflags '-w' ./cmd/worker/worker.go
+		CGO_ENABLED=0 GOOS=linux GOARCH=amd64 go build -o $(GOBIN)/linux_amd64/worker -a -tags netgo -ldflags '-w' ./cmd/worker/worker.go
+
 #env GOOS=linux CGO_ENABLED=0 go install -v -ldflags $(LD_FLAGS) $(REPO_PATH)
 #GOOS=linux CGO_ENABLED=0 go build -o /bin/elasticshift elasticshift.go
 #CGO_ENABLED=0 go build -o /bin/elasticshift elasticshift.go
@@ -108,13 +115,14 @@ get-proto-descriptor:
 	@mkdir -p ${PWD}/vendor/google/protobuf
 	@mkdir -p ${PWD}/vendor/google/api
 	@wget -nc -c ${PROTOBUF_URL}/descriptor.proto -P vendor/google/protobuf
+	@wget -nc -c ${PROTOBUF_URL}/timestamp.proto -P vendor/google/protobuf
 	@wget -nc -c ${GOOGLEAPIS_URL}/annotations.proto -P vendor/google/api
 	@wget -nc -c ${GOOGLEAPIS_URL}/http.proto -P vendor/google/api
 	# @wget -nc -c https://raw.githubusercontent.com/coreos/dex/${DEX_VERSION}/api/api.proto -P api/dex
 
 .PHONY: go-version-checker
 go-version-checker:
-	@./scripts/go-version-checker
+	#@./scripts/go-version-checker
 
 clean:
 	@rm -rf bin/
