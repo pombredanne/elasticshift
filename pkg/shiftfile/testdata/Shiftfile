@@ -1,0 +1,76 @@
+
+VERSION "1.0"
+
+# company/config-name
+# You can use..
+# FROM "elasticshift/java19-maven-builder"
+# in order to utilze the script with different build
+# The idea is to create script free builds,
+# in another word, you shall use someone else build script
+# to build your projects
+#
+NAME "elasticshift/java19-maven-builder"
+
+# Denotes the source code language
+LANGUAGE java
+
+# location of the source code and where the command starts from
+WORKDIR "~/code"
+
+# Variables are used when the parameter shall be changed
+# such as if you're invoking from hierarical build file.
+# this is really useful when build instructions are re-used.
+VAR proj_url "https://github.com/ghazninattarshah/hybrid.test.runner.git"
+
+# The container where the build is going to happen
+IMAGE "elasticshift/java:1.9" {
+	registry "http://dockerregistry.com/elasticshift"
+		script {
+			"apt-get install maven"
+				- apt-get install maven
+		}
+}
+
+#
+# Name of the plugin, description (this can be optional)
+# elasticshift - Name of the company who created this plugin
+# vcs - Name of the plugin
+#
+"elasticshift/vcs", "Checking out the project" {
+
+# Variable shall be used by enclosing with (..)
+	checkout (proj_url)
+}
+
+"elasticshift/shell", "Running maven compilation" {
+	- mvn clean build
+}
+
+"elasticshift/slack-notifier" ,"Send notification to slack channel" {
+# hint is the additional metadata to the plugin
+# which cause any process that have hint name notification will run on same group
+	// PARALLEL:notification
+	url "https://hooks.slack.com/services/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"
+		channel "#slack-notification"
+		username "shiftbot"
+		icon_emoji ":ghost:"
+}
+
+"elasticshift/sendgrid", "send email via sendgrid" {
+# hint is the additional metadata to the plugin
+# which cause any process that have hint name notification will run on same group
+	// PARALLEL:notification
+	to "ghazni.nattarshah@gmail.com"
+}
+
+"elasticshift/archive-sftp", "Store the build archive to sftp" {
+	// PARALLEL:archive
+}
+
+"elasticshift/archive-s3", "Store the build archives to amazon s3" {
+	// PARALLEL:archive
+}
+
+# All the parallel process represented by hint will run in separate thread
+# with in the group separated by hint identifier
+# Also, each process will utilize the multicore processor in order to run faster

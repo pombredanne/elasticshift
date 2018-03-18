@@ -1,0 +1,10 @@
+#
+# Name of the plugin, description (this can be optional)
+# elasticshift - Name of the company who created this plugin
+# vcs - Name of the plugin
+#
+"elasticshift/vcs", "Checking out the project" {
+
+# Variable shall be used by enclosing with (..)
+	checkout (proj_url)
+}

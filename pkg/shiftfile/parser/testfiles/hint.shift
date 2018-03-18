@@ -1,0 +1,10 @@
+# Hint test
+"elasticshift/archive-sftp", "Store the build archive to sftp" {
+	// PARALLEL:archive
+}
+
+#Hint test2
+"elasticshift/archive-s3", "Store the build archives to amazon s3" {
+    #hint comment
+	// PARALLEL:archive
+}
