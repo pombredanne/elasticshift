@@ -7,8 +7,7 @@ package api;
 
 message RegisterReq {
 	string build_id = 1;
-	string container_id = 2;
-	string privatekey = 3;
+	string privatekey = 2;
 }
 
 message RegisterRes {
@@ -29,13 +28,15 @@ message GetProjectReq {
 }
 
 message GetProjectRes {
-	string repository_id = 1;
-	string vcs_id = 2;
-	string branch = 3;
-	string name = 4;
-	string clone_url = 5;
-	string language = 6;
-	string accesstoken = 7;
+	string container_id = 1;
+	string repository_id = 2;
+	string vcs_id = 3;
+	string branch = 4;
+	string name = 5;
+	string clone_url = 6;
+	string language = 7;
+	string accesstoken = 8;
+	string commit_id = 9;
 }
 
 service Shift {

@@ -5,6 +5,7 @@ package logshipper
 
 import (
 	"fmt"
+	"sync"
 
 	"github.com/golang/protobuf/ptypes"
 	"gitlab.com/conspico/elasticshift/api"
@@ -13,6 +14,7 @@ import (
 )
 
 type embedded struct {
+	mutx   sync.RWMutex
 	ctx    types.Context
 	logs   chan stypes.Log
 	stream api.Shift_LogShipClient
@@ -65,11 +67,15 @@ func newEmbeddedLogger(ctx types.Context) (Logger, error) {
 			}
 			req.Time, _ = ptypes.TimestampProto(log.Time)
 
+			logr.mutx.RLock()
+
 			// Send the log to elasticshift server
 			err := stream.Send(req)
 			if err != nil {
 				fmt.Println("Can't send message: ", err.Error())
 			}
+			logr.mutx.RUnlock()
+
 		}
 	}(stream, ctx)
 

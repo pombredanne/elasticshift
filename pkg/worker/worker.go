@@ -179,7 +179,7 @@ func (w *W) Halt() {
 // start the builder where the real execution happens.
 func (w *W) StartBuilder() {
 
-	err := builder.Start(w.logger)
+	err := builder.New(w.Context, w.logger, w.ShiftServer)
 	w.errch <- err
 }
 
