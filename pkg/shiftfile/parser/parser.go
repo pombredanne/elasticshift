@@ -7,6 +7,7 @@ import (
 	"bytes"
 	"errors"
 	"fmt"
+	"strings"
 
 	"gitlab.com/conspico/elasticshift/pkg/shiftfile/scanner"
 	"gitlab.com/conspico/elasticshift/pkg/shiftfile/scope"
@@ -16,6 +17,10 @@ import (
 )
 
 var errEofToken = errors.New("EOF token found")
+
+var (
+	validHints = []string{"PARALLEL", "TIMEOUT"}
+)
 
 type Parser struct {
 	s *scanner.Scanner
@@ -32,8 +37,10 @@ type Parser struct {
 
 	tokenScanned bool
 
-	ntype scope.NodeKind
-	serr  error
+	ntype  scope.NodeKind // node
+	cscope scope.NodeKind // section
+
+	serr error
 }
 
 func New(src []byte) *Parser {
@@ -57,7 +64,7 @@ func (p *Parser) Parse() (*ast.File, error) {
 
 	p.f = &ast.File{}
 
-	list, err := p.NodeList()
+	list, err := p.nodeList()
 
 	if p.serr != nil {
 		return nil, p.serr
@@ -73,7 +80,7 @@ func (p *Parser) Parse() (*ast.File, error) {
 	return p.f, nil
 }
 
-func (p *Parser) NodeList() (*ast.NodeList, error) {
+func (p *Parser) nodeList() (*ast.NodeList, error) {
 
 	root := &ast.NodeList{}
 
@@ -112,15 +119,12 @@ func (p *Parser) scan() token.Token {
 	p.prevTok = p.tok
 	p.tok = p.s.Scan()
 
-	// fmt.Printf("Scanned %s", p.tok)
-
 	for token.COMMENT == p.tok.Type {
 
 		// if previous token is on the same line as comment
 		// then it might be a line comment
 		comment := p.grabComment()
 
-		// fmt.Println(comment)
 		if p.tok.Position.Line == p.prevTok.Position.Line {
 			p.lineComment = append(p.lineComment, comment)
 		} else if p.tok.Position.Line != p.prevTok.Position.Line {
@@ -129,15 +133,24 @@ func (p *Parser) scan() token.Token {
 
 		p.prevTok = p.tok
 		p.tok = p.s.Scan()
-		p.tokenScanned = true
+		p.unscan()
 	}
-
-	// fmt.Println("return token" + p.tok.Text)
 
 	return p.tok
 }
 
+func (p *Parser) unscan() {
+	p.tokenScanned = true
+}
+
+func (p *Parser) forceNextScan() {
+	p.tokenScanned = false
+}
+
 func (p *Parser) nodeItem() (*ast.NodeItem, error) {
+
+	// reset the kind/nodetype
+	p.ntype = 0
 
 	keys, err := p.nodeKey()
 	if len(keys) > 0 && err != nil {
@@ -167,29 +180,35 @@ func (p *Parser) nodeItem() (*ast.NodeItem, error) {
 		p.leadComment = nil
 	}
 
-	// fmt.Println(fmt.Sprintf("node item = %q", p.tok))
-
-	switch p.tok.Type {
-	case token.VERSION, token.NAME, token.LANGUAGE, token.WORKDIR, token.COMMAND:
+	switch n.Kind {
+	case scope.Var, scope.Ver, scope.Nam, scope.Lan, scope.Dir, scope.Frm:
+		p.scan()
 		n.Value, err = p.literal()
-	case token.LBRACE:
-		n.Value, err = p.nodeItem()
-	// case token.IMAGE:
-	// 	n.Value, err = p.image()
-	case token.LPAREN:
-		n.Value, err = p.varholder()
-	case token.HINT:
+	case scope.Cmd:
+		// p.unscan()
+		n.Value, err = p.command()
+	case scope.Blk:
+		n.Value, err = p.block()
+	case scope.Img:
+		n.Value, err = p.image()
+	case scope.Hin:
 		n.Value, err = p.hint()
-	// case token.RBRACE:
-	// 	break
-	// case token.LBRACK:
-	// 	n.Value, err = p.properties()
-	default:
-		switch p.prevTok.Type {
-		case token.VAR:
+	case scope.Vhl:
+		n.Value, err = p.varholder()
+	case scope.Prp:
+	recheck:
+		switch p.tok.Type {
+		case token.HINT:
+			n.Value, err = p.hint()
+		case token.LPAREN:
+			n.Value, err = p.varholder()
+		case token.LBRACK:
+			n.Value, err = p.list()
+		case token.STRING:
 			n.Value, err = p.literal()
-			// case token.LPAREN:
-			// 	n.Value, err = p.varholder()
+		case token.IDENTIFIER:
+			p.scan()
+			goto recheck
 		}
 	}
 
@@ -197,11 +216,11 @@ func (p *Parser) nodeItem() (*ast.NodeItem, error) {
 		return nil, err
 	}
 
-	// reset the slice
+	// TODO add line comment
+
+	// reset the comment
 	p.leadComment = nil
 	p.lineComment = nil
-
-	// fmt.Println(fmt.Sprintf("Node: %#v", n))
 
 	return n, nil
 }
@@ -210,64 +229,58 @@ func (p *Parser) nodeItem() (*ast.NodeItem, error) {
 // Applicatble for VAR and BLOCK
 func (p *Parser) nodeKey() ([]*ast.NodeKey, error) {
 
+	p.ntype = 0
+
 	keycount := 0
 	keys := make([]*ast.NodeKey, 0)
 
-	// reset the kind
-	p.kind(0)
-
-	// VAR, IMAGE, BLOCK
 	for {
-
-		// scan the next key token
-		p.scan()
-		// fmt.Println("Key : " + p.tok.Text)
 
 		switch p.tok.Type {
 		case token.EOF:
 			return keys, errEofToken
-		case token.IDENTIFIER:
-			keys = append(keys, &ast.NodeKey{Key: p.tok})
-			return keys, nil
-		case token.STRING:
-			keys = append(keys, &ast.NodeKey{Key: p.tok})
-			keycount++
 		case token.VAR:
 			p.kind(scope.Var)
-			keys = append(keys, &ast.NodeKey{Key: p.tok})
-			return keys, nil
-		case token.WORKDIR:
-			p.kind(scope.Dir)
-			keys = append(keys, &ast.NodeKey{Key: p.tok})
-			return keys, nil
-		case token.LANGUAGE:
-			p.kind(scope.Lan)
-			keys = append(keys, &ast.NodeKey{Key: p.tok})
-			return keys, nil
-		case token.FROM:
-			p.kind(scope.Frm)
-			keys = append(keys, &ast.NodeKey{Key: p.tok})
-			return keys, nil
 		case token.VERSION:
 			p.kind(scope.Ver)
-			keys = append(keys, &ast.NodeKey{Key: p.tok})
-			return keys, nil
-		case token.NAME:
-			p.kind(scope.Nam)
-			keys = append(keys, &ast.NodeKey{Key: p.tok})
-			return keys, nil
-		case token.COMMA:
-			p.kind(scope.Blk)
-		case token.IMAGE:
-			p.kind(scope.Img)
+			p.forceNextScan()
+			goto exit
 		case token.HINT:
 			p.kind(scope.Hin)
-			keys = append(keys, &ast.NodeKey{Key: p.tok})
-			return keys, nil
+			p.forceNextScan()
+			goto exit
 		case token.COMMAND:
 			p.kind(scope.Cmd)
+			goto exit
+		case token.IMAGE:
+			p.kind(scope.Img)
+		case token.WORKDIR:
+			p.kind(scope.Dir)
+			p.forceNextScan()
+			goto exit
+		case token.LANGUAGE:
+			p.kind(scope.Lan)
+			p.forceNextScan()
+			goto exit
+		case token.FROM:
+			p.kind(scope.Frm)
+			p.forceNextScan()
+			goto exit
+		case token.NAME:
+			p.kind(scope.Nam)
+			p.forceNextScan()
+			goto exit
+		case token.IDENTIFIER:
+			if p.cscope == scope.Img || p.cscope == scope.Blk {
+				p.kind(scope.Prp)
+			}
+			p.forceNextScan() // avoid buffer
+			goto exit
+		case token.STRING:
 			keys = append(keys, &ast.NodeKey{Key: p.tok})
-			return keys, nil
+			p.forceNextScan() // avoid buffer
+			keycount++
+		case token.COMMA:
 		case token.LBRACE:
 			if keycount == 0 {
 				return keys, &PositionErr{
@@ -277,23 +290,32 @@ func (p *Parser) nodeKey() ([]*ast.NodeKey, error) {
 			}
 			p.kind(scope.Blk)
 			return keys, nil
-		case token.ILLEGAL:
-			return keys, &PositionErr{
-				Position: p.tok.Position,
-				Err:      fmt.Errorf("Illegal character"),
-			}
 		case token.LPAREN:
 			p.kind(scope.Vhl)
 			return keys, nil
-		case token.RBRACE:
+		case token.LBRACK:
+			return keys, nil
+		case token.RBRACE, token.RBRACK, token.RPAREN:
 			break
+		case token.ILLEGAL:
+			return keys, &PositionErr{
+				Position: p.tok.Position,
+				Err:      fmt.Errorf("Illegal character : %v", p.tok),
+			}
 		default:
 			return keys, &PositionErr{
 				Position: p.tok.Position,
 				Err:      fmt.Errorf("Expected token: STRING | IDENTIFIER | VAR | LBRACE, got: %s", p.tok.Type),
 			}
 		}
+
+		// next token
+		p.scan()
 	}
+
+exit:
+	keys = append(keys, &ast.NodeKey{Key: p.tok})
+	return keys, nil
 }
 
 func (p *Parser) appendKey(keys []*ast.NodeKey, tok token.Token) {
@@ -315,14 +337,72 @@ func (p *Parser) grabComment() *ast.Comment {
 	return comment
 }
 
-func (p *Parser) literal() (*ast.Literal, error) {
+func (p *Parser) command() (*ast.Command, error) {
 
 	// reads the literal value
-	p.scan()
+	// p.scan()
+
+	lit := &ast.Command{}
+	lit.Token = p.tok
+	return lit, nil
+}
+
+func (p *Parser) literal() (*ast.Literal, error) {
 
 	lit := &ast.Literal{}
 	lit.Token = p.tok
 	return lit, nil
+}
+
+func (p *Parser) image() (*ast.Image, error) {
+
+	p.cscope = scope.Img
+
+	img := &ast.Image{}
+	img.Start = p.tok.Position
+
+	nodes, err := p.block()
+	if err != nil {
+		return nil, err
+	}
+	img.Node = nodes
+
+	return img, nil
+}
+
+func (p *Parser) block() (*ast.Block, error) {
+
+	if token.LBRACE == p.tok.Type {
+		p.scan()
+	}
+
+	p.cscope = scope.Blk
+	blk := &ast.Block{}
+	blk.Lbrace = p.tok.Position
+
+	nodes := make([]ast.Node, 0)
+	for {
+
+		n, err := p.nodeItem()
+		if err != nil {
+			return nil, err
+		}
+
+		nodes = append(nodes, n)
+
+		// next token
+		p.scan()
+
+		if token.RBRACE == p.tok.Type {
+			break
+		}
+	}
+
+	blk.Node = nodes
+	blk.Rbrace = p.tok.Position
+
+	p.cscope = 0
+	return blk, nil
 }
 
 func (p *Parser) varholder() (*ast.VarHolder, error) {
@@ -338,28 +418,41 @@ func (p *Parser) varholder() (*ast.VarHolder, error) {
 	if p.tok.Type == token.RPAREN {
 		return vh, nil
 	}
-	return nil, fmt.Errorf("Expected: RBRACK ')' but %v", p.tok.Text)
+	return nil, fmt.Errorf("Expected: RPAREN ')' but %v", p.tok.Text)
 }
 
 func (p *Parser) hint() (*ast.Hint, error) {
 
-	// after comment is scanned, the next token is buffered
+	// after comment is scanned, the next token is uffered
 	// set it to false, so that it can read the hint
 	if p.prevTok.Type == token.COMMENT {
 		p.tokenScanned = false
 	}
+
+	hint := &ast.Hint{}
+	hint.Token = p.tok
 
 	// reads the hint operation
 	p.scan()
 
 	if p.tok.Type == token.IDENTIFIER {
 
-		//TODO validate the identifier
+		valid := false
+		for _, i := range validHints {
+			if strings.EqualFold(i, p.tok.Text) {
+				valid = true
+				break
+			}
+		}
+
+		if !valid {
+			return nil, fmt.Errorf("Invalid Hint '%s', expecting %s", p.tok.Text, validHints)
+		}
+
 	} else {
 		return nil, fmt.Errorf("Expected: IDENTIFIER but got: %s", p.tok.Type)
 	}
 
-	hint := &ast.Hint{}
 	hint.Operation = p.tok.Text
 
 	// read the hint delimiter
@@ -381,102 +474,46 @@ func (p *Parser) hint() (*ast.Hint, error) {
 	return hint, nil
 }
 
+func (p *Parser) list() (*ast.List, error) {
+
+	l := &ast.List{}
+	l.Lbrack = p.tok.Position
+
+	nodes := make([]ast.Node, 0)
+	for {
+
+		p.scan()
+
+		if token.LBRACK == p.tok.Type {
+			continue
+		}
+
+		if token.RBRACK == p.tok.Type {
+			l.RBrack = p.tok.Position
+			break
+		}
+
+		if token.COMMA == p.tok.Type {
+			continue
+		}
+
+		if token.STRING != p.tok.Type {
+			return nil, fmt.Errorf("Expected a string type, but got %v", p.tok.Type)
+		}
+
+		lit := &ast.Literal{}
+		lit.Token = p.tok
+
+		nodes = append(nodes, lit)
+	}
+
+	l.Node = nodes
+
+	return l, nil
+}
+
 func (p *Parser) validate() bool {
 
 	return true
 	// return nil, errors.New("Expected: STRING token (the name of the shiftfile, format :'company/name')")
 }
-
-// func (p *Parser) variable() (*ast.Variable, error) {
-
-// 	vari := &ast.Variable{}
-// 	vari.Start = p.tok.Position
-
-// 	// // next token should be the name of the variable
-// 	// p.scan()
-
-// 	// if token.IDENTIFIER == p.tok.Type {
-// 	// 	vari.Name = p.tok.Text
-// 	// } else {
-// 	// 	return nil, errors.New("Expected: IDENTIFIER token (the name of the variable)")
-// 	// }
-
-// 	// next token should be the value of the variable
-// 	p.scan()
-
-// 	if token.STRING == p.tok.Type {
-// 		vari.Value = p.tok.Text
-// 	} else {
-// 		return nil, fmt.Errorf("Expected: STRING token (the value belongs to the variable '%s')", vari.Name)
-// 	}
-
-// 	return vari, nil
-// }
-
-// func (p *Parser) grabVersion() (ast.Node, error) {
-
-// 	literal := &ast.Literal{}
-// 	literal.Token = p.tok
-
-// 	// n := ast.NewNodeItem(scope.Ver, &ast.NodeKey{p.tok})
-
-// 	// next token should be the STRING type denotes the actual version
-// 	p.scan()
-
-// 	if token.STRING == p.tok.Type {
-// 		literal.Value = p.tok.Text
-// 	} else {
-// 		return nil, errors.New("Expected: STRING token (the value of the version)")
-// 	}
-
-// 	return literal, nil
-// }
-// func (p *Parser) grabLanguage() (*ast.Object, error) {
-
-// 	lang := &ast.Language{}
-// 	lang.Start = p.tok.Position
-// 	lang.Value = p.tok.Text
-
-// 	obj := ast.NewObject(ast.Lan)
-
-// 	// next token should be the STRING type denotes the actual version
-// 	p.scan()
-
-// 	if token.STRING == p.tok.Type {
-// 		lang.Value = p.tok.Text
-// 	} else {
-// 		return nil, errors.New("Expected: STRING token (the language used for this project)")
-// 	}
-
-// 	obj.Val = lang
-// 	obj.AddKey(p.tok)
-
-// 	p.f.Language = lang
-
-// 	return obj, nil
-// }
-
-// func (p *Parser) grabWorkDirectory() (*ast.Object, error) {
-
-// 	wdir := &ast.Workdir{}
-// 	wdir.Start = p.tok.Position
-// 	wdir.Value = p.tok.Text
-
-// 	obj := ast.NewObject(ast.Dir)
-
-// 	// next token should be the STRING type denotes the actual version
-// 	p.scan()
-
-// 	if token.STRING == p.tok.Type {
-// 		wdir.Value = p.tok.Text
-// 	} else {
-// 		return nil, errors.New("Expected: STRING token (the working directory of this buil)")
-// 	}
-
-// 	obj.Val = wdir
-// 	obj.AddKey(p.tok)
-
-// 	p.f.Workdir = wdir
-
-// 	return obj, nil
-// }

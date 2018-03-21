@@ -23,6 +23,14 @@ func (h Hint) node()      {}
 func (i Image) node()     {}
 func (v VarHolder) node() {}
 
+type Command Literal
+
+func (c Command) node() {}
+
+func (c *Command) Position() token.Position {
+	return c.Token.Position
+}
+
 type File struct {
 	Node     Node
 	Comments []*Comment
@@ -101,7 +109,7 @@ func (n *NodeList) Nodes() *NodeList {
 type Block struct {
 	Lbrace token.Position // {
 	Rbrace token.Position // }
-	List   *NodeList
+	Node   []Node
 }
 
 func (b *Block) Position() token.Position {
@@ -150,7 +158,7 @@ func (h *Hint) Position() token.Position {
 
 type Image struct {
 	Start token.Position
-	Block *Block
+	Node  Node
 }
 
 func (i *Image) Position() token.Position {

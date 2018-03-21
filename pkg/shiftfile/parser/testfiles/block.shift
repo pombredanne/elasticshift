@@ -5,6 +5,7 @@
 #
 "elasticshift/vcs", "Checking out the project" {
 
-# Variable shall be used by enclosing with (..)
+    # Variable shall be used by enclosing with (..)
 	checkout (proj_url)
+    accesstoken "askjdfkjaskdjfhkjsa"
 }

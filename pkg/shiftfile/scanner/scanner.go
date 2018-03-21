@@ -156,6 +156,12 @@ func (s *Scanner) Scan() token.Token {
 		case '}':
 			tok.Type = token.RBRACE
 			tok.Text = "}"
+		case '[':
+			tok.Type = token.LBRACK
+			tok.Text = "["
+		case ']':
+			tok.Type = token.RBRACK
+			tok.Text = "]"
 		case ':':
 			tok.Type = token.HINT_DEL
 			tok.Text = ":"

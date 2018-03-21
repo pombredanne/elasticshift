@@ -182,6 +182,16 @@ var tokens = map[string][]tokenPair{
 			{Line: 1, Text: "http://github.com/ghazninattarshah/hybrid.test.runner.git"},
 		}},
 	},
+	"list": []tokenPair{
+		{`cc ["ghazni.nattarshah@conspico.com", "shahm.nattarshah@conspico.com"]`, nil, []Expected{
+			{Line: 1, Text: "cc"},
+			{Line: 1, Text: "["},
+			{Line: 1, Text: "ghazni.nattarshah@conspico.com"},
+			{Line: 1, Text: ","},
+			{Line: 1, Text: "shahm.nattarshah@conspico.com"},
+			{Line: 1, Text: "]"},
+		}},
+	},
 	"wordir": []tokenPair{
 		{`WORKDIR "~/code"`, nil, []Expected{
 			{Line: 1, Text: "WORKDIR"},
@@ -270,6 +280,7 @@ var tokens = map[string][]tokenPair{
 				# which cause any process that have hint name notification will run on same group
 				// PARALLEL:notification
 				to "ghazni.nattarshah@gmail.com"
+				cc ["ghazni.nattarshah@conspico.com", "shahm.nattarshah@conspico.com"]
 			}
 
 			"elasticshift/archive-sftp", "Store the build archive to sftp" {
@@ -362,6 +373,10 @@ func TestComments(t *testing.T) {
 
 func TestHints(t *testing.T) {
 	testTokenTypes(t, token.HINT, tokens["hints"])
+}
+
+func TestList(t *testing.T) {
+	testTokenTypes(t, token.LBRACK, tokens["list"])
 }
 
 func alltokens(input string) []token.Token {

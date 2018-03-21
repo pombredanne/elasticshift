@@ -41,7 +41,15 @@ func TestParser(t *testing.T) {
 			false,
 		},
 		{
+			"list.shift",
+			false,
+		},
+		{
 			"file.shift",
+			false,
+		},
+		{
+			"filenoc.shift",
 			false,
 		},
 	}

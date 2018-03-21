@@ -1,5 +1,7 @@
 #Current build image
 IMAGE "elasticshift/java" {
+
+	# image registry
 	registry "http://dockerregistry.com/elasticshift"
 	secret "askjdflkjahsdlkjfhlkjs"
 }

@@ -5,6 +5,6 @@
 
 #Hint test2
 "elasticshift/archive-s3", "Store the build archives to amazon s3" {
-    #hint comment
+# hint comment
 	// PARALLEL:archive
 }
