@@ -34,6 +34,9 @@ func (c *Command) Position() token.Position {
 type File struct {
 	Node     Node
 	Comments []*Comment
+
+	BlockCount   int
+	currentBlock int
 }
 
 func (f *File) Position() token.Position {
@@ -110,6 +113,7 @@ type Block struct {
 	Lbrace token.Position // {
 	Rbrace token.Position // }
 	Node   []Node
+	Number int
 }
 
 func (b *Block) Position() token.Position {

@@ -29,6 +29,6 @@ IMAGE "elasticshift/java:1.9" {
 "elasticshift/archive-sftp", "Store the build archive to sftp" {
 	// PARALLEL:archive
 }
-"elasticshift/archive-s3", "Store the build archives to amazon s3" {
+"elasticshift/archive-s3", "Store the build archive to amazon s3" {
 	// PARALLEL:archive
 }

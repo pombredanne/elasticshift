@@ -54,6 +54,7 @@ func New(src []byte) *Parser {
 	errFunc := func(pos token.Position, msg string) {
 		p.serr = &PositionErr{Position: pos, Err: errors.New(msg)}
 	}
+
 	// Initiatest the new scanner
 	p.s = scanner.New(src, errFunc)
 
@@ -367,6 +368,8 @@ func (p *Parser) image() (*ast.Image, error) {
 	}
 	img.Node = nodes
 
+	p.cscope = 0
+
 	return img, nil
 }
 
@@ -376,7 +379,10 @@ func (p *Parser) block() (*ast.Block, error) {
 		p.scan()
 	}
 
-	p.cscope = scope.Blk
+	if p.cscope != scope.Img {
+		p.cscope = scope.Blk
+	}
+
 	blk := &ast.Block{}
 	blk.Lbrace = p.tok.Position
 
@@ -401,7 +407,15 @@ func (p *Parser) block() (*ast.Block, error) {
 	blk.Node = nodes
 	blk.Rbrace = p.tok.Position
 
-	p.cscope = 0
+	if p.cscope == scope.Blk {
+		p.f.BlockCount = p.f.BlockCount + 1
+		blk.Number = p.f.BlockCount
+	}
+
+	if p.cscope != scope.Img {
+		p.cscope = 0
+	}
+
 	return blk, nil
 }
 

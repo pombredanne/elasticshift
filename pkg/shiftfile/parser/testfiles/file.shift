@@ -27,7 +27,8 @@ VAR proj_url "https://github.com/ghazninattarshah/hybrid.test.runner.git"
 # The container where the build is going to happen
 IMAGE "elasticshift/java:1.9" {
 	registry "http://dockerregistry.com/elasticshift"
-		- apt-get install maven
+		username "testuser"
+		token "isdf1i41i23iu12i"
 }
 
 #
@@ -67,7 +68,7 @@ IMAGE "elasticshift/java:1.9" {
 	// PARALLEL:archive
 }
 
-"elasticshift/archive-s3", "Store the build archives to amazon s3" {
+"elasticshift/archive-s3", "Store the build archive to amazon s3" {
 	// PARALLEL:archive
 }
 
