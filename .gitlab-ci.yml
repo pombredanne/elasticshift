@@ -34,6 +34,6 @@ compile:
       - dep ensure
       #- go build -race -ldflags "-extldflags '-static'" -o $CI_PROJECT_DIR/mybinary
       - make
-    # artifacts:
-    #   paths:
-    #     -
+    artifacts:
+      paths:
+        - /go/src/gitlab.com/conspico/elasticshift/bin/
