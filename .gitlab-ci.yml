@@ -32,9 +32,9 @@ format:
 compile:
     stage: build
     script:
-      dep ensure
+      - dep ensure
       #- go build -race -ldflags "-extldflags '-static'" -o $CI_PROJECT_DIR/mybinary
-      make
+      - make
     artifacts:
       paths:
         - $(GOBIN)
