@@ -4,6 +4,7 @@ image: golang:latest
 variables:
   # Please edit to your GitLab project
   REPO_NAME: gitlab.com/conspico/elasticshift
+  GOBIN: $(PWD)/bin
 
 # The problem is that to be able to use go get, one needs to put
 # the repository in the $GOPATH. So for example if your gitlab domain
@@ -33,7 +34,7 @@ compile:
     script:
       dep ensure
       #- go build -race -ldflags "-extldflags '-static'" -o $CI_PROJECT_DIR/mybinary
-      make build
+      make
     artifacts:
       paths:
-        - mybinary
+        - $(GOBIN)
