@@ -15,6 +15,7 @@ before_script:
   - mkdir -p $GOPATH/src/$(dirname $REPO_NAME)
   - ln -svf $CI_PROJECT_DIR $GOPATH/src/$REPO_NAME
   - cd $GOPATH/src/$REPO_NAME
+  - go install github.com/golang/dep
 
 stages:
     - test
@@ -30,6 +31,7 @@ format:
 compile:
     stage: build
     script:
+      dep ensure
       #- go build -race -ldflags "-extldflags '-static'" -o $CI_PROJECT_DIR/mybinary
       make build
     artifacts:
