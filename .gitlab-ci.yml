@@ -18,8 +18,8 @@ before_script:
   - curl https://raw.githubusercontent.com/golang/dep/master/install.sh | sh
 
 stages:
-    - test
     - build
+    - test
 
 format:
     stage: test
