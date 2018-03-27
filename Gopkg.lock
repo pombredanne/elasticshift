@@ -95,6 +95,12 @@
   version = "v2.4.0"
 
 [[projects]]
+  name = "github.com/fsnotify/fsnotify"
+  packages = ["."]
+  revision = "c2828203cd70a50dcccfb2761f8b1f8ceef9a8e9"
+  version = "v1.4.7"
+
+[[projects]]
   name = "github.com/ghodss/yaml"
   packages = ["."]
   revision = "0ca9ea5df5451ffdf184b4428c902747c2c11cd7"
@@ -226,6 +232,23 @@
 
 [[projects]]
   branch = "master"
+  name = "github.com/hashicorp/hcl"
+  packages = [
+    ".",
+    "hcl/ast",
+    "hcl/parser",
+    "hcl/printer",
+    "hcl/scanner",
+    "hcl/strconv",
+    "hcl/token",
+    "json/parser",
+    "json/scanner",
+    "json/token"
+  ]
+  revision = "f40e974e75af4e271d97ce0fc917af5898ae7bda"
+
+[[projects]]
+  branch = "master"
   name = "github.com/howeyc/gopass"
   packages = ["."]
   revision = "bf9dde6d0d2c004a008c27aaee91170c786f6db8"
@@ -235,6 +258,12 @@
   packages = ["."]
   revision = "7fe0c75c13abdee74b09fcacef5ea1c6bba6a874"
   version = "0.2.4"
+
+[[projects]]
+  name = "github.com/inconshreveable/mousetrap"
+  packages = ["."]
+  revision = "76626ae9c91c4f2a10f34cad8ce83ea42c93bb75"
+  version = "v1.0"
 
 [[projects]]
   name = "github.com/json-iterator/go"
@@ -255,6 +284,12 @@
   revision = "03f45bd4b7dad4734bc4620e46a35789349abb20"
 
 [[projects]]
+  name = "github.com/magiconair/properties"
+  packages = ["."]
+  revision = "c3beff4c2358b44d0493c7dda585e7db7ff28ae6"
+  version = "v1.7.6"
+
+[[projects]]
   branch = "master"
   name = "github.com/mailru/easyjson"
   packages = [
@@ -263,6 +298,24 @@
     "jwriter"
   ]
   revision = "32fa128f234d041f196a9f3e0fea5ac9772c08e1"
+
+[[projects]]
+  branch = "master"
+  name = "github.com/mitchellh/go-homedir"
+  packages = ["."]
+  revision = "b8bc1bf767474819792c23f32d8286a45736f1c6"
+
+[[projects]]
+  branch = "master"
+  name = "github.com/mitchellh/mapstructure"
+  packages = ["."]
+  revision = "00c29f56e2386353d58c599509e8dc3801b0d716"
+
+[[projects]]
+  name = "github.com/pelletier/go-toml"
+  packages = ["."]
+  revision = "acdc4509485b587f5e675510c4f2c63e90ff68a8"
+  version = "v1.1.0"
 
 [[projects]]
   branch = "master"
@@ -304,10 +357,47 @@
   version = "v1.1.0"
 
 [[projects]]
+  name = "github.com/spf13/afero"
+  packages = [
+    ".",
+    "mem"
+  ]
+  revision = "bb8f1927f2a9d3ab41c9340aa034f6b803f4359c"
+  version = "v1.0.2"
+
+[[projects]]
+  name = "github.com/spf13/cast"
+  packages = ["."]
+  revision = "8965335b8c7107321228e3e3702cab9832751bac"
+  version = "v1.2.0"
+
+[[projects]]
+  name = "github.com/spf13/cobra"
+  packages = [
+    ".",
+    "cobra",
+    "cobra/cmd"
+  ]
+  revision = "7b2c5ac9fc04fc5efafb60700713d4fa609b777b"
+  version = "v0.0.1"
+
+[[projects]]
+  branch = "master"
+  name = "github.com/spf13/jwalterweatherman"
+  packages = ["."]
+  revision = "7c0cea34c8ece3fbeb2b27ab9b59511d360fb394"
+
+[[projects]]
   name = "github.com/spf13/pflag"
   packages = ["."]
   revision = "e57e3eeb33f795204c1ca35f56c44f83227c6e66"
   version = "v1.0.0"
+
+[[projects]]
+  name = "github.com/spf13/viper"
+  packages = ["."]
+  revision = "b5e8006cbee93ec955a89ab31e0e3ce3204f3736"
+  version = "v1.0.2"
 
 [[projects]]
   name = "github.com/stretchr/testify"
@@ -606,6 +696,6 @@
 [solve-meta]
   analyzer-name = "dep"
   analyzer-version = 1
-  inputs-digest = "3b35e8ae67ebfe90a99a0d9119625f3a6fe7f41cd43b82ed31b7818dc11380eb"
+  inputs-digest = "8e9aeb05cf8412074fe42a89649e77f26711bfe3edd395444bac464a2f23af24"
   solver-name = "gps-cdcl"
   solver-version = 1

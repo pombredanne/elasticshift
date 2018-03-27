@@ -96,3 +96,7 @@ version = "1.6.0"
 [[constraint]]
 name = "k8s.io/client-go"
 version = "v6.0.0"
+
+[[constraint]]
+  name = "github.com/spf13/cobra"
+  version = "0.0.1"
