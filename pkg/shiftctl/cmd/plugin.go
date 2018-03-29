@@ -16,6 +16,7 @@ func commandPlugin() *cobra.Command {
 		Run: func(cmd *cobra.Command, args []string) {
 			cmd.Help()
 			// fmt.Printf("Manages the plugins....")
+
 		},
 	}
 
@@ -42,7 +43,7 @@ func searchCmd() *cobra.Command {
 
 	searchCmd := &cobra.Command{
 		Use:   "search",
-		Short: "Perform a search against shift plugin registry",
+		Short: "Perform the shift plugin search against shift server plugin registry",
 		Run: func(cmd *cobra.Command, args []string) {
 			fmt.Printf("\n Search shift plugin.")
 		},
@@ -54,7 +55,7 @@ func pushCmd() *cobra.Command {
 
 	pushCmd := &cobra.Command{
 		Use:   "push",
-		Short: "Push the plugin to shift registry",
+		Short: "Push the plugin to shift server",
 		Run: func(cmd *cobra.Command, args []string) {
 			fmt.Printf("\n Push shift plugin.")
 		},

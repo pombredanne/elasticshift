@@ -14,8 +14,9 @@ func NewDefaultCommand() *cobra.Command {
 			cmd.Help()
 		},
 	}
-	rootCmd.PersistentFlags().BoolVarP(&Verbose, "verbose", "v", false, "verbose output")
-	
+
+	// rootCmd.PersistentFlags().BoolVarP(&Verbose, "verbose", "v", false, "verbose output")
+
 	rootCmd.AddCommand(commandPlugin())
 
 	return rootCmd
