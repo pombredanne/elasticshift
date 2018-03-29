@@ -4,9 +4,9 @@ package types
 
 import "strconv"
 
-const _BuildStatus_name = "StuckRunningSuccessFailedCancelledWaiting"
+const _BuildStatus_name = "BS_STUCKBS_RUNNINGBS_SUCCESSBS_FAILEDBS_CANCELLEDBS_WAITING"
 
-var _BuildStatus_index = [...]uint8{0, 5, 12, 19, 25, 34, 41}
+var _BuildStatus_index = [...]uint8{0, 8, 18, 28, 37, 49, 59}
 
 func (i BuildStatus) String() string {
 	i -= 1

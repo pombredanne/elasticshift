@@ -128,12 +128,12 @@ type RepositoryList struct {
 type BuildStatus int
 
 const (
-	Stuck BuildStatus = iota + 1
-	BuildStatus_Running
-	BuildStatus_Success
-	BuildStatus_Failed
-	BuildStatus_Cancelled
-	BuildStatus_Waiting
+	BS_STUCK BuildStatus = iota + 1
+	BS_RUNNING
+	BS_SUCCESS
+	BS_FAILED
+	BS_CANCELLED
+	BS_WAITING
 )
 
 func (b *BuildStatus) SetBSON(raw bson.Raw) error {
@@ -173,18 +173,64 @@ type BuildList struct {
 	Count int     `json:"count"`
 }
 
+//go:generate stringer -type=ContainerStatus
+type ContainerStatus int
+
+const (
+	CS_RUNNING ContainerStatus = iota + 1
+	CS_STARTED
+	CS_STOPPED
+)
+
+func (b *ContainerStatus) SetBSON(raw bson.Raw) error {
+
+	var result int
+	err := raw.Unmarshal(&result)
+	if err != nil {
+		return err
+	}
+
+	*b = ContainerStatus(result)
+	return nil
+}
+
 type Container struct {
-	ID              bson.ObjectId `json:"id" bson:"_id,omitempty"`
-	BuildID         string        `json:"build_id" bson:"build_id"`
-	RepoID          string        `json:"repo_id" bson:"repo_id"`
-	VcsID           string        `json:"vcs_id" bson:"vcs_id"`
-	OrchestrationID string        `json:"orchestration_id" bson:"orchestration_id"`
-	Image           string        `json:"image" bson:"image"`
-	repository_id   string        `json:"repository_id" bson:"repository_id"`
-	StartedAt       time.Time     `json:"started_at" bson:"started_at"`
-	StoppedAt       time.Time     `json:"stopped_at" bson:"stopped_at"`
-	Duration        string        `json:"duration" bson:"duration"`
-	Kind            string        `json:"kind" bson:"kind"`
+	ID              bson.ObjectId   `json:"id" bson:"_id,omitempty"`
+	BuildID         string          `json:"build_id" bson:"build_id"`
+	RepositoryID    string          `json:"repository_id" bson:"repository_id"`
+	ContainerID     string          `json:"container_id" bson:"container_id"`
+	VcsID           string          `json:"vcs_id" bson:"vcs_id"`
+	OrchestrationID string          `json:"orchestration_id" bson:"orchestration_id"`
+	Image           string          `json:"image" bson:"image"`
+	StartedAt       time.Time       `json:"started_at" bson:"started_at"`
+	StoppedAt       time.Time       `json:"stopped_at" bson:"stopped_at"`
+	Duration        string          `json:"duration" bson:"duration"`
+	Kind            string          `json:"kind" bson:"kind"`
+	Status          ContainerStatus `json:"status" bson:"status"`
+}
+
+type ContainerList struct {
+	Nodes []Container `json:"nodes"`
+	Count int         `json:"count"`
+}
+
+type App struct {
+	ID             bson.ObjectId `json:"id" bson:"_id,omitempty"`
+	Name           string        `json:"name" bson:"name"`
+	Description    string        `json:"description" bson:"description"`
+	Language       string        `json:"language" bson:"language"`
+	Version        string        `json:"version" bson:"version"`
+	UsedTeamCount  int64         `json:"used_team_count" bson:"used_team_count"`
+	UsedBuildCount int64         `json:"used_build_count" bson:"used_build_count"`
+	IconURL        string        `json:"icon_url" bson:"icon_url"`
+	SourceURL      string        `json:"source_url" bson:"source_url"`
+	Readme         string        `json:"readme" bson:"readme"`
+	Ratings        string        `json:"ratings" bson:"ratings"`
+}
+
+type AppList struct {
+	Nodes []App `json:"nodes"`
+	Count int   `json:"count"`
 }
 
 type KubeConfig []byte

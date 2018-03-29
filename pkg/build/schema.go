@@ -31,27 +31,27 @@ func InitSchema(logger logrus.Logger, ctx context.Context, s Store, repositorySt
 	buildStatusEnum := graphql.NewEnum(graphql.EnumConfig{
 		Name: "BuildStatus",
 		Values: graphql.EnumValueConfigMap{
-			"Stuck": &graphql.EnumValueConfig{
+			"STUCK": &graphql.EnumValueConfig{
 				Value: 1,
 			},
 
-			"Running": &graphql.EnumValueConfig{
+			"RUNNING": &graphql.EnumValueConfig{
 				Value: 2,
 			},
 
-			"Success": &graphql.EnumValueConfig{
+			"SUCCESS": &graphql.EnumValueConfig{
 				Value: 3,
 			},
 
-			"Failed": &graphql.EnumValueConfig{
+			"FAILED": &graphql.EnumValueConfig{
 				Value: 4,
 			},
 
-			"Cancelled": &graphql.EnumValueConfig{
+			"CANCELLED": &graphql.EnumValueConfig{
 				Value: 5,
 			},
 
-			"Waiting": &graphql.EnumValueConfig{
+			"WAITING": &graphql.EnumValueConfig{
 				Value: 6,
 			},
 		},

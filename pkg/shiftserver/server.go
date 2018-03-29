@@ -15,7 +15,9 @@ import (
 	"github.com/graphql-go/handler"
 	"gitlab.com/conspico/elasticshift/api"
 	"gitlab.com/conspico/elasticshift/api/dex"
+	"gitlab.com/conspico/elasticshift/pkg/app"
 	"gitlab.com/conspico/elasticshift/pkg/build"
+	"gitlab.com/conspico/elasticshift/pkg/container"
 	"gitlab.com/conspico/elasticshift/pkg/identity/oauth2/providers"
 	"gitlab.com/conspico/elasticshift/pkg/identity/team"
 	"gitlab.com/conspico/elasticshift/pkg/shift"
@@ -55,6 +57,8 @@ type Server struct {
 	SysConfStore    sysconf.Store
 	BuildStore      build.Store
 	RepositoryStore repository.Store
+	AppStore        app.Store
+	ContainerStore  container.Store
 }
 
 // Config ..
@@ -157,6 +161,12 @@ func (s Server) registerGraphQLServices() {
 	buildStore := build.NewStore(s.DB)
 	s.BuildStore = buildStore
 
+	appStore := app.NewStore(s.DB)
+	s.AppStore = appStore
+
+	containerStore := container.NewStore(s.DB)
+	s.ContainerStore = containerStore
+
 	// team fields
 	teamQ, teamM := team.InitSchema(logger, teamStore)
 	appendFields(queries, teamQ)
@@ -176,6 +186,16 @@ func (s Server) registerGraphQLServices() {
 	buildQ, buildM := build.InitSchema(logger, s.Ctx, buildStore, repositoryStore, sysconfStore)
 	appendFields(queries, buildQ)
 	appendFields(mutations, buildM)
+
+	// app fields
+	appQ, appM := app.InitSchema(logger, s.Ctx, appStore)
+	appendFields(queries, appQ)
+	appendFields(mutations, appM)
+
+	// container fields
+	containerQ, containerM := container.InitSchema(logger, s.Ctx, containerStore)
+	appendFields(queries, containerQ)
+	appendFields(mutations, containerM)
 
 	rootQuery := graphql.ObjectConfig{Name: "RootQuery", Fields: queries}
 	rootMutation := graphql.ObjectConfig{Name: "RootMutation", Fields: mutations}

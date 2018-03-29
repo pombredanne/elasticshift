@@ -106,14 +106,14 @@ func (r *resolver) TriggerBuild(params graphql.ResolveParams) (interface{}, erro
 		branch = repo.DefaultBranch
 	}
 
-	status := types.BuildStatus_Running
-	rb, err := r.store.FetchBuild(repo.Team, repository_id, branch, types.BuildStatus_Running)
+	status := types.BS_RUNNING
+	rb, err := r.store.FetchBuild(repo.Team, repository_id, branch, types.BS_RUNNING)
 	if err != nil {
 		return nil, fmt.Errorf("Failed to validate if there are any build running", err)
 	}
 
 	if len(rb) > 0 {
-		status = types.BuildStatus_Waiting
+		status = types.BS_WAITING
 	}
 
 	b := types.Build{}
@@ -184,13 +184,13 @@ func (r *resolver) CancelBuild(params graphql.ResolveParams) (interface{}, error
 		return nil, fmt.Errorf("Build id not found")
 	}
 
-	if types.BuildStatus_Cancelled == b.Status || types.BuildStatus_Failed == b.Status || types.BuildStatus_Success == b.Status {
+	if types.BS_CANCELLED == b.Status || types.BS_FAILED == b.Status || types.BS_SUCCESS == b.Status {
 		return fmt.Sprintf("Cancelling the build is not possible, because it seems that it was already %s", b.Status.String()), nil
 	}
 
 	// TODO trigger the cancel build, only if the current status is RUNNING | WAITING | STUCK
 
-	err = r.store.UpdateBuildStatus(b.ID, types.BuildStatus_Cancelled)
+	err = r.store.UpdateBuildStatus(b.ID, types.BS_CANCELLED)
 	if err != nil {
 		return nil, fmt.Errorf("Failed to cancel the build: %v", err)
 	}
