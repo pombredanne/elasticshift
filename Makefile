@@ -21,14 +21,14 @@ build: bin/elasticshift get-golint
 
 bin/elasticshift: go-version-checker
 #	@go install -x
-		CGO_ENABLED=0 GOOS=darwin GOARCH=386 go build -o $(GOBIN)/darwin_386/elasticshift -a -tags netgo -ldflags '-w' ./cmd/elasticshift/elasticshift.go
-		CGO_ENABLED=0 GOOS=linux GOARCH=386 go build -o $(GOBIN)/linux_386/elasticshift -a -tags netgo -ldflags '-w' ./cmd/elasticshift/elasticshift.go
-		CGO_ENABLED=0 GOOS=darwin GOARCH=amd64 go build -o $(GOBIN)/darwin_amd64/elasticshift -a -tags netgo -ldflags '-w' ./cmd/elasticshift/elasticshift.go
-		CGO_ENABLED=0 GOOS=linux GOARCH=amd64 go build -o $(GOBIN)/linux_amd64/elasticshift -a -tags netgo -ldflags '-w' ./cmd/elasticshift/elasticshift.go
-		CGO_ENABLED=0 GOOS=darwin GOARCH=386 go build -o $(GOBIN)/darwin_386/worker -a -tags netgo -ldflags '-w' ./cmd/worker/worker.go
-		CGO_ENABLED=0 GOOS=linux GOARCH=386 go build -o $(GOBIN)/linux_386/worker -a -tags netgo -ldflags '-w' ./cmd/worker/worker.go
-		CGO_ENABLED=0 GOOS=darwin GOARCH=amd64 go build -o $(GOBIN)/darwin_amd64/worker -a -tags netgo -ldflags '-w' ./cmd/worker/worker.go
-		CGO_ENABLED=0 GOOS=linux GOARCH=amd64 go build -o $(GOBIN)/linux_amd64/worker -a -tags netgo -ldflags '-w' ./cmd/worker/worker.go
+		CGO_ENABLED=0 GOOS=darwin GOARCH=386 go build -o $(GOBIN)/darwin_386/elasticshift -a -tags netgo -ldflags '-s -w' ./cmd/elasticshift/elasticshift.go
+		CGO_ENABLED=0 GOOS=linux GOARCH=386 go build -o $(GOBIN)/linux_386/elasticshift -a -tags netgo -ldflags '-s -w' ./cmd/elasticshift/elasticshift.go
+		CGO_ENABLED=0 GOOS=darwin GOARCH=amd64 go build -o $(GOBIN)/darwin_amd64/elasticshift -a -tags netgo -ldflags '-s -w' ./cmd/elasticshift/elasticshift.go
+		CGO_ENABLED=0 GOOS=linux GOARCH=amd64 go build -o $(GOBIN)/linux_amd64/elasticshift -a -tags netgo -ldflags '-s -w' ./cmd/elasticshift/elasticshift.go
+		CGO_ENABLED=0 GOOS=darwin GOARCH=386 go build -o $(GOBIN)/darwin_386/worker -a -tags netgo -ldflags '-s -w' ./cmd/worker/worker.go
+		CGO_ENABLED=0 GOOS=linux GOARCH=386 go build -o $(GOBIN)/linux_386/worker -a -tags netgo -ldflags '-s -w' ./cmd/worker/worker.go
+		CGO_ENABLED=0 GOOS=darwin GOARCH=amd64 go build -o $(GOBIN)/darwin_amd64/worker -a -tags netgo -ldflags '-s -w' ./cmd/worker/worker.go
+		CGO_ENABLED=0 GOOS=linux GOARCH=amd64 go build -o $(GOBIN)/linux_amd64/worker -a -tags netgo -ldflags '-s -w' ./cmd/worker/worker.go
 
 #env GOOS=linux CGO_ENABLED=0 go install -v -ldflags $(LD_FLAGS) $(REPO_PATH)
 #GOOS=linux CGO_ENABLED=0 go build -o /bin/elasticshift elasticshift.go
