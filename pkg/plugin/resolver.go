@@ -1,7 +1,7 @@
 /*
 Copyright 2018 The Elasticshift Authors.
 */
-package app
+package plugin
 
 import (
 	"context"
@@ -15,9 +15,9 @@ import (
 )
 
 var (
-	errIDCantBeEmpty    = errors.New("App ID cannot be empty")
-	errNameCantBeEmpty  = errors.New("App Name cannot be empty")
-	errTeamOrNameIsMust = errors.New("App name or team name is must")
+	errIDCantBeEmpty    = errors.New("Plugin ID cannot be empty")
+	errNameCantBeEmpty  = errors.New("Plugin Name cannot be empty")
+	errTeamOrNameIsMust = errors.New("Plugin name or team name is must")
 )
 
 type resolver struct {
@@ -26,7 +26,7 @@ type resolver struct {
 	Ctx    context.Context
 }
 
-func (r *resolver) FetchApp(params graphql.ResolveParams) (interface{}, error) {
+func (r *resolver) FetchPlugin(params graphql.ResolveParams) (interface{}, error) {
 
 	name := params.Args["name"].(string)
 	team := params.Args["team"].(string)
@@ -46,12 +46,12 @@ func (r *resolver) FetchApp(params graphql.ResolveParams) (interface{}, error) {
 	}
 
 	var err error
-	var result []types.App
+	var result []types.Plugin
 	r.store.Execute(func(c *mgo.Collection) {
 		err = c.Find(q).All(&result)
 	})
 
-	var res types.AppList
+	var res types.PluginList
 	res.Nodes = result
 	res.Count = len(res.Nodes)
 

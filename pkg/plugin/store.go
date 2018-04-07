@@ -1,7 +1,7 @@
 /*
 Copyright 2018 The Elasticshift Authors.
 */
-package app
+package plugin
 
 import (
 	base "gitlab.com/conspico/elasticshift/pkg/store"
@@ -21,6 +21,6 @@ type Store interface {
 func NewStore(d stypes.Database) Store {
 	s := &store{}
 	s.Database = d
-	s.CollectionName = "app"
+	s.CollectionName = "plugin"
 	return s
 }

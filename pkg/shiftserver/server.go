@@ -15,11 +15,11 @@ import (
 	"github.com/graphql-go/handler"
 	"gitlab.com/conspico/elasticshift/api"
 	"gitlab.com/conspico/elasticshift/api/dex"
-	"gitlab.com/conspico/elasticshift/pkg/app"
 	"gitlab.com/conspico/elasticshift/pkg/build"
 	"gitlab.com/conspico/elasticshift/pkg/container"
 	"gitlab.com/conspico/elasticshift/pkg/identity/oauth2/providers"
 	"gitlab.com/conspico/elasticshift/pkg/identity/team"
+	"gitlab.com/conspico/elasticshift/pkg/plugin"
 	"gitlab.com/conspico/elasticshift/pkg/shift"
 	"gitlab.com/conspico/elasticshift/pkg/store"
 	stypes "gitlab.com/conspico/elasticshift/pkg/store/types"
@@ -57,7 +57,7 @@ type Server struct {
 	SysConfStore    sysconf.Store
 	BuildStore      build.Store
 	RepositoryStore repository.Store
-	AppStore        app.Store
+	PluginStore     plugin.Store
 	ContainerStore  container.Store
 }
 
@@ -161,8 +161,8 @@ func (s Server) registerGraphQLServices() {
 	buildStore := build.NewStore(s.DB)
 	s.BuildStore = buildStore
 
-	appStore := app.NewStore(s.DB)
-	s.AppStore = appStore
+	pluginStore := plugin.NewStore(s.DB)
+	s.PluginStore = pluginStore
 
 	containerStore := container.NewStore(s.DB)
 	s.ContainerStore = containerStore
@@ -188,9 +188,9 @@ func (s Server) registerGraphQLServices() {
 	appendFields(mutations, buildM)
 
 	// app fields
-	appQ, appM := app.InitSchema(logger, s.Ctx, appStore)
-	appendFields(queries, appQ)
-	appendFields(mutations, appM)
+	pluginQ, pluginM := plugin.InitSchema(logger, s.Ctx, pluginStore)
+	appendFields(queries, pluginQ)
+	appendFields(mutations, pluginM)
 
 	// container fields
 	containerQ, containerM := container.InitSchema(logger, s.Ctx, containerStore)

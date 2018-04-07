@@ -214,7 +214,7 @@ type ContainerList struct {
 	Count int         `json:"count"`
 }
 
-type App struct {
+type Plugin struct {
 	ID             bson.ObjectId `json:"id" bson:"_id,omitempty"`
 	Name           string        `json:"name" bson:"name"`
 	Description    string        `json:"description" bson:"description"`
@@ -228,8 +228,8 @@ type App struct {
 	Ratings        string        `json:"ratings" bson:"ratings"`
 }
 
-type AppList struct {
-	Nodes []App `json:"nodes"`
+type PluginList struct {
+	Nodes []Plugin `json:"nodes"`
 	Count int   `json:"count"`
 }
 

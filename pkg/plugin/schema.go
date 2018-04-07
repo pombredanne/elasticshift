@@ -1,7 +1,7 @@
 /*
 Copyright 2018 The Elasticshift Authors.
 */
-package app
+package plugin
 
 import (
 	"context"
@@ -23,9 +23,9 @@ func InitSchema(logger logrus.Logger, ctx context.Context, s Store) (queries gra
 	fields := graphql.Fields{
 		"id": &graphql.Field{
 			Type:        graphql.ID,
-			Description: "App identifier",
+			Description: "Plugin identifier",
 			Resolve: func(p graphql.ResolveParams) (interface{}, error) {
-				if t, ok := p.Source.(types.App); ok {
+				if t, ok := p.Source.(types.Plugin); ok {
 					return t.ID.Hex(), nil
 				}
 				return nil, nil
@@ -34,64 +34,64 @@ func InitSchema(logger logrus.Logger, ctx context.Context, s Store) (queries gra
 
 		"name": &graphql.Field{
 			Type:        graphql.String,
-			Description: "Name of the app",
+			Description: "Name of the plugin",
 		},
 
 		"description": &graphql.Field{
 			Type:        graphql.String,
-			Description: "Description of the app",
+			Description: "Description of the plugin",
 		},
 
 		"language": &graphql.Field{
 			Type:        graphql.String,
-			Description: "Language used to develop this app",
+			Description: "Language used to develop the plugin",
 		},
 
 		"version": &graphql.Field{
 			Type:        graphql.String,
-			Description: "Version of the app",
+			Description: "Version of the plugin",
 		},
 
 		"used_team_count": &graphql.Field{
 			Type:        graphql.Int,
-			Description: "Number of team currently using this app",
+			Description: "Number of team(s) currently using the plugin",
 		},
 
 		"used_build_count": &graphql.Field{
 			Type:        graphql.Int,
-			Description: "Total build using this app",
+			Description: "Total number of build(s) using the plugin",
 		},
 
 		"icon_url": &graphql.Field{
 			Type:        graphql.String,
-			Description: "Time when the container destroyed",
+			Description: "Plugin icon url",
 		},
 
 		"source_url": &graphql.Field{
 			Type:        graphql.String,
-			Description: "Time when the container destroyed",
+			Description: "Source code reference of the plugin",
 		},
 
 		"readme": &graphql.Field{
 			Type:        graphql.String,
-			Description: "Time when the container destroyed",
+			Description: "Document that refers the readme",
 		},
 
 		"ratings": &graphql.Field{
 			Type:        graphql.String,
-			Description: "Time when the container destroyed",
+			Description: "Rating of the plugin",
 		},
 	}
 
-	appType := graphql.NewObject(
+	pluginType := graphql.NewObject(
 		graphql.ObjectConfig{
-			Name:        "App",
+			Name:        "Plugin",
 			Fields:      fields,
-			Description: "An object of App type",
+			Description: "An object of Plugin type",
 		},
 	)
 
-	appArgs := graphql.FieldConfigArgument{
+	pluginArgs := graphql.FieldConfigArgument{
 		"team": &graphql.ArgumentConfig{
 			Type:        graphql.NewNonNull(graphql.String),
 			Description: "Team identifier",
@@ -99,12 +99,12 @@ func InitSchema(logger logrus.Logger, ctx context.Context, s Store) (queries gra
 
 		"name": &graphql.ArgumentConfig{
 			Type:        graphql.String,
-			Description: "App name",
+			Description: "Plugin name",
 		},
 	}
 
 	queries = graphql.Fields{
-		"app": utils.MakeListType("AppList", appType, r.FetchApp, appArgs),
+		"plugin": utils.MakeListType("PluginList", pluginType, r.FetchPlugin, pluginArgs),
 	}
 
 	mutations = graphql.Fields{}
