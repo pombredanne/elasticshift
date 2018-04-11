@@ -220,17 +220,20 @@ type Plugin struct {
 	Description    string        `json:"description" bson:"description"`
 	Language       string        `json:"language" bson:"language"`
 	Version        string        `json:"version" bson:"version"`
+	Author         string        `json:"author" bson:"author"`
+	Email          string        `json:"email" bson:"email"`
+	SourceURL      string        `json:"source_url" bson:"source_url,omitempty"`
+	Readme         string        `json:"readme" bson:"readme"`
 	UsedTeamCount  int64         `json:"used_team_count" bson:"used_team_count"`
 	UsedBuildCount int64         `json:"used_build_count" bson:"used_build_count"`
 	IconURL        string        `json:"icon_url" bson:"icon_url"`
-	SourceURL      string        `json:"source_url" bson:"source_url"`
-	Readme         string        `json:"readme" bson:"readme"`
 	Ratings        string        `json:"ratings" bson:"ratings"`
+	Team           string        `json:"team" bson:"team"`
 }
 
 type PluginList struct {
 	Nodes []Plugin `json:"nodes"`
-	Count int   `json:"count"`
+	Count int      `json:"count"`
 }
 
 type KubeConfig []byte

@@ -107,36 +107,42 @@ func New(ctx context.Context, c Config) (*Server, error) {
 	r.Handle("/debug/threadcreate", pprof.Handler("threadcreate"))
 	r.Handle("/debug/block", pprof.Handler("block"))
 
-	s.Providers = providers.New(s.Logger, sysconf.NewStore(s.DB))
-
-	// initialize oauth2 providers
-	s.registerEndpointServices()
+	s.SysConfStore = sysconf.NewStore(s.DB)
+	s.Providers = providers.New(s.Logger, s.SysConfStore)
 
 	// initialize graphql based services
 	s.registerGraphQLServices()
+
+	// initialize oauth2 providers
+	s.registerEndpointServices()
 
 	// err := NewAuthServer(ctx, r, c)
 	// if err != nil {
 	// 	return nil, err
 	// }
+
 	return s, nil
 }
 
-func (s Server) registerEndpointServices() {
+func (s *Server) registerEndpointServices() {
 
-	teamStore := team.NewStore(s.DB)
-	vcsServ := vcs.NewService(s.Logger, s.DB, s.Providers, teamStore)
+	// VCS service to link repositories.
+	vcsServ := vcs.NewService(s.Logger, s.DB, s.Providers, s.TeamStore)
 
 	// Oauth2 providers
 	s.Router.HandleFunc("/{team}/link/{provider}", vcsServ.Authorize)
 	s.Router.HandleFunc("/link/{provider}/callback", vcsServ.Authorized)
 
 	// Sysconf Upload kube file
-	sysconfServ := sysconf.NewService(s.Logger, s.DB, teamStore)
+	sysconfServ := sysconf.NewService(s.Logger, s.DB, s.TeamStore)
 	s.Router.HandleFunc("/sysconf/upload", sysconfServ.UploadKubeConfigFile)
+
+	// Plugin bundle push
+	pluginServ := plugin.NewService(s.Logger, s.DB, s.PluginStore, s.TeamStore, s.SysConfStore)
+	s.Router.HandleFunc("/plugin/push", pluginServ.PushPlugin)
 }
 
-func (s Server) registerGraphQLServices() {
+func (s *Server) registerGraphQLServices() {
 
 	logger := s.Logger
 	r := s.Router
@@ -152,8 +158,7 @@ func (s Server) registerGraphQLServices() {
 	vcsStore := vcs.NewStore(s.DB)
 	s.VCSStore = vcsStore
 
-	sysconfStore := sysconf.NewStore(s.DB)
-	s.SysConfStore = sysconfStore
+	sysconfStore := s.SysConfStore
 
 	repositoryStore := repository.NewStore(s.DB)
 	s.RepositoryStore = repositoryStore
