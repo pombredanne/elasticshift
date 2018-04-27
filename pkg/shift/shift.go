@@ -26,7 +26,26 @@ func NewServer(logger logrus.Logger, ctx context.Context, buildStore build.Store
 }
 
 func (s *shift) Register(ctx context.Context, req *api.RegisterReq) (*api.RegisterRes, error) {
-	return nil, nil
+
+	s.logger.Println("Registration request for build " + req.GetBuildId())
+	if req.GetBuildId() == "" {
+		return nil, fmt.Errorf("Registration failed: Build ID cannot be empty.")
+	}
+
+	if req.GetPrivatekey() == "" {
+		return nil, fmt.Errorf("Registration failed: No key provided")
+	}
+
+	buildId := bson.ObjectIdHex(req.GetBuildId())
+	err := s.buildStore.UpdateId(buildId, bson.M{"$push": bson.M{"private_key": req.GetPrivatekey()}})
+	if err != nil {
+		return nil, fmt.Errorf("Registration failed: Due to internal server error %v", err)
+	}
+
+	res := &api.RegisterRes{}
+	res.Registered = true
+
+	return res, nil
 }
 
 func (s *shift) LogShip(reqStream api.Shift_LogShipServer) error {
