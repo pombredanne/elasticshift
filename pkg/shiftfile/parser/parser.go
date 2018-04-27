@@ -81,6 +81,12 @@ func (p *Parser) Parse() (*ast.File, error) {
 	return p.f, nil
 }
 
+func AST(src []byte) (*ast.File, error) {
+
+	p := New(src)
+	return p.Parse()
+}
+
 func (p *Parser) nodeList() (*ast.NodeList, error) {
 
 	root := &ast.NodeList{}
