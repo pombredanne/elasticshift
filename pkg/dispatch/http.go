@@ -54,6 +54,7 @@ type RequestMaker struct {
 	password            string
 	contentType         string
 	logger              logrus.Logger
+	verbose             bool
 }
 
 // NewGetRequestMaker ..
@@ -143,6 +144,13 @@ func (r *RequestMaker) SetContentType(contentType string) *RequestMaker {
 // Set the logger
 func (r *RequestMaker) SetLogger(logger logrus.Logger) *RequestMaker {
 	r.logger = logger
+	return r
+}
+
+// SetVerbose ..
+// Displays the information about the request
+func (r *RequestMaker) Verbose(verbose bool) *RequestMaker {
+	r.verbose = verbose
 	return r
 }
 
@@ -249,7 +257,9 @@ func (r *RequestMaker) Dispatch() error {
 		req.URL.RawQuery = params
 	}
 
-	r.logger.Infoln("Making request to = ", req.URL.String())
+	if r.verbose {
+		r.logger.Infoln("Making request to = ", req.URL.String())
+	}
 
 	// dispatch the request
 	res, err := http.DefaultClient.Do(req)
