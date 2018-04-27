@@ -8,10 +8,11 @@ import (
 	"log"
 	"os"
 
+	"context"
+
 	"gitlab.com/conspico/elasticshift/pkg/worker"
 	"gitlab.com/conspico/elasticshift/pkg/worker/logger"
 	"gitlab.com/conspico/elasticshift/pkg/worker/types"
-	"golang.org/x/net/context"
 )
 
 const (
@@ -20,7 +21,7 @@ const (
 
 func main() {
 
-	ctx := context.Background()
+	bctx := context.Background()
 
 	os.Setenv("SHIFT_HOST", "127.0.0.1")
 	os.Setenv("SHIFT_PORT", "5051")
@@ -49,12 +50,15 @@ func main() {
 		log.Printf("FILELOGR_PATH=%s\n", logfile)
 	}
 
-	opts := []logger.LoggerOptions{
+	opts := []logger.LoggerOption{
 		logger.FileLogger(logfile),
 	}
 
-	logr := logger.New(ctx, buildID, opts...)
+	logr, err := logger.New(bctx, buildID, opts...)
 	defer logr.Close()
+	if err != nil {
+		panic(err)
+	}
 
 	cfg := types.Config{}
 	var isError bool
@@ -104,7 +108,7 @@ func main() {
 	ctx.Config = cfg
 
 	// Start the worker
-	err := worker.Start(ctx, logr)
+	err = worker.Start(ctx, logr)
 	if err != nil {
 		fmt.Println(fmt.Sprintf("Failed to start the worker %v", err))
 	}

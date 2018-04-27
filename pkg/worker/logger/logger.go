@@ -10,7 +10,7 @@ import (
 	"os"
 	"time"
 
-	"gitlab.com/conspico/elasticshift/pkg/worker/types"
+	"context"
 )
 
 const (
@@ -75,7 +75,7 @@ func MinioLogger(url, accesscode, key string) LoggerOption {
 	}
 }
 
-func New(ctx types.Context, buildId string, opt ...LoggerOption) (*Logr, error) {
+func New(ctx context.Context, buildId string, opt ...LoggerOption) (*Logr, error) {
 
 	opts := defaultLoggerOptions
 
@@ -95,7 +95,7 @@ func New(ctx types.Context, buildId string, opt ...LoggerOption) (*Logr, error) 
 
 		f, err = os.OpenFile(opts.logfile, os.O_RDWR|os.O_CREATE|os.O_APPEND, 0666)
 		if err != nil {
-			panic(fmt.Errorf("error opening file: %v", err))
+			return nil, fmt.Errorf("error opening file: %v", err)
 		}
 
 		l.file = f
