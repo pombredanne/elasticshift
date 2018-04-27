@@ -10,31 +10,37 @@ import (
 	"encoding/pem"
 	"fmt"
 	"io/ioutil"
+	"log"
 	"os"
+
+	"gitlab.com/conspico/elasticshift/pkg/utils"
 )
 
 // Generate the RSA keys
 // Used to ssh to running containers.
 func (w *W) GenerateRSAKeys() error {
 
-	w.logger.Info("Generating RSA keys..")
+	log.Println("Generating RSA keys..")
 	r := rand.Reader
 
 	key, err := rsa.GenerateKey(r, DEFAULT_BIT_SIZE)
 	if err != nil {
-		w.logger.Error(fmt.Errorf("Failed to generate rsa keys: %v", err))
+		log.Println(fmt.Errorf("Failed to generate rsa keys: %v", err))
 	}
+
+	// creates the ssh directory
+	utils.Mkdir(DIR_SSH)
 
 	err = w.savePrivateKey(PRIV_KEY_PATH, key)
 	if err != nil {
-		w.logger.Error(err)
+		w.Fatal(fmt.Errorf("Failed to save the private key: %v", err))
 	}
 
 	err = w.savePublicKey(PUB_KEY_PATH, key.PublicKey)
 	if err != nil {
-		w.logger.Error(err)
+		w.Fatal(fmt.Errorf("Failed to save the public key: %v", err))
 	} else {
-		w.logger.Info("Keys generated successfully.")
+		log.Println("Keys generated successfully.")
 	}
 
 	return nil
@@ -43,7 +49,7 @@ func (w *W) GenerateRSAKeys() error {
 // Save the private key in a given filepath
 func (w *W) savePrivateKey(filepath string, key *rsa.PrivateKey) error {
 
-	f, err := os.Create(filepath)
+	f, err := os.OpenFile(filepath, os.O_CREATE|os.O_RDWR, 0666)
 	if err != nil {
 		return fmt.Errorf("Failed to save privatekey: %v", err)
 	}
@@ -75,7 +81,7 @@ func (w *W) savePublicKey(filepath string, key rsa.PublicKey) error {
 		Bytes: derEncodedPKIXbytes,
 	}
 
-	f, err := os.Create(filepath)
+	f, err := os.OpenFile(filepath, os.O_CREATE|os.O_RDWR, 0666)
 	if err != nil {
 		return fmt.Errorf("Failed to create %s: %v", filepath, err)
 	}

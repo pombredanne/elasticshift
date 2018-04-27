@@ -7,17 +7,15 @@ import (
 	"context"
 
 	"gitlab.com/conspico/elasticshift/api"
-	"gitlab.com/conspico/elasticshift/pkg/worker/logshipper"
 	"gitlab.com/conspico/elasticshift/pkg/worker/types"
 )
 
 type server struct {
-	ctx    types.Context
-	logger logshipper.Logger
+	ctx types.Context
 }
 
-func NewServer(ctx types.Context, logger logshipper.Logger) api.WorkServer {
-	return &server{ctx, logger}
+func NewServer(ctx types.Context) api.WorkServer {
+	return &server{ctx}
 }
 
 func (s *server) Top(req *api.TopReq, stream api.Work_TopServer) error {
