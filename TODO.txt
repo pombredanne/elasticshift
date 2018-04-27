@@ -4,7 +4,12 @@ D - store users
 D - store VCS
 D - store repos
 - oauth schema design
-- oauth coding 
+- oauth coding
 - https no response with postman
-- store builds
+D - store builds
 - oauth request (temp storage) and make it thread safe.
+- Worker logger and multi pipe based on additional logger.
+- Get the orchestration cluster from system config.
+- Ability to set default cluster to use for builds.
+- Run build with kubernetes
+
