@@ -22,9 +22,8 @@ import (
 )
 
 const (
-	DEFAULT_STORAGE = "default-storage"
-	PLUGIN_DIR      = "plugins"
-	BUNDLE_EXT      = ".bundle"
+	PLUGIN_DIR = "plugins"
+	BUNDLE_EXT = ".bundle"
 )
 
 var (
@@ -147,8 +146,7 @@ func (s service) PushPlugin(w http.ResponseWriter, r *http.Request) {
 	}
 
 	// find the system storage
-	var result types.NFSVolumeSysConf
-	err = s.sysconfStore.GetSysConf(sysconf.VolumeNfsKind, DEFAULT_STORAGE, &result)
+	result, err := s.sysconfStore.GetDefaultStorage()
 	if err != nil {
 		http.Error(w, "Failed to fetch the default storage: "+err.Error(), http.StatusInternalServerError)
 		return

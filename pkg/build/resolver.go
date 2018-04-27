@@ -7,15 +7,23 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"io/ioutil"
+	"net/http"
+	"path/filepath"
 	"strings"
 	"time"
 
 	"github.com/Sirupsen/logrus"
 	"github.com/docker/docker/api/types/container"
+	"github.com/docker/docker/api/types/strslice"
+	"github.com/docker/go-connections/nat"
 	"github.com/graphql-go/graphql"
 	"gitlab.com/conspico/elasticshift/api/types"
 	"gitlab.com/conspico/elasticshift/pkg/cloudprovider/docker"
+	"gitlab.com/conspico/elasticshift/pkg/shiftfile/keys"
+	"gitlab.com/conspico/elasticshift/pkg/shiftfile/parser"
 	"gitlab.com/conspico/elasticshift/pkg/sysconf"
+	"gitlab.com/conspico/elasticshift/pkg/utils"
 	"gitlab.com/conspico/elasticshift/pkg/vcs/repository"
 	"gopkg.in/mgo.v2/bson"
 )
@@ -26,11 +34,26 @@ var (
 	errInvalidRepositoryID     = errors.New("Please provide the valid repository ID")
 
 	logfile = "logfile"
+
+	// place holders vcs_account, repository, branch
+	RAW_GUTHUB_URL = "https://raw.githubusercontent.com/%s/%s/%s/Shiftfile"
+
+	DIR_CODE    = "code"
+	DIR_PLUGINS = "plugins"
+	DIR_WORKER  = "worker"
+	DIR_LOGS    = "logs"
+
+	// TODO check for windows container
+	VOL_SHIFT   = "/shift"
+	VOL_CODE    = filepath.Join(VOL_SHIFT, DIR_CODE)
+	VOL_PLUGINS = filepath.Join(VOL_SHIFT, DIR_PLUGINS)
+	VOL_LOGS    = filepath.Join(VOL_SHIFT, DIR_LOGS)
 )
 
 const (
-	LogType_Embedded = "Embedded"
-	LogType_NFS      = "NFS"
+	LogType_Embedded = "embedded"
+	LogType_File     = "file"
+	LogType_NFS      = "nfs"
 )
 
 type resolver struct {
@@ -59,21 +82,65 @@ func (r *resolver) ContainerLauncher() {
 				r.SLog(b.ID, fmt.Sprintf("Failed to connect to docker daemon: %v", err))
 			}
 
+			imgName, err := r.findImageName(b)
+			if err != nil {
+				r.SLog(b.ID, fmt.Sprintf("Unable to find the build image from Shiftfile", b.CloneURL))
+			}
+			fmt.Println("Image name: " + imgName)
+
+			// find the system storage
+			storage, err := r.sysconfStore.GetDefaultStorage()
+			if err != nil {
+				r.SLog(b.ID, "Failed to fetch the default storage: "+err.Error())
+				return
+			}
+
+			err = utils.Mkdir(filepath.Join(storage.Path, "code", b.Team))
+			if err != nil {
+				r.SLog(b.ID, "Unable to create directory for cloning the project:"+err.Error())
+			}
+
+			hostIp := utils.GetIP()
+			if hostIp == "" {
+				hostIp = "127.0.0.1"
+			}
+
 			env := []string{
-				"SHIFT_HOST=127.0.0.1",
-				"SHIFT_PORT=5050",
-				"SHIFT_LOGGER=" + LogType_Embedded,
+				"SHIFT_HOST=shiftserver",
+				"SHIFT_PORT=5051",
+				"SHIFT_LOGGER=" + LogType_File,
 				"SHIFT_BUILDID=" + b.ID.Hex(),
+				"SHIFT_TIMEOUT=120m",
+				"WORKER_PORT=" + "6060",
+			}
+
+			filepath.Join(storage.Path, b.Team, DIR_CODE)
+
+			hc := &container.HostConfig{}
+			hc.Binds = []string{
+				filepath.Join(storage.Path, b.Team, DIR_CODE) + ":" + VOL_CODE,
+				filepath.Join(storage.Path, b.Team, DIR_LOGS) + ":" + VOL_LOGS,
+				filepath.Join(storage.Path, DIR_PLUGINS) + ":" + VOL_PLUGINS,
+				filepath.Join(storage.Path, DIR_WORKER) + ":" + VOL_SHIFT,
+			}
+
+			workerPort, _ := nat.NewPort("tcp", "6060")
+			serverPort, _ := nat.NewPort("tcp", "5051")
+
+			exposedPorts := map[nat.Port]struct{}{
+				serverPort: struct{}{},
+				workerPort: struct{}{},
 			}
 
 			c := &container.Config{
-				Image: "alpine",
-
-				// Cmd:   []string{"/bin/sh"},
-				// Entrypoint: strslice.StrSlice{"/bin/sh"},
-				Env: env,
+				Image:        imgName,
+				Entrypoint:   strslice.StrSlice{"./shift/worker"},
+				Env:          env,
+				AttachStdout: true,
+				ExposedPorts: exposedPorts,
 			}
-			containerID, err := cli.CreateContainer(c, b.ID.Hex())
+
+			containerID, err := cli.CreateContainer(c, hc, b.ID.Hex())
 			if err != nil {
 				str := fmt.Sprintf("Unable to create the container %v", err)
 				r.SLog(b.ID, str)
@@ -85,6 +152,10 @@ func (r *resolver) ContainerLauncher() {
 				r.logger.Errorln("Failed to update the container id: ", containerID)
 			}
 
+			err = cli.StartContainer(containerID)
+			if err != nil {
+				r.logger.Errorln("Failed to start the container: %v", err)
+			}
 		}(b)
 	}
 }
@@ -125,7 +196,8 @@ func (r *resolver) TriggerBuild(params graphql.ResolveParams) (interface{}, erro
 	b.StartedAt = time.Now()
 	b.Team = repo.Team
 	b.Branch = branch
-	b.LogType = LogType_Embedded
+	b.LogType = LogType_File
+	b.CloneURL = repo.CloneURL
 
 	// Build file path - (for NFS)
 	// <cache>/team-id/vcs-id/repository-id/branch-name/build-id/log
@@ -209,4 +281,46 @@ func (r *resolver) FetchBuildByID(params graphql.ResolveParams) (interface{}, er
 		return nil, err
 	}
 	return res, nil
+}
+
+func (r *resolver) findImageName(b types.Build) (string, error) {
+
+	var file []byte
+	// https://github.com/nshahm/hybrid.test.runner/raw/master/Shiftfile
+	if strings.Contains(b.CloneURL, "github.com") {
+
+		// repoUrl := fmt.Sprintf(RAW_GUTHUB_URL, )
+		repoUrl := strings.TrimRight(b.CloneURL, ".git")
+		repoUrl += "/raw/" + b.Branch + "/Shiftfile"
+
+		fmt.Println("Repo URL: " + repoUrl)
+
+		resp, err := http.Get(repoUrl)
+		if err != nil {
+			return "", err
+		}
+
+		fmt.Println("Raw URL:" + resp.Request.URL.String())
+		resp, err = http.Get(resp.Request.URL.String())
+		if err != nil {
+			return "", err
+		}
+
+		// read the response body
+		file, err = ioutil.ReadAll(resp.Body)
+		if err != nil {
+			return "", err
+		}
+	}
+
+	// r.logger.Infoln("Response = ", string(file[:]))
+
+	// write shift file
+
+	sf, err := parser.AST(file)
+	if err != nil {
+		r.SLog(b.ID, fmt.Sprintf("Failed to parse shift file: %v", err))
+	}
+
+	return sf.Image()[keys.NAME].(string), nil
 }

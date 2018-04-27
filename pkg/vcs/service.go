@@ -149,6 +149,8 @@ func (s service) Authorized(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, errVCSAccountAlreadyLinked, http.StatusConflict)
 	}
 
+	u.Source = r.Host
+
 	// u.ID = utils.NewUUID()
 	// u.CreatedDt = time.Now()
 	// u.UpdatedDt = time.Now()

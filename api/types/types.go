@@ -165,7 +165,9 @@ type Build struct {
 	TriggeredBy  string        `json:"triggered_by" bson:"triggered_by"`
 	Status       BuildStatus   `json:"status" bson:"status"`
 	Branch       string        `json:"branch" bson:"branch"`
+	CloneURL     string        `json:"clone_url" bson:"clone_url"`
 	Team         string        `json:"team" bson:"team"`
+	Privatekey   string        `json:"-" bson:"private_key,omitempty"`
 }
 
 type BuildList struct {

@@ -21,6 +21,8 @@ type Store interface {
 	GetVCSSysConf() ([]types.VCSSysConf, error)
 
 	GetSysConf(kind, name string, result interface{}) error
+
+	GetDefaultStorage() (types.NFSVolumeSysConf, error)
 }
 
 // NewStore ..
@@ -45,4 +47,12 @@ func (r *store) GetSysConf(kind, name string, result interface{}) error {
 	q["name"] = name
 
 	return r.FindOne(q, result)
+}
+
+func (r *store) GetDefaultStorage() (types.NFSVolumeSysConf, error) {
+
+	// find the system storage
+	var result types.NFSVolumeSysConf
+	err := r.GetSysConf(VolumeNfsKind, DEFAULT_STORAGE, &result)
+	return result, err
 }

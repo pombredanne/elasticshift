@@ -6,15 +6,14 @@ package builder
 import (
 	"context"
 	"fmt"
+	"log"
 
 	"gitlab.com/conspico/elasticshift/api"
-	"gitlab.com/conspico/elasticshift/pkg/worker/logshipper"
 	wtypes "gitlab.com/conspico/elasticshift/pkg/worker/types"
 	"google.golang.org/grpc"
 )
 
 type builder struct {
-	logger      logshipper.Logger
 	shiftconn   *grpc.ClientConn
 	ctx         context.Context
 	config      wtypes.Config
@@ -22,10 +21,9 @@ type builder struct {
 	project     *api.GetProjectRes
 }
 
-func New(ctx wtypes.Context, logger logshipper.Logger, shiftconn *grpc.ClientConn) error {
+func New(ctx wtypes.Context, shiftconn *grpc.ClientConn) error {
 
 	b := builder{}
-	b.logger = logger
 	b.shiftconn = shiftconn
 	b.ctx = ctx.Context
 	b.shiftclient = ctx.Client
@@ -42,6 +40,8 @@ func (b *builder) run() error {
 		return fmt.Errorf("Failed to get the project/repository detail from shift server: %v", err)
 	}
 	b.project = proj
+
+	log.Printf("Project Info: %v", proj)
 
 	// Checkout the source code
 

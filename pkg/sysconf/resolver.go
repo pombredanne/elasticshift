@@ -25,6 +25,8 @@ const (
 	VcsKind       = "vcs"
 	GenericKind   = "generic"
 	VolumeNfsKind = "nfs"
+
+	DEFAULT_STORAGE = "default-storage"
 )
 
 type resolver struct {

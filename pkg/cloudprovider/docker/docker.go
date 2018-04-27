@@ -51,14 +51,19 @@ type ImagePullStatus struct {
 }
 
 type DockerClient interface {
-	CreateContainer(opts *container.Config, name string) (string, error)
+	CreateContainer(opts *container.Config, hostConfig *container.HostConfig, name string) (string, error)
 	DeleteContainer(id string) error
 	StartContainer(id string) error
 	StopContainer(id string) error
+	CLI() *client.Client
 }
 
 type StreamWriter struct {
 	w io.Writer
+}
+
+func (d *dockerClient) CLI() *client.Client {
+	return d.cli
 }
 
 func NewClient(opts *ClientOptions) (DockerClient, error) {
@@ -111,11 +116,11 @@ func (p ImagePullStatus) String() string {
 	return buf.String()
 }
 
-func (dc *dockerClient) CreateContainer(opts *container.Config, name string) (string, error) {
+func (dc *dockerClient) CreateContainer(opts *container.Config, hostConfig *container.HostConfig, name string) (string, error) {
 
 	r, err := dc.cli.ImagePull(dc.ctx, opts.Image, types.ImagePullOptions{})
 	if err != nil {
-		fmt.Println("Image pull error if any: %v", err)
+		fmt.Printf("Image pull error if any: %v\n", err)
 		return "", err
 	}
 	defer r.Close()
@@ -125,7 +130,7 @@ func (dc *dockerClient) CreateContainer(opts *container.Config, name string) (st
 		return "", fmt.Errorf("Failed to grab image pull progress %v", err)
 	}
 
-	container, err := dc.cli.ContainerCreate(dc.ctx, opts, nil, nil, name)
+	container, err := dc.cli.ContainerCreate(dc.ctx, opts, hostConfig, nil, name)
 	if err != nil {
 		return "", fmt.Errorf("Failed to create container %s:%v", opts.Image, err)
 	}

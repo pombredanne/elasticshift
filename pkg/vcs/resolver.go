@@ -15,6 +15,7 @@ import (
 	"gitlab.com/conspico/elasticshift/pkg/identity/oauth2/providers"
 	"gitlab.com/conspico/elasticshift/pkg/identity/team"
 	"gitlab.com/conspico/elasticshift/pkg/vcs/repository"
+	"gopkg.in/mgo.v2/bson"
 )
 
 // VCSServer ..
@@ -146,6 +147,16 @@ func (r resolver) AddRepository(params graphql.ResolveParams) (interface{}, erro
 	repo.Team = teamName
 	repo.VcsID = account.ID
 	repo.Identifier = strings.Join([]string{source, vcsName}, ":")
+
+	var currentRepo types.Repository
+	err = r.repositoryStore.FindOne(bson.M{"repo_id": repo.RepoID, "team": teamName, "name": repoName, "identifier": repo.Identifier}, &currentRepo)
+	if err != nil && err.Error() != "not found" {
+		return nil, fmt.Errorf("Failed to check the existance of the repository :v", err)
+	}
+
+	if strings.EqualFold(currentRepo.RepoID, repo.RepoID) {
+		return nil, fmt.Errorf("URI '%s' already added as a repository to your team", uri)
+	}
 
 	// Store the repository, if it doesn't exist, otherwise throw error
 	err = r.repositoryStore.Save(&repo)

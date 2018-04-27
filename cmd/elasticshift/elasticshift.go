@@ -102,7 +102,7 @@ func main() {
 
 func elasticshift() error {
 
-	cfgFile := "/etc/conspico/elasticshift/config.yaml"
+	cfgFile := "/elasticshift/config.yaml"
 	cfgData, err := ioutil.ReadFile(cfgFile)
 
 	var c Config
@@ -128,8 +128,8 @@ func elasticshift() error {
 			},
 
 			Web: Web{
-				HTTP: "127.0.0.1:5050",
-				GRPC: "127.0.0.1:5051",
+				HTTP: "0.0.0.0:5050",
+				GRPC: "0.0.0.0:5051",
 			},
 
 			Identity: Identity{
@@ -175,6 +175,7 @@ func elasticshift() error {
 	if err != nil {
 		return fmt.Errorf("Failed to parse database retryin duration %s :%v", c.Store.Retry, err)
 	}
+	sc.Store.AutoReconnect = true
 
 	// parse identity config
 	if c.Identity.Issuer != "" {
@@ -250,7 +251,7 @@ func elasticshift() error {
 
 			err = grpcServer.Serve(listen)
 
-			return fmt.Errorf("Listening on %s : %v", c.Web.GRPC, err)
+			return fmt.Errorf("Listening on %s failed : %v", c.Web.GRPC, err)
 		}()
 	}()
 
