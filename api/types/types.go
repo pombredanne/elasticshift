@@ -238,6 +238,37 @@ type PluginList struct {
 	Count int      `json:"count"`
 }
 
+type Integration struct {
+	ID          bson.ObjectId `json:"id" bson:"_id,omitempty"`
+	Name        string        `json:"name" bson:"name"`
+	Provider    int           `json:"provider" bson:"provider"`
+	Kind        int           `json:"kind" bson:"kind"`
+	Host        string        `json:"host" bson:"host"`
+	Certificate string        `json:"certificate" bson:"certificate"`
+	Token       string        `json:"token" bson:"token"`
+	Team        string        `json:"team" bson:"team"`
+}
+
+type IntegrationList struct {
+	Nodes []Integration `json:"nodes"`
+	Count int           `json:"count"`
+}
+
+type Infrastructure struct {
+	ID          bson.ObjectId `json:"id" bson:"_id,omitempty"`
+	Name        string        `json:"name" bson:"name"`
+	Description string        `json:"description" bson:"description,omitempty"`
+	Kind        string        `json:"kind" bson:"kind"`
+	Private     bool          `json:"private" bson:"private"`
+	Code        string        `json:"code" bson:"code"`
+	Team        string        `json:"team" bson:"team"`
+}
+
+type InfrastructureList struct {
+	Nodes []Infrastructure `json:"nodes"`
+	Count int              `json:"count"`
+}
+
 type KubeConfig []byte
 
 func (f KubeConfig) GetBSON() (interface{}, error) {

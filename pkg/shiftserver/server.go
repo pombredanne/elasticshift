@@ -19,6 +19,8 @@ import (
 	"gitlab.com/conspico/elasticshift/pkg/container"
 	"gitlab.com/conspico/elasticshift/pkg/identity/oauth2/providers"
 	"gitlab.com/conspico/elasticshift/pkg/identity/team"
+	"gitlab.com/conspico/elasticshift/pkg/infrastructure"
+	"gitlab.com/conspico/elasticshift/pkg/integration"
 	"gitlab.com/conspico/elasticshift/pkg/plugin"
 	"gitlab.com/conspico/elasticshift/pkg/shift"
 	"gitlab.com/conspico/elasticshift/pkg/store"
@@ -52,13 +54,15 @@ type Server struct {
 	Providers providers.Providers
 	Ctx       context.Context
 
-	TeamStore       team.Store
-	VCSStore        vcs.Store
-	SysConfStore    sysconf.Store
-	BuildStore      build.Store
-	RepositoryStore repository.Store
-	PluginStore     plugin.Store
-	ContainerStore  container.Store
+	TeamStore           team.Store
+	VCSStore            vcs.Store
+	SysConfStore        sysconf.Store
+	BuildStore          build.Store
+	RepositoryStore     repository.Store
+	PluginStore         plugin.Store
+	ContainerStore      container.Store
+	IntegrationStore    integration.Store
+	InfrastructureStore infrastructure.Store
 }
 
 // Config ..
@@ -172,6 +176,12 @@ func (s *Server) registerGraphQLServices() {
 	containerStore := container.NewStore(s.DB)
 	s.ContainerStore = containerStore
 
+	integrationStore := integration.NewStore(s.DB)
+	s.IntegrationStore = integrationStore
+
+	infrastructureStore := infrastructure.NewStore(s.DB)
+	s.InfrastructureStore = infrastructureStore
+
 	// team fields
 	teamQ, teamM := team.InitSchema(logger, teamStore)
 	appendFields(queries, teamQ)
@@ -201,6 +211,16 @@ func (s *Server) registerGraphQLServices() {
 	containerQ, containerM := container.InitSchema(logger, s.Ctx, containerStore)
 	appendFields(queries, containerQ)
 	appendFields(mutations, containerM)
+
+	// container fields
+	integrationQ, integrationM := integration.InitSchema(logger, s.Ctx, integrationStore)
+	appendFields(queries, integrationQ)
+	appendFields(mutations, integrationM)
+
+	// container fields
+	infrastructureQ, infrastructureM := infrastructure.InitSchema(logger, s.Ctx, infrastructureStore)
+	appendFields(queries, infrastructureQ)
+	appendFields(mutations, infrastructureM)
 
 	rootQuery := graphql.ObjectConfig{Name: "RootQuery", Fields: queries}
 	rootMutation := graphql.ObjectConfig{Name: "RootMutation", Fields: mutations}

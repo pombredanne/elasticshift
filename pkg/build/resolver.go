@@ -19,7 +19,7 @@ import (
 	"github.com/docker/go-connections/nat"
 	"github.com/graphql-go/graphql"
 	"gitlab.com/conspico/elasticshift/api/types"
-	"gitlab.com/conspico/elasticshift/pkg/cloudprovider/docker"
+	"gitlab.com/conspico/elasticshift/pkg/integration/docker"
 	"gitlab.com/conspico/elasticshift/pkg/shiftfile/keys"
 	"gitlab.com/conspico/elasticshift/pkg/shiftfile/parser"
 	"gitlab.com/conspico/elasticshift/pkg/sysconf"
