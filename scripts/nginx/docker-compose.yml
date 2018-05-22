@@ -1,0 +1,11 @@
+version : "3"
+
+services:
+  cdn:
+    container_name: cdn
+    image: nginx:latest
+    ports:
+      - "7777:7777"
+    volumes:
+      - "/Users/ghazni/sandbox/projects/go/src/gitlab.com/conspico/elasticshift/bin/linux_amd64:/var/www/assets/:ro"
+      - "/Users/ghazni/sandbox/projects/go/src/gitlab.com/conspico/elasticshift/scripts/nginx:/etc/nginx:ro"

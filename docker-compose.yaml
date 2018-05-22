@@ -1,0 +1,41 @@
+version : "3"
+
+services:
+  mongodb:
+    container_name: shiftdb
+    image: mongo:latest
+    ports:
+      - "27017:27017"
+    volumes:
+      - "${DATA_HOME}/mongodb:/data/db"
+    # networks:
+    #   backend:
+        # ipv4_address: 172.20.0.10
+
+  elasticshift:
+    container_name: shiftserver
+    image: registry.gitlab.com/conspico/esh:latest
+    ports:
+      - "5050:5050"
+      - "5051:5051"
+      - "80:80"
+      - "443:443"
+    environment:
+      - STORE_SERVER=shiftdb
+      - no_proxy=localhost,127.0.0.1
+    volumes:
+      - "$DATA_HOME/elasticshift:/shift"
+      - "/var/run/docker.sock:/var/run/docker.sock"
+    depends_on:
+      - mongodb
+    # networks:
+    #   backend:
+        # ipv4_address: 172.20.0.11
+
+# networks:
+#   backend:
+#     driver: bridge
+    # ipam:
+    #   driver: default
+    #   config:
+    #     - subnet: 172.20.0.0/24
