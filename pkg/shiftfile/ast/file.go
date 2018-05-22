@@ -145,7 +145,6 @@ func (f *File) properties(ni Node, props map[string]interface{}) map[string]inte
 			props[key] = n.Value.(*Literal).Token.Text
 
 		case *List:
-
 			listSlice := []string{}
 			for _, i := range n.Value.(*List).Node {
 				listSlice = append(listSlice, i.(*Literal).Token.Text)
@@ -157,6 +156,12 @@ func (f *File) properties(ni Node, props map[string]interface{}) map[string]inte
 
 		case *Command:
 			cmdSlice = append(cmdSlice, n.Value.(*Command).Token.Text)
+
+		case *Argument:
+			props[key] = "ARG:" + n.Value.(*Argument).Token.Text
+
+		case *Secret:
+			props[key] = "SECRET:" + n.Value.(*Secret).Token.Text
 		}
 	}
 

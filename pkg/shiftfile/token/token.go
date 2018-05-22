@@ -53,6 +53,8 @@ const (
 	LHINT    // /*
 	RHINT    // */
 	HINT_DEL // :
+	ARGUMENT // @
+	SECRET   // ^
 	operator_end
 
 	keyword_beg
@@ -100,6 +102,8 @@ var tokens = [...]string{
 	LHINT:    "LHINT",
 	RHINT:    "RHINT",
 	HINT_DEL: "HINT_DEL",
+	ARGUMENT: "ARGUMENT",
+	SECRET:   "SECRET",
 
 	FROM:     "FROM",
 	IMAGE:    "IMAGE",

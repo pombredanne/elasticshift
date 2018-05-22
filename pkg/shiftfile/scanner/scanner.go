@@ -165,6 +165,8 @@ func (s *Scanner) Scan() token.Token {
 		case ':':
 			tok.Type = token.HINT_DEL
 			tok.Text = ":"
+		case '@', '^':
+			tok.Type, tok.Text = s.scanArgumentOrSecret()
 		case ',':
 			tok.Type = token.COMMA
 			tok.Text = ","
@@ -232,6 +234,31 @@ func (s *Scanner) scanMultilineString() (token.Type, string) {
 	}
 
 	return token.STRING, string(s.src[ofs:s.pos.Offset])
+}
+
+func (s *Scanner) scanArgumentOrSecret() (token.Type, string) {
+
+	var ttype token.Type
+	if s.ch == '@' {
+		ttype = token.ARGUMENT
+	} else if s.ch == '^' {
+		ttype = token.SECRET
+	}
+
+	// move next to read the arg or secret
+	s.next()
+
+	ofs := s.pos.Offset - 1
+	for isLetter(s.ch) || isDigit(s.ch) || s.ch == '_' {
+		ch := s.next()
+		if ch == '\n' || ch < 0 {
+			break
+		}
+	}
+
+	s.unreadIfNotEOF(s.ch)
+
+	return ttype, string(s.src[ofs:s.pos.Offset])
 }
 
 func (s *Scanner) scanCommand() (token.Type, string) {
@@ -384,7 +411,6 @@ func (s *Scanner) scanIdentifier() (token.Type, string) {
 		}
 	}
 	return token.IDENTIFIER, iden
-
 }
 
 // Construct the error with the given message

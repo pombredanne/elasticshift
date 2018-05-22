@@ -22,6 +22,8 @@ func (i Literal) node()   {}
 func (h Hint) node()      {}
 func (i Image) node()     {}
 func (v VarHolder) node() {}
+func (a Argument) node()  {}
+func (s Secret) node()    {}
 
 type Command Literal
 
@@ -175,4 +177,20 @@ type VarHolder struct {
 
 func (v *VarHolder) Position() token.Position {
 	return v.Token.Position
+}
+
+type Argument struct {
+	Token token.Token
+}
+
+func (a *Argument) Position() token.Position {
+	return a.Token.Position
+}
+
+type Secret struct {
+	Token token.Token
+}
+
+func (s *Secret) Position() token.Position {
+	return s.Token.Position
 }

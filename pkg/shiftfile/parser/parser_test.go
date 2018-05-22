@@ -52,6 +52,10 @@ func TestParser(t *testing.T) {
 			"filenoc.shift",
 			false,
 		},
+		{
+			"arg_secret.shift",
+			false,
+		},
 	}
 
 	testfileDir := "./testfiles"

@@ -77,6 +77,42 @@ var tokens = map[string][]tokenPair{
 			{Line: 1, Text: "1.0"},
 		}},
 	},
+	"arg": []tokenPair{
+		{`@token`, nil, []Expected{
+			{Line: 1, Text: "token"},
+		}},
+		{`@channel_name`, nil, []Expected{
+			{Line: 1, Text: "channel_name"},
+		}},
+		{`"elasticshift/vcs", "Checking out the project" {
+		checkout @checkout_url
+		author (author)
+		branch "develop"
+		accesstoken ^1234kj12h34hh234
+	}`, nil, []Expected{
+			{Line: 1, Text: "elasticshift/vcs"},
+			{Line: 1, Text: ","},
+			{Line: 1, Text: "Checking out the project"},
+			{Line: 1, Text: "{"},
+			{Line: 2, Text: "checkout"},
+			{Line: 2, Text: "checkout_url"},
+			{Line: 3, Text: "author"},
+			{Line: 3, Text: "("},
+			{Line: 3, Text: "author"},
+			{Line: 3, Text: ")"},
+			{Line: 4, Text: "branch"},
+			{Line: 4, Text: "develop"},
+			{Line: 5, Text: "accesstoken"},
+			{Line: 5, Text: "1234kj12h34hh234"},
+			{Line: 6, Text: "}"},
+		}},
+	},
+	"secret": []tokenPair{
+		{`channel_token ^devtoken`, nil, []Expected{
+			{Line: 1, Text: "channel_token"},
+			{Line: 1, Text: "devtoken"},
+		}},
+	},
 	"language": []tokenPair{
 		{`LANGUAGE "java"`, nil, []Expected{
 			{Line: 1, Text: "LANGUAGE"},
@@ -361,6 +397,14 @@ func TestName(t *testing.T) {
 
 func TestVersion(t *testing.T) {
 	testTokenTypes(t, token.VERSION, tokens["version"])
+}
+
+func TestArg(t *testing.T) {
+	testTokenTypes(t, token.ARG, tokens["arg"])
+}
+
+func TestSecret(t *testing.T) {
+	testTokenTypes(t, token.SECRET, tokens["secret"])
 }
 
 func TestBool(t *testing.T) {

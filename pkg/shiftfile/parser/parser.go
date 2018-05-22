@@ -207,6 +207,10 @@ func (p *Parser) nodeItem() (*ast.NodeItem, error) {
 		switch p.tok.Type {
 		case token.HINT:
 			n.Value, err = p.hint()
+		case token.ARGUMENT:
+			n.Value, err = p.argument()
+		case token.SECRET:
+			n.Value, err = p.secret()
 		case token.LPAREN:
 			n.Value, err = p.varholder()
 		case token.LBRACK:
@@ -423,6 +427,26 @@ func (p *Parser) block() (*ast.Block, error) {
 	}
 
 	return blk, nil
+}
+
+func (p *Parser) secret() (*ast.Secret, error) {
+
+	p.scan()
+
+	sec := &ast.Secret{}
+	sec.Token = p.tok
+
+	return sec, nil
+}
+
+func (p *Parser) argument() (*ast.Argument, error) {
+
+	p.scan()
+
+	arg := &ast.Argument{}
+	arg.Token = p.tok
+
+	return arg, nil
 }
 
 func (p *Parser) varholder() (*ast.VarHolder, error) {
