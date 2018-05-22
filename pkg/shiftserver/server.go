@@ -17,6 +17,7 @@ import (
 	"gitlab.com/conspico/elasticshift/api/dex"
 	"gitlab.com/conspico/elasticshift/pkg/build"
 	"gitlab.com/conspico/elasticshift/pkg/container"
+	"gitlab.com/conspico/elasticshift/pkg/defaults"
 	"gitlab.com/conspico/elasticshift/pkg/identity/oauth2/providers"
 	"gitlab.com/conspico/elasticshift/pkg/identity/team"
 	"gitlab.com/conspico/elasticshift/pkg/infrastructure"
@@ -63,6 +64,7 @@ type Server struct {
 	ContainerStore      container.Store
 	IntegrationStore    integration.Store
 	InfrastructureStore infrastructure.Store
+	DefaultStore        defaults.Store
 }
 
 // Config ..
@@ -182,6 +184,9 @@ func (s *Server) registerGraphQLServices() {
 	infrastructureStore := infrastructure.NewStore(s.DB)
 	s.InfrastructureStore = infrastructureStore
 
+	defaultStore := defaults.NewStore(s.DB)
+	s.DefaultStore = defaultStore
+
 	// team fields
 	teamQ, teamM := team.InitSchema(logger, teamStore)
 	appendFields(queries, teamQ)
@@ -198,7 +203,7 @@ func (s *Server) registerGraphQLServices() {
 	appendFields(mutations, sysconfM)
 
 	// build fields
-	buildQ, buildM := build.InitSchema(logger, s.Ctx, buildStore, repositoryStore, sysconfStore)
+	buildQ, buildM := build.InitSchema(logger, s.Ctx, buildStore, repositoryStore, sysconfStore, teamStore, integrationStore, defaultStore)
 	appendFields(queries, buildQ)
 	appendFields(mutations, buildM)
 
@@ -212,15 +217,20 @@ func (s *Server) registerGraphQLServices() {
 	appendFields(queries, containerQ)
 	appendFields(mutations, containerM)
 
-	// container fields
+	// integration fields
 	integrationQ, integrationM := integration.InitSchema(logger, s.Ctx, integrationStore)
 	appendFields(queries, integrationQ)
 	appendFields(mutations, integrationM)
 
-	// container fields
+	// infrastructure fields
 	infrastructureQ, infrastructureM := infrastructure.InitSchema(logger, s.Ctx, infrastructureStore)
 	appendFields(queries, infrastructureQ)
 	appendFields(mutations, infrastructureM)
+
+	// default fields
+	defaultQ, defaultM := defaults.InitSchema(logger, s.Ctx, defaultStore, teamStore)
+	appendFields(queries, defaultQ)
+	appendFields(mutations, defaultM)
 
 	rootQuery := graphql.ObjectConfig{Name: "RootQuery", Fields: queries}
 	rootMutation := graphql.ObjectConfig{Name: "RootMutation", Fields: mutations}

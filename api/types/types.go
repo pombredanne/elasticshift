@@ -154,20 +154,21 @@ type Log struct {
 }
 
 type Build struct {
-	ID           bson.ObjectId `json:"id" bson:"_id,omitempty"`
-	RepositoryID string        `json:"repository_id" bson:"repository_id"`
-	VcsID        string        `json:"vcs_id" bson:"vcs_id"`
-	ContainerID  string        `json:"container_id" bson:"container_id"`
-	Log          []Log         `json:"-" bson:"log"`
-	LogType      string        `json:"-" bson:"log_type"`
-	StartedAt    time.Time     `json:"started_at" bson:"started_at"`
-	EndedAt      time.Time     `json:"ended_at" bson:"ended_at"`
-	TriggeredBy  string        `json:"triggered_by" bson:"triggered_by"`
-	Status       BuildStatus   `json:"status" bson:"status"`
-	Branch       string        `json:"branch" bson:"branch"`
-	CloneURL     string        `json:"clone_url" bson:"clone_url"`
-	Team         string        `json:"team" bson:"team"`
-	Privatekey   string        `json:"-" bson:"private_key,omitempty"`
+	ID                bson.ObjectId `json:"id" bson:"_id,omitempty"`
+	RepositoryID      string        `json:"repository_id" bson:"repository_id"`
+	VcsID             string        `json:"vcs_id" bson:"vcs_id"`
+	ContainerID       string        `json:"container_id" bson:"container_id"`
+	Log               []Log         `json:"-" bson:"log"`
+	LogType           string        `json:"-" bson:"log_type"`
+	StartedAt         time.Time     `json:"started_at" bson:"started_at"`
+	EndedAt           time.Time     `json:"ended_at" bson:"ended_at"`
+	TriggeredBy       string        `json:"triggered_by" bson:"triggered_by"`
+	Status            BuildStatus   `json:"status" bson:"status"`
+	Branch            string        `json:"branch" bson:"branch"`
+	CloneURL          string        `json:"clone_url" bson:"clone_url"`
+	Team              string        `json:"team" bson:"team"`
+	ContainerEngineID string        `json:"container_engine_id" bson:"container_engine_id"`
+	Privatekey        string        `json:"-" bson:"private_key,omitempty"`
 }
 
 type BuildList struct {
@@ -238,20 +239,39 @@ type PluginList struct {
 	Count int      `json:"count"`
 }
 
-type Integration struct {
-	ID          bson.ObjectId `json:"id" bson:"_id,omitempty"`
-	Name        string        `json:"name" bson:"name"`
-	Provider    int           `json:"provider" bson:"provider"`
-	Kind        int           `json:"kind" bson:"kind"`
-	Host        string        `json:"host" bson:"host"`
-	Certificate string        `json:"certificate" bson:"certificate"`
-	Token       string        `json:"token" bson:"token"`
-	Team        string        `json:"team" bson:"team"`
+type ContainerEngine struct {
+	ID           bson.ObjectId `json:"id" bson:"_id,omitempty"`
+	Name         string        `json:"name" bson:"name"`
+	Provider     int           `json:"provider" bson:"provider"`
+	Kind         int           `json:"kind" bson:"kind"`
+	Host         string        `json:"host" bson:"host"`
+	Certificate  string        `json:"certificate" bson:"certificate"`
+	Token        string        `json:"token" bson:"token"`
+	InternalType int           `json:"-" bson:"internal_type"`
+	Team         string        `json:"team" bson:"team"`
 }
 
-type IntegrationList struct {
-	Nodes []Integration `json:"nodes"`
-	Count int           `json:"count"`
+type ContainerEngineList struct {
+	Nodes []ContainerEngine `json:"nodes"`
+	Count int               `json:"count"`
+}
+
+type Storage struct {
+	ID           bson.ObjectId `json:"id" bson:"_id,omitempty"`
+	Name         string        `json:"name" bson:"name"`
+	Provider     int           `json:"provider" bson:"provider"`
+	Kind         int           `json:"kind" bson:"kind"`
+	Host         string        `json:"host" bson:"host"`
+	Certificate  string        `json:"certificate" bson:"certificate"`
+	AccessKey    string        `json:"access_key" bson:"access_key"`
+	SecretKey    string        `json:"secret_key" bson:"secret_key"`
+	InternalType int           `json:"-" bson:"internal_type"`
+	Team         string        `json:"team" bson:"team"`
+}
+
+type StorageList struct {
+	Nodes []Storage `json:"nodes"`
+	Count int       `json:"count"`
 }
 
 type Infrastructure struct {
@@ -267,6 +287,20 @@ type Infrastructure struct {
 type InfrastructureList struct {
 	Nodes []Infrastructure `json:"nodes"`
 	Count int              `json:"count"`
+}
+
+type Property struct {
+	Key   string `json:"key" bson:"key"`
+	Value string `json:"value" bson:"value"`
+}
+
+type Default struct {
+	ID                bson.ObjectId     `json:"id" bson:"_id,omitempty"`
+	Kind              int               `json:"kind" bson:"kind"`
+	ReferenceID       string            `json:"reference_id" bson:"reference_id"`
+	ContainerEngineID string            `json:"container_engine_id" bson:"container_engine_id,omitempty"`
+	StorageID         string            `json:"storage_id" bson:"storage_id,omitempty"`
+	Languages         map[string]string `json:"languages" bson:"languages,omitempty"`
 }
 
 type KubeConfig []byte

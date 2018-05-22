@@ -1,7 +1,7 @@
 /*
 Copyright 2017 The Elasticshift Authors.
 */
-package docker
+package integration
 
 import (
 	"bytes"
@@ -17,7 +17,7 @@ import (
 
 	"github.com/docker/docker/api/types"
 	"github.com/docker/docker/api/types/container"
-	"github.com/docker/docker/client"
+	dclient "github.com/docker/docker/client"
 )
 
 const DefaultHost = "unix:///var/run/docker.sock"
@@ -40,7 +40,7 @@ type ContainerInfo struct {
 }
 
 type dockerClient struct {
-	cli *client.Client
+	cli *dclient.Client
 	ctx context.Context
 }
 
@@ -55,21 +55,21 @@ type DockerClient interface {
 	DeleteContainer(id string) error
 	StartContainer(id string) error
 	StopContainer(id string) error
-	CLI() *client.Client
+	CLI() *dclient.Client
 }
 
 type StreamWriter struct {
 	w io.Writer
 }
 
-func (d *dockerClient) CLI() *client.Client {
+func (d *dockerClient) CLI() *dclient.Client {
 	return d.cli
 }
 
 func NewClient(opts *ClientOptions) (DockerClient, error) {
 
 	var httpClient *http.Client
-	c, err := client.NewClient(opts.Host, opts.Version, httpClient, nil)
+	c, err := dclient.NewClient(opts.Host, opts.Version, httpClient, nil)
 	if err != nil {
 		return &dockerClient{}, fmt.Errorf("Failed to create Docker Client for host '%s:%s, :%v", opts.Host, opts.Version, err)
 	}

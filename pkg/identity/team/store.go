@@ -105,7 +105,7 @@ func (r *store) GetVCS(team string) ([]types.VCS, error) {
 	var err error
 	var t types.Team
 	r.Execute(func(c *mgo.Collection) {
-		err = c.Find(bson.M{"name": team}).One(&t)
+		err = c.Find(bson.M{"_id": bson.ObjectIdHex(team)}).One(&t)
 	})
 	return t.Accounts, err
 }

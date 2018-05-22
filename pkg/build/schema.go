@@ -9,20 +9,26 @@ import (
 	"github.com/Sirupsen/logrus"
 	"github.com/graphql-go/graphql"
 	"gitlab.com/conspico/elasticshift/api/types"
+	"gitlab.com/conspico/elasticshift/pkg/defaults"
+	"gitlab.com/conspico/elasticshift/pkg/identity/team"
+	"gitlab.com/conspico/elasticshift/pkg/integration"
 	"gitlab.com/conspico/elasticshift/pkg/sysconf"
 	"gitlab.com/conspico/elasticshift/pkg/utils"
 	"gitlab.com/conspico/elasticshift/pkg/vcs/repository"
 )
 
-func InitSchema(logger logrus.Logger, ctx context.Context, s Store, repositoryStore repository.Store, sysconfStore sysconf.Store) (queries graphql.Fields, mutations graphql.Fields) {
+func InitSchema(logger logrus.Logger, ctx context.Context, s Store, repositoryStore repository.Store, sysconfStore sysconf.Store, teamStore team.Store, integrationStore integration.Store, defaultStore defaults.Store) (queries graphql.Fields, mutations graphql.Fields) {
 
 	r := &resolver{
-		store:           s,
-		repositoryStore: repositoryStore,
-		sysconfStore:    sysconfStore,
-		logger:          logger,
-		Ctx:             ctx,
-		BuildQueue:      make(chan types.Build),
+		store:            s,
+		repositoryStore:  repositoryStore,
+		sysconfStore:     sysconfStore,
+		teamStore:        teamStore,
+		integrationStore: integrationStore,
+		defaultStore:     defaultStore,
+		logger:           logger,
+		Ctx:              ctx,
+		BuildQueue:       make(chan types.Build),
 	}
 
 	// Launch a background process to launch container after build trigger.

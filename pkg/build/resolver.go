@@ -14,16 +14,14 @@ import (
 	"time"
 
 	"github.com/Sirupsen/logrus"
-	"github.com/docker/docker/api/types/container"
-	"github.com/docker/docker/api/types/strslice"
-	"github.com/docker/go-connections/nat"
 	"github.com/graphql-go/graphql"
 	"gitlab.com/conspico/elasticshift/api/types"
-	"gitlab.com/conspico/elasticshift/pkg/integration/docker"
+	"gitlab.com/conspico/elasticshift/pkg/defaults"
+	"gitlab.com/conspico/elasticshift/pkg/identity/team"
+	"gitlab.com/conspico/elasticshift/pkg/integration"
 	"gitlab.com/conspico/elasticshift/pkg/shiftfile/keys"
 	"gitlab.com/conspico/elasticshift/pkg/shiftfile/parser"
 	"gitlab.com/conspico/elasticshift/pkg/sysconf"
-	"gitlab.com/conspico/elasticshift/pkg/utils"
 	"gitlab.com/conspico/elasticshift/pkg/vcs/repository"
 	"gopkg.in/mgo.v2/bson"
 )
@@ -57,107 +55,15 @@ const (
 )
 
 type resolver struct {
-	store           Store
-	repositoryStore repository.Store
-	sysconfStore    sysconf.Store
-	logger          logrus.Logger
-	Ctx             context.Context
-	BuildQueue      chan types.Build
-}
-
-func (r *resolver) ContainerLauncher() {
-
-	for b := range r.BuildQueue {
-
-		go func(b types.Build) {
-
-			// start the container
-			// TODO select the default orchestration, by config
-			opts := &docker.ClientOptions{}
-			opts.Host = docker.DefaultHost
-			opts.Ctx = r.Ctx
-
-			cli, err := docker.NewClient(opts)
-			if err != nil {
-				r.SLog(b.ID, fmt.Sprintf("Failed to connect to docker daemon: %v", err))
-			}
-
-			imgName, err := r.findImageName(b)
-			if err != nil {
-				r.SLog(b.ID, fmt.Sprintf("Unable to find the build image from Shiftfile", b.CloneURL))
-			}
-			fmt.Println("Image name: " + imgName)
-
-			// find the system storage
-			storage, err := r.sysconfStore.GetDefaultStorage()
-			if err != nil {
-				r.SLog(b.ID, "Failed to fetch the default storage: "+err.Error())
-				return
-			}
-
-			err = utils.Mkdir(filepath.Join(storage.Path, "code", b.Team))
-			if err != nil {
-				r.SLog(b.ID, "Unable to create directory for cloning the project:"+err.Error())
-			}
-
-			hostIp := utils.GetIP()
-			if hostIp == "" {
-				hostIp = "127.0.0.1"
-			}
-
-			env := []string{
-				"SHIFT_HOST=shiftserver",
-				"SHIFT_PORT=5051",
-				"SHIFT_LOGGER=" + LogType_File,
-				"SHIFT_BUILDID=" + b.ID.Hex(),
-				"SHIFT_TIMEOUT=120m",
-				"WORKER_PORT=" + "6060",
-			}
-
-			filepath.Join(storage.Path, b.Team, DIR_CODE)
-
-			hc := &container.HostConfig{}
-			hc.Binds = []string{
-				filepath.Join(storage.Path, b.Team, DIR_CODE) + ":" + VOL_CODE,
-				filepath.Join(storage.Path, b.Team, DIR_LOGS) + ":" + VOL_LOGS,
-				filepath.Join(storage.Path, DIR_PLUGINS) + ":" + VOL_PLUGINS,
-				filepath.Join(storage.Path, DIR_WORKER) + ":" + VOL_SHIFT,
-			}
-
-			workerPort, _ := nat.NewPort("tcp", "6060")
-			serverPort, _ := nat.NewPort("tcp", "5051")
-
-			exposedPorts := map[nat.Port]struct{}{
-				serverPort: struct{}{},
-				workerPort: struct{}{},
-			}
-
-			c := &container.Config{
-				Image:        imgName,
-				Entrypoint:   strslice.StrSlice{"./shift/worker"},
-				Env:          env,
-				AttachStdout: true,
-				ExposedPorts: exposedPorts,
-			}
-
-			containerID, err := cli.CreateContainer(c, hc, b.ID.Hex())
-			if err != nil {
-				str := fmt.Sprintf("Unable to create the container %v", err)
-				r.SLog(b.ID, str)
-			}
-
-			fmt.Println("Container ID =", containerID)
-			err = r.store.UpdateContainerID(b.ID, containerID)
-			if err != nil {
-				r.logger.Errorln("Failed to update the container id: ", containerID)
-			}
-
-			err = cli.StartContainer(containerID)
-			if err != nil {
-				r.logger.Errorln("Failed to start the container: %v", err)
-			}
-		}(b)
-	}
+	store            Store
+	repositoryStore  repository.Store
+	integrationStore integration.Store
+	teamStore        team.Store
+	sysconfStore     sysconf.Store
+	defaultStore     defaults.Store
+	logger           logrus.Logger
+	Ctx              context.Context
+	BuildQueue       chan types.Build
 }
 
 func (r *resolver) TriggerBuild(params graphql.ResolveParams) (interface{}, error) {
@@ -177,6 +83,16 @@ func (r *resolver) TriggerBuild(params graphql.ResolveParams) (interface{}, erro
 		branch = repo.DefaultBranch
 	}
 
+	// Check if default container engine is set
+	dce, err := r.defaultStore.GetDefaultContainerEngine(repo.Team)
+	if err != nil {
+		return nil, err
+	}
+
+	if dce == "" {
+		return nil, fmt.Errorf("No default container engine found, please configure it.")
+	}
+
 	status := types.BS_RUNNING
 	rb, err := r.store.FetchBuild(repo.Team, repository_id, branch, types.BS_RUNNING)
 	if err != nil {
@@ -190,6 +106,7 @@ func (r *resolver) TriggerBuild(params graphql.ResolveParams) (interface{}, erro
 	b := types.Build{}
 	b.ID = bson.NewObjectId()
 	b.RepositoryID = repository_id
+	b.ContainerEngineID = dce
 	b.VcsID = repo.VcsID
 	b.Status = status
 	b.TriggeredBy = "Anonymous" //TODO fill in with logged-in user
@@ -306,6 +223,10 @@ func (r *resolver) findImageName(b types.Build) (string, error) {
 			return "", err
 		}
 
+		if resp.StatusCode != 200 {
+			return "", fmt.Errorf("Failed to fetch the shiftfile from %s: , Error: %s", repoUrl, resp.Status)
+		}
+
 		// read the response body
 		file, err = ioutil.ReadAll(resp.Body)
 		if err != nil {
@@ -313,7 +234,7 @@ func (r *resolver) findImageName(b types.Build) (string, error) {
 		}
 	}
 
-	// r.logger.Infoln("Response = ", string(file[:]))
+	r.logger.Infoln("Response = ", string(file[:]))
 
 	// write shift file
 

@@ -42,12 +42,12 @@ type resolver struct {
 
 func (r resolver) FetchVCS(params graphql.ResolveParams) (interface{}, error) {
 
-	teamName, _ := params.Args["team"].(string)
-	if teamName == "" {
+	teamID, _ := params.Args["team"].(string)
+	if teamID == "" {
 		return nil, team.ErrTeamNameIsEmpty
 	}
 
-	result, err := r.teamStore.GetVCS(teamName)
+	result, err := r.teamStore.GetVCS(teamID)
 
 	var res types.VCSList
 	res.Nodes = result

@@ -50,7 +50,7 @@ func InitSchema(logger logrus.Logger, ctx context.Context, s Store) (queries gra
 	})
 
 	kindEnum := graphql.NewEnum(graphql.EnumConfig{
-		Name: "Kind",
+		Name: "ContainerEngineKind",
 		Values: graphql.EnumValueConfigMap{
 			"KUBERNETES": &graphql.EnumValueConfig{
 				Value: 1,
@@ -66,12 +66,30 @@ func InitSchema(logger logrus.Logger, ctx context.Context, s Store) (queries gra
 		},
 	})
 
-	fields := graphql.Fields{
+	storageKindEnum := graphql.NewEnum(graphql.EnumConfig{
+		Name: "StorageKind",
+		Values: graphql.EnumValueConfigMap{
+
+			"MINIO": &graphql.EnumValueConfig{
+				Value: 1,
+			},
+
+			"S3": &graphql.EnumValueConfig{
+				Value: 2,
+			},
+
+			"GCE": &graphql.EnumValueConfig{
+				Value: 3,
+			},
+		},
+	})
+
+	containerEngineFields := graphql.Fields{
 		"id": &graphql.Field{
 			Type:        graphql.ID,
 			Description: "Integration identifier",
 			Resolve: func(p graphql.ResolveParams) (interface{}, error) {
-				if t, ok := p.Source.(types.Integration); ok {
+				if t, ok := p.Source.(types.ContainerEngine); ok {
 					return t.ID.Hex(), nil
 				}
 				return nil, nil
@@ -88,7 +106,7 @@ func InitSchema(logger logrus.Logger, ctx context.Context, s Store) (queries gra
 			Description: "Type of cluster such as kubernetes, dcos or dockerswarm",
 			Resolve: func(p graphql.ResolveParams) (interface{}, error) {
 
-				if t, ok := p.Source.(types.Integration); ok {
+				if t, ok := p.Source.(types.ContainerEngine); ok {
 					return int(t.Kind), nil
 				}
 				return nil, nil
@@ -100,7 +118,7 @@ func InitSchema(logger logrus.Logger, ctx context.Context, s Store) (queries gra
 			Description: "Provider such as ONPREM, GCE, AMAZON, ALIBABACLOUD and azure etc",
 			Resolve: func(p graphql.ResolveParams) (interface{}, error) {
 
-				if t, ok := p.Source.(types.Integration); ok {
+				if t, ok := p.Source.(types.ContainerEngine); ok {
 					return int(t.Provider), nil
 				}
 				return nil, nil
@@ -128,19 +146,107 @@ func InitSchema(logger logrus.Logger, ctx context.Context, s Store) (queries gra
 		},
 	}
 
-	integrationType := graphql.NewObject(
+	storageFields := graphql.Fields{
+		"id": &graphql.Field{
+			Type:        graphql.ID,
+			Description: "Integration identifier",
+			Resolve: func(p graphql.ResolveParams) (interface{}, error) {
+				if t, ok := p.Source.(types.Storage); ok {
+					return t.ID.Hex(), nil
+				}
+				return nil, nil
+			},
+		},
+
+		"name": &graphql.Field{
+			Type:        graphql.String,
+			Description: "Name of the integration such as dev_gce_cluster",
+		},
+
+		"kind": &graphql.Field{
+			Type:        storageKindEnum,
+			Description: "Type of storage such as minio, gce or amazon s3",
+			Resolve: func(p graphql.ResolveParams) (interface{}, error) {
+
+				if t, ok := p.Source.(types.Storage); ok {
+					return int(t.Kind), nil
+				}
+				return nil, nil
+			},
+		},
+
+		"provider": &graphql.Field{
+			Type:        providerEnum,
+			Description: "Provider such as ONPREM, GCE, AMAZON, ALIBABACLOUD and azure etc",
+			Resolve: func(p graphql.ResolveParams) (interface{}, error) {
+
+				if t, ok := p.Source.(types.Storage); ok {
+					return int(t.Provider), nil
+				}
+				return nil, nil
+			},
+		},
+
+		"certificate": &graphql.Field{
+			Type:        graphql.String,
+			Description: "Certificate to access the storage provider",
+		},
+
+		"host": &graphql.Field{
+			Type:        graphql.String,
+			Description: "Host of the storage provider",
+		},
+
+		"access_key": &graphql.Field{
+			Type:        graphql.String,
+			Description: "Token to access the storage provider",
+		},
+
+		"secret_key": &graphql.Field{
+			Type:        graphql.String,
+			Description: "Token to access the storage provider",
+		},
+
+		"team": &graphql.Field{
+			Type:        graphql.String,
+			Description: "Team Identifier",
+		},
+	}
+
+	containerEngineType := graphql.NewObject(
 		graphql.ObjectConfig{
-			Name:        "Integration",
-			Fields:      fields,
-			Description: "An object of Integration type",
+			Name:        "ContainerEngine",
+			Fields:      containerEngineFields,
+			Description: "An object of ContainerEngine type",
 		},
 	)
 
-	integrationArgs := graphql.FieldConfigArgument{
+	storageType := graphql.NewObject(
+		graphql.ObjectConfig{
+			Name:        "Storage",
+			Fields:      storageFields,
+			Description: "An object of Storage type",
+		},
+	)
+
+	containerEngineArgs := graphql.FieldConfigArgument{
 
 		"id": &graphql.ArgumentConfig{
 			Type:        graphql.String,
-			Description: "Integration identifier",
+			Description: "Container Engine identifier",
+		},
+
+		"team": &graphql.ArgumentConfig{
+			Type:        graphql.NewNonNull(graphql.String),
+			Description: "Team identifier",
+		},
+	}
+
+	storageArgs := graphql.FieldConfigArgument{
+
+		"id": &graphql.ArgumentConfig{
+			Type:        graphql.String,
+			Description: "Storage identifier",
 		},
 
 		"team": &graphql.ArgumentConfig{
@@ -150,17 +256,18 @@ func InitSchema(logger logrus.Logger, ctx context.Context, s Store) (queries gra
 	}
 
 	queries = graphql.Fields{
-		"integration": utils.MakeListType("IntegrationList", integrationType, r.FetchIntegration, integrationArgs),
+		"ContainerEngine": utils.MakeListType("ContainerEngineList", containerEngineType, r.FetchContainerEngine, containerEngineArgs),
+		"Storage":         utils.MakeListType("StorageList", storageType, r.FetchStorage, storageArgs),
 	}
 
 	mutations = graphql.Fields{
 
-		"addIntegration": &graphql.Field{
-			Type: integrationType,
+		"addKubernetesCluster": &graphql.Field{
+			Type: containerEngineType,
 			Args: graphql.FieldConfigArgument{
 				"name": &graphql.ArgumentConfig{
 					Type:        graphql.NewNonNull(graphql.String),
-					Description: "Name of the integration",
+					Description: "Name of the container engine",
 				},
 				"kind": &graphql.ArgumentConfig{
 					Type:        graphql.NewNonNull(kindEnum),
@@ -188,6 +295,45 @@ func InitSchema(logger logrus.Logger, ctx context.Context, s Store) (queries gra
 				},
 			},
 			Resolve: r.AddKubernetesCluster,
+		},
+
+		"addStorage": &graphql.Field{
+			Type: storageType,
+			Args: graphql.FieldConfigArgument{
+				"name": &graphql.ArgumentConfig{
+					Type:        graphql.NewNonNull(graphql.String),
+					Description: "Name of the storage",
+				},
+				"kind": &graphql.ArgumentConfig{
+					Type:        graphql.NewNonNull(storageKindEnum),
+					Description: "Type of provider where the storage cluster resides such as kubernetes, dcos or dockerswarm",
+				},
+				"provider": &graphql.ArgumentConfig{
+					Type:        graphql.NewNonNull(providerEnum),
+					Description: "Provider name such as onprem, gce, azure or amazon etc",
+				},
+				"host": &graphql.ArgumentConfig{
+					Type:        graphql.NewNonNull(graphql.String),
+					Description: "Host of the storage provider",
+				},
+				"certificate": &graphql.ArgumentConfig{
+					Type:        graphql.NewNonNull(graphql.String),
+					Description: "Certificate for the storage provider",
+				},
+				"accesskey": &graphql.ArgumentConfig{
+					Type:        graphql.NewNonNull(graphql.String),
+					Description: "Access key to storage provider",
+				},
+				"secretkey": &graphql.ArgumentConfig{
+					Type:        graphql.NewNonNull(graphql.String),
+					Description: "secret key to storage provider",
+				},
+				"team": &graphql.ArgumentConfig{
+					Type:        graphql.NewNonNull(graphql.String),
+					Description: "Team identifier",
+				},
+			},
+			Resolve: r.AddStorage,
 		},
 	}
 
