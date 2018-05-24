@@ -130,11 +130,9 @@ func (r *store) UpdateVCS(team string, vcs types.VCS) error {
 	var err error
 	r.Execute(func(c *mgo.Collection) {
 		err = c.Update(bson.M{"name": team, "accounts.id": vcs.ID},
-			bson.M{"$set": bson.M{"accounts.$.access_token": vcs.AccessToken,
-				"accounts.$.access_code":   vcs.AccessCode,
-				"accounts.$.refresh_token": vcs.RefreshToken,
-				"accounts.$.owner_type":    vcs.OwnerType,
-				"accounts.$.token_expiry":  vcs.TokenExpiry}})
+			bson.M{"$set": bson.M{
+				"accounts.$.owner_type":   vcs.OwnerType,
+				"accounts.$.token_expiry": vcs.TokenExpiry}})
 	})
 	return err
 }
