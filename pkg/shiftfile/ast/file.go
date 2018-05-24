@@ -10,6 +10,11 @@ import (
 	"gitlab.com/conspico/elasticshift/pkg/shiftfile/scope"
 )
 
+var (
+	PREFIX_SECRET   = "^"
+	PREFIX_ARGUMENT = "@"
+)
+
 func (f *File) Version() string {
 	return f.value(scope.Ver)
 }
@@ -158,10 +163,10 @@ func (f *File) properties(ni Node, props map[string]interface{}) map[string]inte
 			cmdSlice = append(cmdSlice, n.Value.(*Command).Token.Text)
 
 		case *Argument:
-			props[key] = "ARG:" + n.Value.(*Argument).Token.Text
+			props[key] = PREFIX_ARGUMENT + n.Value.(*Argument).Token.Text
 
 		case *Secret:
-			props[key] = "SECRET:" + n.Value.(*Secret).Token.Text
+			props[key] = PREFIX_SECRET + n.Value.(*Secret).Token.Text
 		}
 	}
 
@@ -174,6 +179,10 @@ func (f *File) properties(ni Node, props map[string]interface{}) map[string]inte
 	}
 
 	return props
+}
+
+func (f *File) IsSecretOrArgument(value string) bool {
+	return value != "" && (strings.HasPrefix(value, PREFIX_SECRET) || strings.HasPrefix(value, PREFIX_ARGUMENT))
 }
 
 func items(n Node) []*NodeItem {
