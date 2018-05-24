@@ -23,6 +23,7 @@ import (
 	"gitlab.com/conspico/elasticshift/pkg/infrastructure"
 	"gitlab.com/conspico/elasticshift/pkg/integration"
 	"gitlab.com/conspico/elasticshift/pkg/plugin"
+	"gitlab.com/conspico/elasticshift/pkg/secret"
 	"gitlab.com/conspico/elasticshift/pkg/shift"
 	"gitlab.com/conspico/elasticshift/pkg/store"
 	stypes "gitlab.com/conspico/elasticshift/pkg/store/types"
@@ -65,6 +66,7 @@ type Server struct {
 	IntegrationStore    integration.Store
 	InfrastructureStore infrastructure.Store
 	DefaultStore        defaults.Store
+	SecretStore         secret.Store
 }
 
 // Config ..
@@ -122,6 +124,11 @@ func New(ctx context.Context, c Config) (*Server, error) {
 	// initialize oauth2 providers
 	s.registerEndpointServices()
 
+	err := s.bootstrap()
+	if err != nil {
+		return nil, err
+	}
+
 	// err := NewAuthServer(ctx, r, c)
 	// if err != nil {
 	// 	return nil, err
@@ -133,7 +140,7 @@ func New(ctx context.Context, c Config) (*Server, error) {
 func (s *Server) registerEndpointServices() {
 
 	// VCS service to link repositories.
-	vcsServ := vcs.NewService(s.Logger, s.DB, s.Providers, s.TeamStore)
+	vcsServ := vcs.NewService(s.Logger, s.DB, s.Providers, s.TeamStore, s.SecretStore)
 
 	// Oauth2 providers
 	s.Router.HandleFunc("/{team}/link/{provider}", vcsServ.Authorize)
@@ -187,6 +194,9 @@ func (s *Server) registerGraphQLServices() {
 	defaultStore := defaults.NewStore(s.DB)
 	s.DefaultStore = defaultStore
 
+	secretStore := secret.NewStore(s.DB)
+	s.SecretStore = secretStore
+
 	// team fields
 	teamQ, teamM := team.InitSchema(logger, teamStore)
 	appendFields(queries, teamQ)
@@ -231,6 +241,11 @@ func (s *Server) registerGraphQLServices() {
 	defaultQ, defaultM := defaults.InitSchema(logger, s.Ctx, defaultStore, teamStore)
 	appendFields(queries, defaultQ)
 	appendFields(mutations, defaultM)
+
+	// secret fields
+	secretQ, secretM := secret.InitSchema(logger, s.Ctx, secretStore, teamStore, repositoryStore)
+	appendFields(queries, secretQ)
+	appendFields(mutations, secretM)
 
 	rootQuery := graphql.ObjectConfig{Name: "RootQuery", Fields: queries}
 	rootMutation := graphql.ObjectConfig{Name: "RootMutation", Fields: mutations}

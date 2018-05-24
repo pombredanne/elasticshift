@@ -94,6 +94,7 @@ type VCS struct {
 	AccessToken  string    `json:"access_token" bson:"access_token,omitempty"`
 	RefreshToken string    `json:"refresh_token" bson:"refresh_token,omitempty"`
 	TokenExpiry  time.Time `json:"token_expiry" bson:"token_expiry,omitempty"`
+	SecretID     string    `json:"-" bson:"secret_id"`
 }
 
 // Repository ..
@@ -287,6 +288,23 @@ type Infrastructure struct {
 type InfrastructureList struct {
 	Nodes []Infrastructure `json:"nodes"`
 	Count int              `json:"count"`
+}
+
+type Secret struct {
+	ID            bson.ObjectId `json:"id" bson:"_id,omitempty"`
+	Name          string        `json:"name" bson:"name"`
+	Kind          string        `json:"kind" bson:"kind"`
+	ReferenceKind string        `json:"reference_kind" bson:"reference_kind"`
+	ReferenceID   string        `json:"reference_id" bson:"reference_id"`
+	Value         string        `json:"value" bson:"value"`
+	InternalType  string        `json:"-" bson:"internal_type"`
+	KeyID         string        `json:"-" bson:"key_id"`
+	TeamID        string        `json:"team_id" bson:"team_id"`
+}
+
+type SecretList struct {
+	Nodes []Secret `json:"nodes"`
+	Count int      `json:"count"`
 }
 
 type Property struct {
