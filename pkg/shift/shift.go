@@ -12,6 +12,7 @@ import (
 	"gitlab.com/conspico/elasticshift/api"
 	"gitlab.com/conspico/elasticshift/api/types"
 	"gitlab.com/conspico/elasticshift/pkg/build"
+	"gitlab.com/conspico/elasticshift/pkg/secret"
 	"gitlab.com/conspico/elasticshift/pkg/vcs/repository"
 	"golang.org/x/net/context"
 	"gopkg.in/mgo.v2/bson"
@@ -22,10 +23,11 @@ type shift struct {
 	Ctx             context.Context
 	buildStore      build.Store
 	repositoryStore repository.Store
+	vault           secret.Vault
 }
 
-func NewServer(logger logrus.Logger, ctx context.Context, buildStore build.Store, repositoryStore repository.Store) api.ShiftServer {
-	return &shift{logger, ctx, buildStore, repositoryStore}
+func NewServer(logger logrus.Logger, ctx context.Context, buildStore build.Store, repositoryStore repository.Store, vault secret.Vault) api.ShiftServer {
+	return &shift{logger, ctx, buildStore, repositoryStore, vault}
 }
 
 func (s *shift) Register(ctx context.Context, req *api.RegisterReq) (*api.RegisterRes, error) {
@@ -38,6 +40,8 @@ func (s *shift) Register(ctx context.Context, req *api.RegisterReq) (*api.Regist
 	if req.GetPrivatekey() == "" {
 		return nil, fmt.Errorf("Registration failed: No key provided")
 	}
+
+	// TODO store the secret key id in build and the actual key in secret store
 
 	buildId := bson.ObjectIdHex(req.GetBuildId())
 	err := s.buildStore.UpdateId(buildId, bson.M{"$push": bson.M{"private_key": req.GetPrivatekey()}})

@@ -12,7 +12,6 @@ import (
 	"bytes"
 
 	"encoding/base64"
-	"encoding/json"
 
 	"github.com/Sirupsen/logrus"
 	"github.com/gorilla/mux"
@@ -21,7 +20,6 @@ import (
 	"gitlab.com/conspico/elasticshift/pkg/identity/team"
 	"gitlab.com/conspico/elasticshift/pkg/secret"
 	stypes "gitlab.com/conspico/elasticshift/pkg/store/types"
-	"gopkg.in/mgo.v2/bson"
 )
 
 var (
@@ -58,11 +56,11 @@ const (
 )
 
 type service struct {
-	store       Store
-	teamStore   team.Store
-	secretStore secret.Store
-	logger      logrus.Logger
-	providers   providers.Providers
+	store     Store
+	teamStore team.Store
+	vault     secret.Vault
+	logger    logrus.Logger
+	providers providers.Providers
 }
 
 // Service ..
@@ -72,14 +70,14 @@ type Service interface {
 }
 
 // NewVCSService ..
-func NewService(logger logrus.Logger, d stypes.Database, providers providers.Providers, teamStore team.Store, secretStore secret.Store) Service {
+func NewService(logger logrus.Logger, d stypes.Database, providers providers.Providers, teamStore team.Store, vault secret.Vault) Service {
 
 	return &service{
-		store:       NewStore(d),
-		teamStore:   teamStore,
-		secretStore: secretStore,
-		logger:      logger,
-		providers:   providers,
+		store:     NewStore(d),
+		teamStore: teamStore,
+		vault:     vault,
+		logger:    logger,
+		providers: providers,
 	}
 }
 
@@ -143,23 +141,19 @@ func (s service) Authorized(w http.ResponseWriter, r *http.Request) {
 	acc, err := s.teamStore.GetVCSByID(team, u.ID)
 	if strings.EqualFold(acc.ID, u.ID) {
 
-		var sec types.Secret
-		err := s.secretStore.FindOne(u.ID, &sec)
+		sec, err := s.vault.GetByReferenceID(u.ID, secret.RefType_VCS)
 		if err != nil {
 			http.Error(w, "Failed to update VCS", http.StatusConflict)
 		}
+
 		props, err := s.props(u)
 		if err != nil {
 			http.Error(w, "Failed to update VCS", http.StatusConflict)
 		}
+		sec.Value = props
 
-		// encrypt
-		value, err := secret.Encrypt(props)
-		if err != nil {
-			http.Error(w, "Failed to update VCS", http.StatusConflict)
-		}
-
-		err = s.secretStore.UpdateSecret(sec.ID, bson.M{"value": value})
+		// encrypt and vault the value
+		id, err = s.vault.Put(sec)
 		if err != nil {
 			http.Error(w, "Failed to update VCS", http.StatusConflict)
 		}
@@ -177,7 +171,7 @@ func (s service) Authorized(w http.ResponseWriter, r *http.Request) {
 	u.Source = r.Host
 
 	var sec types.Secret
-	s.saveSecret(&sec, u, team, w)
+	secretID := s.saveSecret(sec, u, team, w)
 
 	if err == nil {
 
@@ -189,7 +183,8 @@ func (s service) Authorized(w http.ResponseWriter, r *http.Request) {
 	// u.CreatedDt = time.Now()
 	// u.UpdatedDt = time.Now()
 
-	u.SecretID = sec.ID.Hex()
+	u.SecretID = secretID
+
 	err = s.teamStore.SaveVCS(team, &u)
 	if err != nil {
 		// TODO return http error
@@ -199,7 +194,7 @@ func (s service) Authorized(w http.ResponseWriter, r *http.Request) {
 	http.Redirect(w, r, url, http.StatusTemporaryRedirect)
 }
 
-func (s service) saveSecret(sec *types.Secret, u types.VCS, team string, w http.ResponseWriter) {
+func (s service) saveSecret(sec types.Secret, u types.VCS, team string, w http.ResponseWriter) string {
 
 	// save token to secret store
 	sec.Name = u.Source + "/" + u.Name
@@ -207,34 +202,27 @@ func (s service) saveSecret(sec *types.Secret, u types.VCS, team string, w http.
 	sec.ReferenceKind = secret.RefType_VCS
 	sec.ReferenceID = u.ID
 	sec.TeamID = team
+
 	props, err := s.props(u)
 	if err != nil {
 		http.Error(w, "Failed to save VCS info:", http.StatusInternalServerError)
 	}
+	sec.Value = props
 
-	sec.Value, err = secret.Encrypt(props)
+	id, err := s.vault.Put(sec)
 	if err != nil {
 		http.Error(w, "Failed to save VCS info:", http.StatusInternalServerError)
 	}
-
-	err = s.secretStore.Save(&sec)
-	if err != nil {
-		http.Error(w, "Failed to save VCS info:", http.StatusInternalServerError)
-	}
+	return id
 }
 
 func (s service) props(u types.VCS) (string, error) {
 
-	props := make(map[string]string)
-	props["access_token"] = u.AccessToken
-	props["refresh_token"] = u.RefreshToken
+	p := secret.NewPair()
+	p["access_token"] = u.AccessToken
+	p["refresh_token"] = u.RefreshToken
 
-	propsJson, err := json.Marshal(props)
-	if err != nil {
-		return "", err
-	}
-
-	return string(propsJson), nil
+	return p.Json()
 }
 
 // func (s vcsService) GetVCS(teamID string) (GetVCSResponse, error) {

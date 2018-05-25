@@ -30,6 +30,7 @@ type Interface interface {
 	FindByObjectID(id bson.ObjectId, model interface{}) error
 	Exist(selector interface{}) (bool, error)
 	Remove(id interface{}) error
+	RemoveBySelector(selector interface{}) error
 	RemoveMultiple(ids []interface{}) error
 	GetSession() *mgo.Session
 }
@@ -153,6 +154,16 @@ func (s *Store) Remove(id interface{}) error {
 	var err error
 	s.Execute(func(c *mgo.Collection) {
 		err = c.RemoveId(id)
+	})
+	return err
+}
+
+// Remove a document based on a selector
+func (s *Store) RemoveBySelector(selector interface{}) error {
+
+	var err error
+	s.Execute(func(c *mgo.Collection) {
+		err = c.Remove(selector)
 	})
 	return err
 }

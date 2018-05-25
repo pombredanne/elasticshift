@@ -56,6 +56,8 @@ type Server struct {
 	Providers providers.Providers
 	Ctx       context.Context
 
+	Vault secret.Vault
+
 	TeamStore           team.Store
 	VCSStore            vcs.Store
 	SysConfStore        sysconf.Store
@@ -140,7 +142,7 @@ func New(ctx context.Context, c Config) (*Server, error) {
 func (s *Server) registerEndpointServices() {
 
 	// VCS service to link repositories.
-	vcsServ := vcs.NewService(s.Logger, s.DB, s.Providers, s.TeamStore, s.SecretStore)
+	vcsServ := vcs.NewService(s.Logger, s.DB, s.Providers, s.TeamStore, s.Vault)
 
 	// Oauth2 providers
 	s.Router.HandleFunc("/{team}/link/{provider}", vcsServ.Authorize)
@@ -196,6 +198,9 @@ func (s *Server) registerGraphQLServices() {
 
 	secretStore := secret.NewStore(s.DB)
 	s.SecretStore = secretStore
+
+	vault := secret.NewVault(secretStore, logger, s.Ctx)
+	s.Vault = vault
 
 	// team fields
 	teamQ, teamM := team.InitSchema(logger, teamStore)
@@ -279,7 +284,7 @@ func appendFields(fields graphql.Fields, input graphql.Fields) {
 
 // Registers the GRPC services
 func RegisterGRPCServices(grpcServer *grpc.Server, s *Server) {
-	api.RegisterShiftServer(grpcServer, shift.NewServer(s.Logger, s.Ctx, s.BuildStore, s.RepositoryStore))
+	api.RegisterShiftServer(grpcServer, shift.NewServer(s.Logger, s.Ctx, s.BuildStore, s.RepositoryStore, s.Vault))
 }
 
 // Registers the exposed http services
