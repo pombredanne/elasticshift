@@ -43,10 +43,24 @@ func (b *builder) run() error {
 
 	log.Printf("Project Info: %v", proj)
 
-	// Checkout the source code
+	// 1. Ensure connection to log storage is good
 
-	// Analyze the build spec (shiftfile), if exist
-	// otherwise use the global language spec defined by elasticshift
+	// 2. Load the build cache, if available ensure it
+
+	// 3. Checkout the source code
+
+	// 4. Analyze the build spec (shiftfile), if exist within repository
+	//  otherwise use the global language spec defined by elasticshift
+
+	// 5. Parse the shiftfile
+
+	// 6. Ensure the arguments are inputted as static or dynamic values (through env)
+
+	// 7. Build the execution map
+
+	// 8. Fetch the secrets
+
+	// 9. Traverse the execution map & run the actual build
 
 	return nil
 }
