@@ -20,7 +20,7 @@ const (
 	LogType_NFS      = "NFS"
 )
 
-func TestDocker(t *testing.T) {
+func testDocker(t *testing.T) {
 
 	buildId := bson.NewObjectId().Hex()
 	team := "elasticshift"

@@ -11,6 +11,7 @@ import (
 	itypes "gitlab.com/conspico/elasticshift/pkg/integration/types"
 )
 
+//container engine
 const (
 	Kubernetes int = iota + 1
 	DockerSwarm
@@ -28,18 +29,11 @@ type ContainerEngineInterface interface {
 	CreateContainerWithVolume(opts *itypes.CreateContainerOptions) (*itypes.ContainerInfo, error)
 }
 
-func New(logger logrus.Logger, i types.ContainerEngine) (ContainerEngineInterface, error) {
-
-	// ID          bson.ObjectId `json:"id" bson:"_id,omitempty"`
-	// Name        string        `json:"name" bson:"name"`
-	// Provider    int           `json:"provider" bson:"provider"`
-	// Kind        int           `json:"kind" bson:"kind"`
-	// Host        string        `json:"host" bson:"host"`
-	// Certificate string        `json:"certificate" bson:"certificate"`
-	// Token       string        `json:"token" bson:"token"`
-	// Team        string        `json:"team" bson:"team"`
+func NewContainerEngine(logger logrus.Logger, i types.ContainerEngine) (ContainerEngineInterface, error) {
 
 	switch i.Kind {
+	case DCOS:
+	case DockerSwarm:
 	case Kubernetes:
 		opts := &ConnectOptions{}
 		opts.Host = i.Host
@@ -47,9 +41,7 @@ func New(logger logrus.Logger, i types.ContainerEngine) (ContainerEngineInterfac
 		opts.Token = i.Token
 		opts.InsecureSkipTLSVerify = true
 		return ConnectKubernetes(logger, opts)
-	case DockerSwarm:
-	case DCOS:
 	}
 
-	return nil, fmt.Errorf("Failed to connect to default container engine.")
+	return nil, fmt.Errorf("No container engine to connect.")
 }

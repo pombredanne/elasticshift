@@ -24,7 +24,7 @@ func (r *resolver) GetContainerEngine(team string) (integration.ContainerEngineI
 	err = r.integrationStore.FindByID(dce, &i)
 
 	// connect to container engine cluster
-	return integration.New(r.logger, i)
+	return integration.NewContainerEngine(r.logger, i)
 }
 
 func (r *resolver) ContainerLauncher() {

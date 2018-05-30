@@ -145,16 +145,17 @@ func (s *Server) registerEndpointServices() {
 	vcsServ := vcs.NewService(s.Logger, s.DB, s.Providers, s.TeamStore, s.Vault)
 
 	// Oauth2 providers
-	s.Router.HandleFunc("/{team}/link/{provider}", vcsServ.Authorize)
-	s.Router.HandleFunc("/link/{provider}/callback", vcsServ.Authorized)
+	s.Router.HandleFunc("/api/{team}/link/{provider}", vcsServ.Authorize)
+	s.Router.HandleFunc("/api/link/{provider}/callback", vcsServ.Authorized)
 
+	// TODO remove kubeconfig
 	// Sysconf Upload kube file
-	sysconfServ := sysconf.NewService(s.Logger, s.DB, s.TeamStore)
-	s.Router.HandleFunc("/sysconf/upload", sysconfServ.UploadKubeConfigFile)
+	// sysconfServ := sysconf.NewService(s.Logger, s.DB, s.TeamStore)
+	// s.Router.HandleFunc("/sysconf/upload", sysconfServ.UploadKubeConfigFile)
 
 	// Plugin bundle push
 	pluginServ := plugin.NewService(s.Logger, s.DB, s.PluginStore, s.TeamStore, s.SysConfStore)
-	s.Router.HandleFunc("/plugin/push", pluginServ.PushPlugin)
+	s.Router.HandleFunc("/api/plugin/push", pluginServ.PushPlugin)
 }
 
 func (s *Server) registerGraphQLServices() {
