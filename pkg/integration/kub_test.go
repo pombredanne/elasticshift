@@ -3,15 +3,13 @@ package integration
 import (
 	"fmt"
 	"io"
-	"log"
 	"os"
-	"path/filepath"
 	"strconv"
 	"testing"
 
 	"k8s.io/client-go/kubernetes"
-	"k8s.io/client-go/tools/clientcmd"
 	clientcmdapi "k8s.io/client-go/tools/clientcmd/api"
+	"k8s.io/client-go/tools/clientcmd"
 )
 
 func TestCreateContainer(t *testing.T) {
@@ -56,37 +54,37 @@ func TestCreateContainer(t *testing.T) {
 	}
 	config.CurrentContext = ctx
 
-	// clientBuilder := clientcmd.NewDefaultClientConfig(*config, &clientcmd.ConfigOverrides{
-	// 	ClusterInfo: clientcmdapi.Cluster{
-	// 		InsecureSkipTLSVerify: true,
-	// 	},
-	// })
+	clientBuilder := clientcmd.NewDefaultClientConfig(*config, &clientcmd.ConfigOverrides{
+		ClusterInfo: clientcmdapi.Cluster{
+			InsecureSkipTLSVerify: true,
+		},
+	})
 
-	kubeconfig := filepath.Join(
-		os.Getenv("HOME"), ".kube", "config",
-	)
-	clientConfig, err := clientcmd.BuildConfigFromFlags("", kubeconfig)
-	if err != nil {
-		log.Fatal(err)
-	}
+	//kubeconfig := filepath.Join(
+	//	os.Getenv("HOME"), ".kube", "config",
+	//)
+	//clientConfig, err := clientcmd.BuildConfigFromFlags("", kubeconfig)
+	//if err != nil {
+	//	log.Fatal(err)
+	//}
 
 	// fmt.Printf("\nClient config %#v", clientConfig)
 
 	// fmt.Println("Token = ", clientConfig.BearerToken)
 
-	// clientConfig, err := clientBuilder.ClientConfig()
-	// if err != nil {
-	// 	panic(fmt.Errorf("Failed to connect to kubernetes : %v", err))
-	// }
+	clientConfig, err := clientBuilder.ClientConfig()
+	if err != nil {
+		panic(fmt.Errorf("Failed to connect to kubernetes : %v", err))
+	}
 
 	clientset, err := kubernetes.NewForConfig(clientConfig)
 	if err != nil {
 		panic(err)
 	}
 
-	/*deploymentsClient := clientset.AppsV1().Deployments(namespace)
+	deploymentsClient := clientset.AppsV1().Deployments(namespace)
 
-	deployment := &appsv1.Deployment{
+	deployment := appsv1.Deployment{
 		ObjectMeta: metav1.ObjectMeta{
 			Name: "demo-deployment",
 		},
@@ -120,7 +118,7 @@ func TestCreateContainer(t *testing.T) {
 				},
 			},
 		},
-	}*/
+	}
 
 	// Create Deployment
 	/*fmt.Println("Creating deployment...")
@@ -128,11 +126,11 @@ func TestCreateContainer(t *testing.T) {
 	if err != nil {
 		panic(err)
 	}
-	fmt.Printf("Created deployment %q.\n", result.GetObjectMeta().GetName())*/
+	fmt.Printf("Created deployment %q.\n", result.GetObjectMeta().GetName())
 
 	fmt.Println("Fetching logs...")
 
-	req := clientset.Apps().RESTClient().Get().
+	req := clientset.CoreV1().RESTClient().Get().
 		Namespace("shiftmk").
 		Resource("pods").
 		Name("demo-deployment-857588f755-z8lcv").
@@ -141,9 +139,9 @@ func TestCreateContainer(t *testing.T) {
 		// Param("selector", "app=demo").
 		// Resource("pods").
 		SubResource("log").
-		Param("follow", strconv.FormatBool(true)).
+		Param("follow", strconv.FormatBool(true))
 		// Param("container", "web").
-		Param("previous", strconv.FormatBool(false))
+		//Param("previous", strconv.FormatBool(false))
 
 	readCloser, err := req.Stream()
 	if err != nil {

@@ -229,7 +229,7 @@ type Plugin struct {
 	SourceURL      string        `json:"source_url" bson:"source_url,omitempty"`
 	Readme         string        `json:"readme" bson:"readme"`
 	UsedTeamCount  int64         `json:"used_team_count" bson:"used_team_count"`
-	UsedBuildCount int64         `json:"used_build_count" bson:"used_build_count"`
+	UsedReposCount int64         `json:"used_build_count" bson:"used_build_count"`
 	IconURL        string        `json:"icon_url" bson:"icon_url"`
 	Ratings        string        `json:"ratings" bson:"ratings"`
 	Team           string        `json:"team" bson:"team"`
@@ -338,4 +338,39 @@ func (f *KubeConfig) SetBSON(raw bson.Raw) error {
 
 	*f, err = base64.StdEncoding.DecodeString(data)
 	return err
+}
+
+type Shiftfile struct {
+	ID          bson.ObjectId `json:"id" bson:"_id,omitempty"`
+	Name        string        `json:"name" bson:"name"`
+	Description string        `json:"description" bson:"description"`
+	File        ShiftfileType `json:"file" bson:"file"`
+	UsedByTeams int64         `json:"used_by_teams" bson:"used_by_teams"`
+	UsedByRepos int64         `json:"used_by_repos" bson:"used_by_repos"`
+	TeamID      string        `json:"team_id" bson:"team_id"`
+	Ratings     string        `json:"ratings" bson:"ratings"`
+}
+
+type ShiftfileType []byte
+
+func (f ShiftfileType) GetBSON() (interface{}, error) {
+	return base64.StdEncoding.EncodeToString([]byte(f)), nil
+}
+
+func (f *ShiftfileType) SetBSON(raw bson.Raw) error {
+
+	var data string
+	var err error
+
+	if err = raw.Unmarshal(&data); err != nil {
+		return err
+	}
+
+	*f, err = base64.StdEncoding.DecodeString(data)
+	return err
+}
+
+type ShiftfileList struct {
+	Nodes []Shiftfile `json:"nodes"`
+	Count int      `json:"count"`
 }
