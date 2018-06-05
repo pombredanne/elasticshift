@@ -19,7 +19,6 @@ fi
 
 mkdir -p bin
 
-# TODO(ericchiang): Architectures other than amd64?
 ZIP="protoc-${VERSION}-${OS}-x86_64.zip"
 URL="https://github.com/google/protobuf/releases/download/v${VERSION}/${ZIP}"
 

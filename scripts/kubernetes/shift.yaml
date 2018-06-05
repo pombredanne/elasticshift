@@ -19,7 +19,7 @@ metadata:
   name: elasticshift
 rules:
 - apiGroups: ["*"]
-  resources: ["pods", "deployments", "services", "replicasets"]
+  resources: ["pods", "deployments", "services", "replicasets", "logs"]
   verbs: ["*"]
 
 ---

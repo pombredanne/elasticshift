@@ -19,7 +19,7 @@ metadata:
   name: shiftmk
 rules:
 - apiGroups: ["*"]
-  resources: ["pods", "deployments", "services", "replicasets"]
+  resources: ["pods", "deployments", "services", "replicasets", "pods/log"]
   verbs: ["*"]
 
 ---
