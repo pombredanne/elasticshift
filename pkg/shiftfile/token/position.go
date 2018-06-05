@@ -5,7 +5,6 @@ package token
 
 import "fmt"
 
-
 type Position struct {
 	Filename string // Name of the configuration file
 	Line     int    // Linenumber starts at 1

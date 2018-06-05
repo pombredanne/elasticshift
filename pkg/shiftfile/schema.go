@@ -52,7 +52,7 @@ func InitSchema(logger logrus.Logger, ctx context.Context, s Store) (queries gra
 			Description: "Number of repo(s) currently using this shiftfile",
 		},
 
-		"used_team_count": &graphql.Field{
+		"used_by_teams": &graphql.Field{
 			Type:        graphql.Int,
 			Description: "Number of team(s) currently using this shiftfile",
 		},
@@ -87,4 +87,3 @@ func InitSchema(logger logrus.Logger, ctx context.Context, s Store) (queries gra
 
 	return queries, mutations
 }
-

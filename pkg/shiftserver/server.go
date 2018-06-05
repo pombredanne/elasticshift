@@ -33,8 +33,8 @@ import (
 	"golang.org/x/net/context"
 	"google.golang.org/grpc"
 
-	mgo "gopkg.in/mgo.v2"
 	"gitlab.com/conspico/elasticshift/pkg/shiftfile"
+	mgo "gopkg.in/mgo.v2"
 )
 
 // Constants for performing encode decode
@@ -70,7 +70,7 @@ type Server struct {
 	InfrastructureStore infrastructure.Store
 	DefaultStore        defaults.Store
 	SecretStore         secret.Store
-	ShiftfileStore shiftfile.Store
+	ShiftfileStore      shiftfile.Store
 }
 
 // Config ..
@@ -129,7 +129,7 @@ func New(ctx context.Context, c Config) (*Server, error) {
 	s.registerEndpointServices()
 
 	s.registerWebSocketServices()
-	
+
 	err := s.bootstrap()
 	if err != nil {
 		return nil, err
@@ -206,7 +206,7 @@ func (s *Server) registerGraphQLServices() {
 
 	vault := secret.NewVault(secretStore, logger, s.Ctx)
 	s.Vault = vault
-	
+
 	shiftfileStore := shiftfile.NewStore(s.DB)
 	s.ShiftfileStore = shiftfileStore
 
@@ -259,12 +259,12 @@ func (s *Server) registerGraphQLServices() {
 	secretQ, secretM := secret.InitSchema(logger, s.Ctx, secretStore, teamStore, repositoryStore)
 	appendFields(queries, secretQ)
 	appendFields(mutations, secretM)
-	
+
 	// secret fields
 	shiftfileQ, shiftfileM := shiftfile.InitSchema(logger, s.Ctx, shiftfileStore)
 	appendFields(queries, shiftfileQ)
 	appendFields(mutations, shiftfileM)
-	
+
 	rootQuery := graphql.ObjectConfig{Name: "RootQuery", Fields: queries}
 	rootMutation := graphql.ObjectConfig{Name: "RootMutation", Fields: mutations}
 
@@ -291,8 +291,7 @@ func (s *Server) registerWebSocketServices() {
 
 	//r := s.Router
 	//r.HandleFunc("/api/ws/")
-	
-	
+
 }
 
 // Utility method to append fields

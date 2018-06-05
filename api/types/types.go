@@ -372,5 +372,5 @@ func (f *ShiftfileType) SetBSON(raw bson.Raw) error {
 
 type ShiftfileList struct {
 	Nodes []Shiftfile `json:"nodes"`
-	Count int      `json:"count"`
+	Count int         `json:"count"`
 }
