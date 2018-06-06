@@ -149,5 +149,5 @@ func TestCreateContainer(t *testing.T) {
 	}
 
 	fmt.Println("Streaming logs...")
-	io.Copy(os.Stdout, readCloser)
+	io.Copy(os.Stdout, readCloser) */
 }
