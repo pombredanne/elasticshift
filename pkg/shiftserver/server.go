@@ -285,6 +285,7 @@ func (s *Server) registerGraphQLServices() {
 		GraphiQL: true,
 	})
 	r.Handle("/graphql", h)
+	r.Handle("/graphql/", h)
 }
 
 func (s *Server) registerWebSocketServices() {
