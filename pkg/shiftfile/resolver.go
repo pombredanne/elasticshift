@@ -15,9 +15,9 @@ import (
 )
 
 var (
-	errIDCantBeEmpty    = errors.New("Plugin ID cannot be empty")
-	errNameCantBeEmpty  = errors.New("Plugin Name cannot be empty")
-	errTeamOrNameIsMust = errors.New("Plugin name or team name is must")
+	errNameCantBeEmpty  = errors.New("Shiftfile name cannot be empty")
+	errFileContentCannotBeEmpty = errors.New("Shiftfile content is empty")
+	errTeamIDCantBeEmpty = errors.New("Team ID cannot be empty")
 )
 
 type resolver struct {
@@ -50,4 +50,34 @@ func (r *resolver) FetchShiftfile(params graphql.ResolveParams) (interface{}, er
 	res.Count = len(res.Nodes)
 
 	return &res, err
+}
+
+func (r *resolver) AddShiftfile(params graphql.ResolveParams) (interface{}, error) {
+	
+	name, _ := params.Args["name"].(string)
+	if name == "" {
+		return nil, errNameCantBeEmpty
+	}
+	
+	teamID, _ := params.Args["team_id"].(string)
+	if teamID == "" {
+		return nil, errTeamIDCantBeEmpty
+	}
+	
+	description, _ := params.Args["description"].(string)
+	file, _ := params.Args["file"].(string)
+	if file == "" {
+		return nil, errFileContentCannotBeEmpty
+	}
+	
+	// TODO validate the file content
+	
+	sf := types.Shiftfile{}
+	sf.Name = name
+	sf.Description = description
+	sf.File = []byte(file)
+	sf.TeamID = teamID
+
+	err := r.store.Save(&sf)
+	return sf, err
 }
