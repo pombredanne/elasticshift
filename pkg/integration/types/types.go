@@ -33,3 +33,8 @@ type ContainerInfo struct {
 	Namespace         string
 	Name              string
 }
+
+type PersistentVolumeClaimOptions struct {
+	Name string
+	Capacity string
+}

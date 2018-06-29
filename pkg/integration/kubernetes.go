@@ -315,15 +315,47 @@ func (c *kubernetesClient) CreateContainerWithVolume(opts *itypes.CreateContaine
 	//watch.Stop()
 	return cinfo, nil
 }
-func (c *kubernetesClient) CreatePersistentVolume(opts *itypes.CreatePersistentVolumeOption) (interface{}, error) {
-	pv := c.Kube.CoreV1().PersistentVolumes()
 
+func (c *kubernetesClient) PersistentVolumeClaim(opts *itypes.PersistentVolumeClaimOptions) (interface{}, error) {
+	
 	q, err := resource.ParseQuantity(opts.Capacity)
+	if err != nil {
+		return nil, err
+	}
+	
+	pvc := c.Kube.CoreV1().PersistentVolumeClaims(c.opts.Namespace)
+	persistentVolumeClaim, err := pvc.Create(&apiv1.PersistentVolumeClaim{
+		ObjectMeta: metav1.ObjectMeta{
+			Name: opts.Name,
+		},
+		TypeMeta: metav1.TypeMeta{
+			Kind:"PersistentVolumeClaim",
+			APIVersion:"v1",
+		},
+		Spec:apiv1.PersistentVolumeClaimSpec{
+			AccessModes: []apiv1.PersistentVolumeAccessMode{ apiv1.ReadWriteMany},
+			Resources: apiv1.ResourceRequirements{
+				Requests: apiv1.ResourceList{
+					apiv1.ResourceRequestsStorage: q,
+				},
+			},
+		},
+	})
+	
+	if err != nil {
+		return nil, err
+	}
+	return persistentVolumeClaim, nil
+}
 
+func (c *kubernetesClient) CreatePersistentVolume(opts *itypes.CreatePersistentVolumeOptions) (*itypes.PersistentVolumeInfo, error) {
+	
+	q, err := resource.ParseQuantity(opts.Capacity)
 	if err != nil {
 		panic(err) // handle it
 	}
-
+	
+	pv := c.Kube.CoreV1().PersistentVolumes()
 	persistentVolume, err := pv.Create(&apiv1.PersistentVolume{
 		ObjectMeta: metav1.ObjectMeta{
 			Name: opts.Name,
@@ -333,29 +365,29 @@ func (c *kubernetesClient) CreatePersistentVolume(opts *itypes.CreatePersistentV
 			APIVersion: "v1",
 		},
 		Spec: apiv1.PersistentVolumeSpec{
-			//Capacity :
 			PersistentVolumeSource: apiv1.PersistentVolumeSource{
 				NFS: &apiv1.NFSVolumeSource{
 					Server: opts.Server,
 					Path:   opts.Path,
+					ReadOnly:false,
 				},
 			},
 			AccessModes:  []apiv1.PersistentVolumeAccessMode{apiv1.ReadWriteMany},
 			MountOptions: opts.MountOptions,
-			//Capacity:     map[apiv1.ResourceName]resource.Quantity{apiv1.ResourceStorage: *resource.NewQuantity(5, resource.BinarySI)},
 			Capacity: map[apiv1.ResourceName]resource.Quantity{apiv1.ResourceStorage: q},
-			//MountOptions: []string{"hard", "nfsvers=4.1"},
+			PersistentVolumeReclaimPolicy:apiv1.PersistentVolumeReclaimRetain,
 		},
-		//Spec : apiv1.PersistentVolumeSpec{
-
-		//}
 	})
 
 	if err != nil {
-		panic(err)
+		return nil, err
 	}
 
-	return persistentVolume, nil
+	vi := &itypes.PersistentVolumeInfo{
+		Name : persistentVolume.Name,
+	}
+	
+	return vi, nil
 }
 
 //func (c *kubernetesClient) GetContainerStatus(opts *CreateContainerOptions) string {
@@ -364,3 +396,4 @@ func (c *kubernetesClient) CreatePersistentVolume(opts *itypes.CreatePersistentV
 //}
 
 func int32Ptr(i int32) *int32 { return &i }
+

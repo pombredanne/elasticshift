@@ -27,6 +27,7 @@ type containerEngine struct {
 type ContainerEngineInterface interface {
 	CreateContainer(opts *itypes.CreateContainerOptions) (*itypes.ContainerInfo, error)
 	CreateContainerWithVolume(opts *itypes.CreateContainerOptions) (*itypes.ContainerInfo, error)
+	CreatePersistentVolume(opts *itypes.CreatePersistentVolumeOptions) (*itypes.PersistentVolumeInfo, error)
 }
 
 func NewContainerEngine(logger logrus.Logger, i types.ContainerEngine) (ContainerEngineInterface, error) {

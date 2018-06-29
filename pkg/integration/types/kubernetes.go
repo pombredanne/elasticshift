@@ -8,20 +8,22 @@ type KubernetesClientOptions struct {
 	Namespace  string
 }
 
-//go:generate stringer -type=PersistentVolumeProvider
-type PersistentVolumeProvider int
-
-const (
-	NetworkFileShare PersistentVolumeProvider = iota
-	GoogleCloudStorage
-	HostLocalDirectory
-)
-
-type CreatePersistentVolumeOption struct {
+type CreatePersistentVolumeOptions struct {
+	Name     string
+	Capacity string // Specfic to kubernetes
+	
+	//NFS
 	Server       string
 	Path         string
-	Name         string
 	MountOptions []string
-	provider     PersistentVolumeProvider
-	Capacity     string // Specfic to kubernetes
+	
+	// minio
+	Url         string
+	AccessKey   string
+	AccessToken string
+}
+
+type PersistentVolumeInfo struct {
+
+	Name string
 }
