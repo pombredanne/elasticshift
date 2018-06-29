@@ -8,9 +8,28 @@ import (
 	"fmt"
 	"log"
 
+	"path/filepath"
+
 	"gitlab.com/conspico/elasticshift/api"
+	"gitlab.com/conspico/elasticshift/pkg/shiftfile/ast"
+	"gitlab.com/conspico/elasticshift/pkg/shiftfile/parser"
+	"gitlab.com/conspico/elasticshift/pkg/vcs"
+	"gitlab.com/conspico/elasticshift/pkg/worker/logger"
 	wtypes "gitlab.com/conspico/elasticshift/pkg/worker/types"
 	"google.golang.org/grpc"
+)
+
+var (
+	DIR_CODE    = "code"
+	DIR_PLUGINS = "plugins"
+	DIR_WORKER  = "worker"
+	DIR_LOGS    = "logs"
+
+	// TODO check for windows container
+	VOL_SHIFT   = "/opt/elasticshift"
+	VOL_CODE    = filepath.Join(VOL_SHIFT, DIR_CODE)
+	VOL_PLUGINS = filepath.Join(VOL_SHIFT, DIR_PLUGINS)
+	VOL_LOGS    = filepath.Join(VOL_SHIFT, DIR_LOGS)
 )
 
 type builder struct {
@@ -19,15 +38,20 @@ type builder struct {
 	config      wtypes.Config
 	shiftclient api.ShiftClient
 	project     *api.GetProjectRes
+	logr        *logger.Logr
+
+	f *ast.File
+	g *graph
 }
 
-func New(ctx wtypes.Context, shiftconn *grpc.ClientConn) error {
+func New(ctx wtypes.Context, shiftconn *grpc.ClientConn, logr *logger.Logr) error {
 
 	b := builder{}
 	b.shiftconn = shiftconn
 	b.ctx = ctx.Context
 	b.shiftclient = ctx.Client
 	b.config = ctx.Config
+	b.logr = logr
 
 	return b.run()
 }
@@ -43,24 +67,45 @@ func (b *builder) run() error {
 
 	log.Printf("Project Info: %v", proj)
 
-	// 1. Ensure connection to log storage is good
+	// 1. Ensure connection to log storage is good, this container should be loaded with
 
 	// 2. Load the build cache, if available ensure it
 
-	// 3. Checkout the source code
+	// 3. Fetch the shiftfile
+	f, err := vcs.GetShiftFile(proj.Source, proj.CloneUrl, proj.Branch)
+	if err != nil {
+		return err
+	}
 
-	// 4. Analyze the build spec (shiftfile), if exist within repository
-	//  otherwise use the global language spec defined by elasticshift
+	// 4. otherwise use the global language spec defined by elasticshift
+	if f == nil {
+		//TODO fetch the default shift file
+	}
 
 	// 5. Parse the shiftfile
+	sf, err := parser.AST(f)
+	if err != nil {
+		return err
+	}
+	b.f = sf
 
 	// 6. Ensure the arguments are inputted as static or dynamic values (through env)
 
-	// 7. Build the execution map
+	// 7. Construct the runtime execution map from shiftfile ast
+	graph, err := ConstructGraph(sf)
+	if err != nil {
+		return err
+	}
+	b.g = graph
 
 	// 8. Fetch the secrets
 
 	// 9. Traverse the execution map & run the actual build
+
+	err = b.build(graph)
+	if err != nil {
+		return err
+	}
 
 	return nil
 }
