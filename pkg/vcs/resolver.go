@@ -151,7 +151,7 @@ func (r resolver) AddRepository(params graphql.ResolveParams) (interface{}, erro
 	var currentRepo types.Repository
 	err = r.repositoryStore.FindOne(bson.M{"repo_id": repo.RepoID, "team": teamName, "name": repoName, "identifier": repo.Identifier}, &currentRepo)
 	if err != nil && err.Error() != "not found" {
-		return nil, fmt.Errorf("Failed to check the existance of the repository :v", err)
+		return nil, fmt.Errorf("Failed to check the existance of the repository :%v", err)
 	}
 
 	if strings.EqualFold(currentRepo.RepoID, repo.RepoID) {
@@ -191,7 +191,7 @@ func (r resolver) getToken(team string, a types.VCS, p providers.Provider) (stri
 	err = r.teamStore.UpdateVCS(team, a)
 
 	if err != nil {
-		return "", fmt.Errorf("Failed to update VCS after token refreshed.", err)
+		return "", fmt.Errorf("Failed to update VCS after token refreshed: %v", err)
 	}
 	return tok.AccessToken, nil
 }
