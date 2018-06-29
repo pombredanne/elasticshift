@@ -1,0 +1,5 @@
+IMAGE [
+	"elasticshift/java",
+	"elasticshift/java6",
+	"elasticshift/java7"
+]

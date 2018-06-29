@@ -58,6 +58,27 @@ func (f *File) Var(name string) string {
 	return ""
 }
 
+func (f *File) ImageNames() []string {
+
+	var n *NodeItem
+	for _, item := range items(f.Node) {
+		if scope.Img == item.Kind {
+			n = item
+			break
+		}
+	}
+
+	if n == nil {
+		return nil
+	}
+
+	keys := []string{}
+	for _, k := range n.Keys {
+		keys = append(keys, k.Key.Text)
+	}
+	return keys
+}
+
 func (f *File) Image() map[string]interface{} {
 
 	var n *NodeItem
@@ -73,11 +94,25 @@ func (f *File) Image() map[string]interface{} {
 		return iMap
 	}
 
-	// Image name
-	iMap[keys.NAME] = n.Keys[0].Key.Text
+	nkeys := len(n.Keys)
+	if nkeys > 1 {
+		keyarr := []string{}
+		for _, k := range n.Keys {
+			keyarr = append(keyarr, k.Key.Text)
+		}
+		iMap[keys.NAME] = strings.Join(keyarr, ",")
+	} else {
+		iMap[keys.NAME] = n.Keys[0].Key.Text
+	}
 
-	img := n.Value.(*Image)
-	if img.Node == nil {
+	// Image name
+
+	var img *Image
+	if n.Value != nil {
+		img = n.Value.(*Image)
+	}
+
+	if img == nil || img.Node == nil {
 		return iMap
 	}
 

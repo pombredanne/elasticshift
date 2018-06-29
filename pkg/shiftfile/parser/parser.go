@@ -241,7 +241,9 @@ func (p *Parser) nodeItem() (*ast.NodeItem, error) {
 func (p *Parser) nodeKey() ([]*ast.NodeKey, error) {
 
 	p.ntype = 0
-
+	
+	multiImg := false
+	
 	keycount := 0
 	keys := make([]*ast.NodeKey, 0)
 
@@ -289,6 +291,7 @@ func (p *Parser) nodeKey() ([]*ast.NodeKey, error) {
 			goto exit
 		case token.STRING:
 			keys = append(keys, &ast.NodeKey{Key: p.tok})
+			// fmt.Printf("\n%#v", p.tok)
 			p.forceNextScan() // avoid buffer
 			keycount++
 		case token.COMMA:
@@ -305,8 +308,18 @@ func (p *Parser) nodeKey() ([]*ast.NodeKey, error) {
 			p.kind(scope.Vhl)
 			return keys, nil
 		case token.LBRACK:
-			return keys, nil
-		case token.RBRACE, token.RBRACK, token.RPAREN:
+			if p.ntype != scope.Img {
+				return keys, nil
+			}
+			// if img block with multiple keys, dont break let the keys be parsed.
+			multiImg = true
+		case token.RBRACK:
+			if !multiImg {
+				break
+			}
+			multiImg = false
+			
+		case token.RBRACE, token.RPAREN:
 			break
 		case token.ILLEGAL:
 			return keys, &PositionErr{
@@ -322,6 +335,12 @@ func (p *Parser) nodeKey() ([]*ast.NodeKey, error) {
 
 		// next token
 		p.scan()
+
+		// special condition only for IMAGE tag when no block is available
+		if p.ntype == scope.Img && len(keys) == 1 && p.tok.Type != token.LBRACE && !multiImg {
+			p.unscan()
+			return keys, nil
+		}
 	}
 
 exit:
@@ -371,13 +390,17 @@ func (p *Parser) image() (*ast.Image, error) {
 
 	img := &ast.Image{}
 	img.Start = p.tok.Position
+	
+	// The condition fails only when there is no block defined for IMAGE block
+	if token.LBRACE == p.tok.Type {
 
-	nodes, err := p.block()
-	if err != nil {
-		return nil, err
+		nodes, err := p.block()
+		if err != nil {
+			return nil, err
+		}
+		img.Node = nodes
 	}
-	img.Node = nodes
-
+	
 	p.cscope = 0
 
 	return img, nil

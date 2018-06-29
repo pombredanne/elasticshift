@@ -1,0 +1,5 @@
+IMAGE "elasticshift/java:1.9"
+
+"elasticshift/vcs", "vcs checkout" {
+    checkout "proj_url"
+}

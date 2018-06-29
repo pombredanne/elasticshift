@@ -28,11 +28,21 @@ func TestFile(t *testing.T) {
 		t.Fatalf("Failed %v", err)
 	}
 
-	testVars(f, t)
+	t.Run("vars", func(t *testing.T) {
+		testVars(f, t)
+	})
 
-	testImage(f, t)
+	t.Run("image", func(t *testing.T) {
+		testImage(f, t)
+	})
 
-	testBlock(f, t)
+	t.Run("imagenames", func(t *testing.T) {
+		testImageNames(f, t)
+	})
+
+	t.Run("blocks", func(t *testing.T) {
+		testBlock(f, t)
+	})
 }
 
 func testVars(f *ast.File, t *testing.T) {
@@ -51,6 +61,13 @@ func testImage(f *ast.File, t *testing.T) {
 	assertString(t, "http://dockerregistry.com/elasticshift", imap["registry"].(string))
 	assertString(t, "testuser", imap["username"].(string))
 	assertString(t, "isdf1i41i23iu12i", imap["token"].(string))
+}
+
+func testImageNames(f *ast.File, t *testing.T) {
+
+	imgn := f.ImageNames()
+
+	assertString(t, "elasticshift/java:1.9", imgn[0])
 }
 
 func testBlock(f *ast.File, t *testing.T) {
