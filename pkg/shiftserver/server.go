@@ -226,7 +226,7 @@ func (s *Server) registerGraphQLServices() {
 	appendFields(mutations, sysconfM)
 
 	// build fields
-	buildQ, buildM := build.InitSchema(logger, s.Ctx, buildStore, repositoryStore, sysconfStore, teamStore, integrationStore, defaultStore)
+	buildQ, buildM := build.InitSchema(logger, s.Ctx, buildStore, repositoryStore, sysconfStore, teamStore, integrationStore, defaultStore, shiftfileStore)
 	appendFields(queries, buildQ)
 	appendFields(mutations, buildM)
 

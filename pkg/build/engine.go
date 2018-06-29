@@ -31,6 +31,8 @@ func (r *resolver) ContainerLauncher() {
 
 	defer r.recoverErrorIfAny()
 
+	// Restrict the concurrent execution and queue the build
+	// if it is for same branch.
 	// TODO handle panic
 	for b := range r.BuildQueue {
 
@@ -117,10 +119,10 @@ func (r *resolver) ContainerLauncher() {
 			envs := []itypes.Env{
 				itypes.Env{"SHIFT_HOST", "shiftserver"},
 				itypes.Env{"SHIFT_PORT", "5051"},
-				itypes.Env{"SHIFT_LOGGER", LogType_File},
 				itypes.Env{"SHIFT_BUILDID", b.ID.Hex()},
 				itypes.Env{"SHIFT_TIMEOUT", "120m"},
 				itypes.Env{"WORKER_PORT", "6060"},
+				itypes.Env{"SHIFT_TEAMID", b.Team},
 			}
 
 			opts := &itypes.CreateContainerOptions{}
@@ -152,6 +154,7 @@ func (r *resolver) ContainerLauncher() {
 
 func (r *resolver) recoverErrorIfAny() {
 
-	err := recover()
-	fmt.Println("recovered : %v", err)
+	if err := recover(); err != nil {
+		fmt.Println("recovered : %v", err)
+	}
 }

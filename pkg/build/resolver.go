@@ -7,8 +7,6 @@ import (
 	"context"
 	"errors"
 	"fmt"
-	"io/ioutil"
-	"net/http"
 	"path/filepath"
 	"strings"
 	"time"
@@ -19,9 +17,11 @@ import (
 	"gitlab.com/conspico/elasticshift/pkg/defaults"
 	"gitlab.com/conspico/elasticshift/pkg/identity/team"
 	"gitlab.com/conspico/elasticshift/pkg/integration"
+	"gitlab.com/conspico/elasticshift/pkg/shiftfile"
 	"gitlab.com/conspico/elasticshift/pkg/shiftfile/keys"
 	"gitlab.com/conspico/elasticshift/pkg/shiftfile/parser"
 	"gitlab.com/conspico/elasticshift/pkg/sysconf"
+	"gitlab.com/conspico/elasticshift/pkg/vcs"
 	"gitlab.com/conspico/elasticshift/pkg/vcs/repository"
 	"gopkg.in/mgo.v2/bson"
 )
@@ -35,23 +35,6 @@ var (
 
 	// place holders vcs_account, repository, branch
 	RAW_GUTHUB_URL = "https://raw.githubusercontent.com/%s/%s/%s/Shiftfile"
-
-	DIR_CODE    = "code"
-	DIR_PLUGINS = "plugins"
-	DIR_WORKER  = "worker"
-	DIR_LOGS    = "logs"
-
-	// TODO check for windows container
-	VOL_SHIFT   = "/shift"
-	VOL_CODE    = filepath.Join(VOL_SHIFT, DIR_CODE)
-	VOL_PLUGINS = filepath.Join(VOL_SHIFT, DIR_PLUGINS)
-	VOL_LOGS    = filepath.Join(VOL_SHIFT, DIR_LOGS)
-)
-
-const (
-	LogType_Embedded = "embedded"
-	LogType_File     = "file"
-	LogType_NFS      = "nfs"
 )
 
 type resolver struct {
@@ -61,6 +44,7 @@ type resolver struct {
 	teamStore        team.Store
 	sysconfStore     sysconf.Store
 	defaultStore     defaults.Store
+	shiftfileStore   shiftfile.Store
 	logger           logrus.Logger
 	Ctx              context.Context
 	BuildQueue       chan types.Build
@@ -68,12 +52,12 @@ type resolver struct {
 
 func (r *resolver) TriggerBuild(params graphql.ResolveParams) (interface{}, error) {
 
-	repository_id, _ := params.Args["repository_id"].(string)
-	if repository_id == "" {
+	repositoryID, _ := params.Args["repositoryID"].(string)
+	if repositoryID == "" {
 		return nil, errRepositoryIDCantBeEmpty
 	}
 
-	repo, err := r.repositoryStore.GetRepositoryByID(repository_id)
+	repo, err := r.repositoryStore.GetRepositoryByID(repositoryID)
 	if err != nil {
 		return nil, errInvalidRepositoryID
 	}
@@ -84,17 +68,17 @@ func (r *resolver) TriggerBuild(params graphql.ResolveParams) (interface{}, erro
 	}
 
 	// Check if default container engine is set
-	dce, err := r.defaultStore.GetDefaultContainerEngine(repo.Team)
+	def, err := r.defaultStore.FindByReferenceId(repo.Team)
 	if err != nil {
 		return nil, err
 	}
 
-	if dce == "" {
+	if def.ContainerEngineID == "" {
 		return nil, fmt.Errorf("No default container engine found, please configure it.")
 	}
 
 	status := types.BS_RUNNING
-	rb, err := r.store.FetchBuild(repo.Team, repository_id, branch, types.BS_RUNNING)
+	rb, err := r.store.FetchBuild(repo.Team, repositoryID, branch, types.BS_RUNNING)
 	if err != nil {
 		return nil, fmt.Errorf("Failed to validate if there are any build running", err)
 	}
@@ -105,31 +89,35 @@ func (r *resolver) TriggerBuild(params graphql.ResolveParams) (interface{}, erro
 
 	b := types.Build{}
 	b.ID = bson.NewObjectId()
-	b.RepositoryID = repository_id
-	b.ContainerEngineID = dce
+	b.RepositoryID = repositoryID
+	b.ContainerEngineID = def.ContainerEngineID
 	b.VcsID = repo.VcsID
 	b.Status = status
 	b.TriggeredBy = "Anonymous" //TODO fill in with logged-in user
 	b.StartedAt = time.Now()
 	b.Team = repo.Team
 	b.Branch = branch
-	b.LogType = LogType_File
+	b.StorageID = def.StorageID
 	b.CloneURL = repo.CloneURL
+	b.Language = repo.Language
 
 	// Build file path - (for NFS)
 	// <cache>/team-id/vcs-id/repository-id/branch-name/build-id/log
 	// <cache>/team-id/vcs-id/repository-id/branch-name/build-id/reports
 	// <cache>/team-id/vcs-id/repository-id/branch-name/build-id/archive.zip
 	// cache must be mounted as /elasticshift to containers
-	// b.Log = filepath.Join(repo.Team, repo.Identifier, repo.Name, branch, b.ID.Hex(), logfile)
+	b.StoragePath = filepath.Join(repo.Team, repo.Identifier, repo.Name, branch, b.ID.Hex())
 
 	err = r.store.Save(&b)
 	if err != nil {
 		return nil, fmt.Errorf("Failed to save build details: %v", err)
 	}
 
-	// Pass the build data to builder
-	r.BuildQueue <- b
+	if b.Status == types.BS_RUNNING {
+
+		// Pass the build data to builder
+		r.BuildQueue <- b
+	}
 
 	return b, err
 }
@@ -202,46 +190,43 @@ func (r *resolver) FetchBuildByID(params graphql.ResolveParams) (interface{}, er
 
 func (r *resolver) findImageName(b types.Build) (string, error) {
 
-	var file []byte
-	// https://github.com/nshahm/hybrid.test.runner/raw/master/Shiftfile
-	if strings.Contains(b.CloneURL, "github.com") {
+	f, err := r.repoImageName(b)
+	if err != nil && f == nil {
 
-		// repoUrl := fmt.Sprintf(RAW_GUTHUB_URL, )
-		repoUrl := strings.TrimRight(b.CloneURL, ".git")
-		repoUrl += "/raw/" + b.Branch + "/Shiftfile"
-
-		fmt.Println("Repo URL: " + repoUrl)
-
-		resp, err := http.Get(repoUrl)
+		// falling back to see if there is a team's default configured
+		defs, err := r.defaultStore.FindByReferenceId(b.Team)
 		if err != nil {
-			return "", err
+			return "", fmt.Errorf("Failed to fetch defaults by reference id: %v", err)
 		}
 
-		fmt.Println("Raw URL:" + resp.Request.URL.String())
-		resp, err = http.Get(resp.Request.URL.String())
+		var file types.Shiftfile
+		err = r.shiftfileStore.FindByID(defs.Languages[b.Language], &file)
 		if err != nil {
-			return "", err
+			return "", fmt.Errorf("Failed to fetch the default shiftfile for language: %v", err)
 		}
-
-		if resp.StatusCode != 200 {
-			return "", fmt.Errorf("Failed to fetch the shiftfile from %s: , Error: %s", repoUrl, resp.Status)
-		}
-
-		// read the response body
-		file, err = ioutil.ReadAll(resp.Body)
-		if err != nil {
-			return "", err
-		}
+		f = file.File
 	}
-
-	r.logger.Infoln("Response = ", string(file[:]))
-
 	// write shift file
 
-	sf, err := parser.AST(file)
+	sf, err := parser.AST([]byte(f))
 	if err != nil {
 		r.SLog(b.ID, fmt.Sprintf("Failed to parse shift file: %v", err))
 	}
 
 	return sf.Image()[keys.NAME].(string), nil
+}
+
+func (r *resolver) repoImageName(b types.Build) ([]byte, error) {
+
+	var source string
+	if strings.Contains(b.CloneURL, vcs.GITHUB_DOT_COM) {
+		source = vcs.GITHUB_DOT_COM
+	}
+
+	f, err := vcs.GetShiftFile(source, b.CloneURL, b.Branch)
+	if err != nil {
+		return nil, err
+	}
+
+	return f, nil
 }
