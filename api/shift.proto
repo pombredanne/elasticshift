@@ -37,6 +37,8 @@ message GetProjectRes {
 	string language = 7;
 	string accesstoken = 8;
 	string commit_id = 9;
+	string storage_path = 10;
+	string source = 11;
 }
 
 service Shift {
