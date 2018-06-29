@@ -42,7 +42,6 @@ func (s *shift) Register(ctx context.Context, req *api.RegisterReq) (*api.Regist
 	}
 
 	// TODO store the secret key id in build and the actual key in secret store
-
 	buildId := bson.ObjectIdHex(req.GetBuildId())
 	err := s.buildStore.UpdateId(buildId, bson.M{"$push": bson.M{"private_key": req.GetPrivatekey()}})
 	if err != nil {
@@ -112,6 +111,9 @@ func (s *shift) GetProject(ctx context.Context, req *api.GetProjectReq) (*api.Ge
 	res.CloneUrl = r.CloneURL
 	res.Language = r.Language
 	res.Name = r.Name
+	res.StoragePath = b.StoragePath
+	//TODO add source to response
+	// res.Source = b.Source
 
 	return res, nil
 }
