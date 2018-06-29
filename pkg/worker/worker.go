@@ -150,7 +150,7 @@ func (w *W) ConnectToShiftServer() error {
 // 	// Start logshipper
 // 	f, err := logshipper.New(w.Context, w.Config.BuildID)
 // 	if err != nil {
-// 		return fmt.Errorf("Failed to start log shipper for '%s' type : %v ", w.Config.LogType, err)
+// 		return fmt.Errorf("Failed to start log shipper for '%s' type : %v ", w.Config.ShiftDir, err)
 // 	}
 // 	w.logfile = f
 // 	log.Println("Started.")
@@ -243,7 +243,7 @@ func (w *W) Halt() {
 
 // start the builder where the real execution happens.
 func (w *W) StartBuilder() error {
-	return builder.New(w.Context, w.ShiftServer)
+	return builder.New(w.Context, w.ShiftServer, w.Logr)
 }
 
 // Post the log to error channel, that denotes the startup of the worker is failed

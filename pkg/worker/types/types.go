@@ -17,11 +17,13 @@ type Context struct {
 }
 
 type Config struct {
-	GRPC string
+	GRPC string //worker port
 
-	Host    string
-	Port    string
-	LogType string
-	Timeout string
-	BuildID string
+	Host string // shift server host
+	Port string // shift server port
+
+	ShiftDir string
+	Timeout  string
+	BuildID  string
+	TeamID   string
 }

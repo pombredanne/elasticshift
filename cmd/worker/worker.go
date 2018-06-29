@@ -22,19 +22,14 @@ const (
 func main() {
 
 	bctx := context.Background()
+	cfg := types.Config{}
 
 	os.Setenv("SHIFT_HOST", "127.0.0.1")
 	os.Setenv("SHIFT_PORT", "5051")
-	os.Setenv("SHIFT_LOGGER", "embedded")
-	os.Setenv("SHIFT_BUILDID", "5ad21b9ddc294a6133cdd77d")
+	os.Setenv("SHIFT_BUILDID", "5b0393b3dc294a2d45fa2232")
+	os.Setenv("SHIFT_DIR", "/Users/ghazni/.elasticshift/storage")
 	os.Setenv("WORKER_PORT", "6060")
-
-	logType := os.Getenv("SHIFT_LOGGER")
-	if logType == "" {
-		panic("SHIFT_LOGGER must be passed through environment variable.")
-	} else {
-		log.Printf("SHIFT_LOGGER=%s\n", logType)
-	}
+	os.Setenv("SHIFT_TEAMID", "5a3a41f08011e098fb86b41f")
 
 	buildID := os.Getenv("SHIFT_BUILDID")
 	if buildID == "" {
@@ -42,25 +37,34 @@ func main() {
 	} else {
 		log.Printf("SHIFT_BUILDID=%s\n", buildID)
 	}
+	cfg.BuildID = buildID
 
-	logfile := os.Getenv("FILELOGR_PATH")
-	if logfile == "" {
-		panic("FILELOGR_PATH must be passed through environment variable.")
+	teamID := os.Getenv("SHIFT_TEAMID")
+	if teamID == "" {
+		panic("SHIFT_TEAMID  must be passed through environment variable.")
 	} else {
-		log.Printf("FILELOGR_PATH=%s\n", logfile)
+		log.Printf("SHIFT_TEAMID=%s\n", teamID)
 	}
+	cfg.TeamID = teamID
+
+	shiftDir := os.Getenv("SHIFT_DIR")
+	if shiftDir == "" {
+		panic("SHIFT_DIR must be passed through environment variable.")
+	} else {
+		log.Printf("SHIFT_DIR=%s\n", shiftDir)
+	}
+	cfg.ShiftDir = shiftDir
 
 	opts := []logger.LoggerOption{
-		logger.FileLogger(logfile),
+		logger.FileLogger(shiftDir),
 	}
 
-	logr, err := logger.New(bctx, buildID, opts...)
+	logr, err := logger.New(bctx, buildID, teamID, opts...)
 	defer logr.Close()
 	if err != nil {
 		panic(err)
 	}
 
-	cfg := types.Config{}
 	var isError bool
 	host := os.Getenv("SHIFT_HOST")
 	if host == "" {
