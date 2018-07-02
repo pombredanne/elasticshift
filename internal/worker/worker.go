@@ -4,18 +4,126 @@ Copyright 2018 The Elasticshift Authors.
 package worker
 
 import (
+	"context"
+	"errors"
 	"fmt"
 	"log"
 	"net"
+	"os"
 	"time"
 
 	"gitlab.com/conspico/elasticshift/api"
+	"gitlab.com/conspico/elasticshift/internal/worker/logger"
+	"gitlab.com/conspico/elasticshift/internal/worker/types"
 	"gitlab.com/conspico/elasticshift/pkg/builder"
-	"gitlab.com/conspico/elasticshift/pkg/worker/logger"
-	"gitlab.com/conspico/elasticshift/pkg/worker/types"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/keepalive"
 )
+
+const (
+	defaultTimeout = "120m"
+)
+
+// Run ..
+func Run() error {
+
+	bctx := context.Background()
+	cfg := types.Config{}
+
+	os.Setenv("SHIFT_HOST", "127.0.0.1")
+	os.Setenv("SHIFT_PORT", "5051")
+	os.Setenv("SHIFT_BUILDID", "5b0393b3dc294a2d45fa2232")
+	os.Setenv("SHIFT_DIR", "/Users/ghazni/.elasticshift/storage")
+	os.Setenv("WORKER_PORT", "6060")
+	os.Setenv("SHIFT_TEAMID", "5a3a41f08011e098fb86b41f")
+
+	buildID := os.Getenv("SHIFT_BUILDID")
+	if buildID == "" {
+		log.Fatalln("SHIFT_BUILDID must be passed through environment variable.")
+	} else {
+		log.Printf("SHIFT_BUILDID=%s\n", buildID)
+	}
+	cfg.BuildID = buildID
+
+	teamID := os.Getenv("SHIFT_TEAMID")
+	if teamID == "" {
+		log.Fatalln("SHIFT_TEAMID  must be passed through environment variable.")
+	} else {
+		log.Printf("SHIFT_TEAMID=%s\n", teamID)
+	}
+	cfg.TeamID = teamID
+
+	shiftDir := os.Getenv("SHIFT_DIR")
+	if shiftDir == "" {
+		log.Fatalln("SHIFT_DIR must be passed through environment variable.")
+	} else {
+		log.Printf("SHIFT_DIR=%s\n", shiftDir)
+	}
+	cfg.ShiftDir = shiftDir
+
+	opts := []logger.LoggerOption{
+		logger.FileLogger(shiftDir),
+	}
+
+	logr, err := logger.New(bctx, buildID, teamID, opts...)
+	defer logr.Close()
+	if err != nil {
+		panic(err)
+	}
+
+	var isError bool
+	host := os.Getenv("SHIFT_HOST")
+	if host == "" {
+		log.Fatalln("SHIFT_HOST must be passed through environment variable.")
+		isError = true
+	} else {
+		log.Printf("SHIFT_HOST=%s\n", host)
+	}
+	cfg.Host = host
+
+	port := os.Getenv("SHIFT_PORT")
+	if port == "" {
+		log.Fatalln("SHIFT_PORT must be passed through environment variable")
+		isError = true
+	} else {
+		log.Printf("SHIFT_PORT=%s\n", port)
+	}
+	cfg.Port = port
+
+	workerPort := os.Getenv("WORKER_PORT")
+	if workerPort == "" {
+		log.Fatalln("WORKER_PORT must be passed though environment variable.")
+		isError = true
+	} else {
+		log.Printf("WORKER_PORT=%s\n", workerPort)
+	}
+	cfg.GRPC = workerPort
+
+	if isError {
+		log.Println("One or more arguments required to start the worker has not passed through environment variables.")
+		return errors.New("Halting the worker.")
+	}
+
+	cfg.Timeout = os.Getenv("SHIFT_TIMEOUT")
+	if cfg.Timeout == "" {
+		log.Println("SHIFT_TIMEOUT defaulted to 120m")
+		cfg.Timeout = defaultTimeout
+	} else {
+		log.Println("SHIFT_TIMEOUT=" + cfg.Timeout)
+	}
+
+	ctx := types.Context{}
+	ctx.Context = context.Background()
+	ctx.Config = cfg
+
+	// Start the worker
+	err = Start(ctx, logr)
+	if err != nil {
+		return fmt.Errorf("Failed to start the worker %v", err)
+	}
+
+	return nil
+}
 
 // W holds the worker related values
 type W struct {

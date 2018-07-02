@@ -7,7 +7,7 @@ import (
 	"context"
 
 	"gitlab.com/conspico/elasticshift/api"
-	"gitlab.com/conspico/elasticshift/pkg/worker/types"
+	"gitlab.com/conspico/elasticshift/internal/worker/types"
 )
 
 type server struct {

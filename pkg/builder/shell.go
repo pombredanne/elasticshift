@@ -8,7 +8,7 @@ import (
 	"log"
 	"os/exec"
 
-	"gitlab.com/conspico/elasticshift/pkg/shiftfile/keys"
+	"gitlab.com/conspico/elasticshift/internal/pkg/shiftfile/keys"
 )
 
 func (b *builder) invokeShell(n *N) error {

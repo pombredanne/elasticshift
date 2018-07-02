@@ -1,7 +1,7 @@
 /*
 Copyright 2017 The Elasticshift Authors.
 */
-package server
+package shiftserver
 
 import (
 	"time"

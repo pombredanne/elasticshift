@@ -11,11 +11,11 @@ import (
 	"path/filepath"
 
 	"gitlab.com/conspico/elasticshift/api"
-	"gitlab.com/conspico/elasticshift/pkg/shiftfile/ast"
-	"gitlab.com/conspico/elasticshift/pkg/shiftfile/parser"
-	"gitlab.com/conspico/elasticshift/pkg/vcs"
-	"gitlab.com/conspico/elasticshift/pkg/worker/logger"
-	wtypes "gitlab.com/conspico/elasticshift/pkg/worker/types"
+	"gitlab.com/conspico/elasticshift/internal/pkg/shiftfile/ast"
+	"gitlab.com/conspico/elasticshift/internal/pkg/shiftfile/parser"
+	"gitlab.com/conspico/elasticshift/internal/pkg/vcs"
+	"gitlab.com/conspico/elasticshift/internal/worker/logger"
+	wtypes "gitlab.com/conspico/elasticshift/internal/worker/types"
 	"google.golang.org/grpc"
 )
 

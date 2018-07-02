@@ -1,7 +1,7 @@
 /*
 Copyright 2017 The Elasticshift Authors.
 */
-package server
+package shiftserver
 
 import (
 	"encoding/base64"
@@ -54,8 +54,8 @@ type Server struct {
 	BuildType *graphql.Object
 }
 
-// Config ..
-type Config struct {
+// ServerConfig ..
+type ServerConfig struct {
 	Store    store.Config
 	Logger   logrus.Logger
 	Session  *mgo.Session
@@ -74,7 +74,7 @@ type Identity struct {
 
 // New ..
 // Creates a new server
-func New(ctx context.Context, c Config) (*Server, error) {
+func New(ctx context.Context, c ServerConfig) (*Server, error) {
 
 	s := &Server{}
 	s.Ctx = ctx
