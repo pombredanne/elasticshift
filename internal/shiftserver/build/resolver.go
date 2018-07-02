@@ -77,7 +77,7 @@ func NewResolver(ctx context.Context, logger logrus.Logger, s store.Shift) (Reso
 
 func (r *resolver) TriggerBuild(params graphql.ResolveParams) (interface{}, error) {
 
-	repositoryID, _ := params.Args["repositoryID"].(string)
+	repositoryID, _ := params.Args["repository_id"].(string)
 	if repositoryID == "" {
 		return nil, errRepositoryIDCantBeEmpty
 	}

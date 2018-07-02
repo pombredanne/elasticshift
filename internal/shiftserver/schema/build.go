@@ -9,24 +9,13 @@ import (
 	"github.com/Sirupsen/logrus"
 	"github.com/graphql-go/graphql"
 	"gitlab.com/conspico/elasticshift/api/types"
+	"gitlab.com/conspico/elasticshift/internal/pkg/utils"
 	"gitlab.com/conspico/elasticshift/internal/shiftserver/build"
 	"gitlab.com/conspico/elasticshift/internal/shiftserver/store"
-	"gitlab.com/conspico/elasticshift/internal/pkg/utils"
 )
 
-func newBuildSchema(
-	ctx context.Context,
-	logger logrus.Logger,
-	s store.Shift,
-) (queries graphql.Fields, mutations graphql.Fields) {
-
-	// return error
-	r, _ := build.NewResolver(ctx, logger, s)
-	// if err != nil {
-	// 	return err
-	// }
-
-	buildStatusEnum := graphql.NewEnum(graphql.EnumConfig{
+var (
+	buildStatusEnum = graphql.NewEnum(graphql.EnumConfig{
 		Name: "BuildStatus",
 		Values: graphql.EnumValueConfigMap{
 			"STUCK": &graphql.EnumValueConfig{
@@ -55,7 +44,7 @@ func newBuildSchema(
 		},
 	})
 
-	fields := graphql.Fields{
+	fields = graphql.Fields{
 		"id": &graphql.Field{
 			Type:        graphql.ID,
 			Description: "Build identifier",
@@ -120,13 +109,26 @@ func newBuildSchema(
 		},
 	}
 
-	buildType := graphql.NewObject(
+	BuildType = graphql.NewObject(
 		graphql.ObjectConfig{
 			Name:        "Build",
 			Fields:      fields,
 			Description: "An object of Build type",
 		},
 	)
+)
+
+func newBuildSchema(
+	ctx context.Context,
+	logger logrus.Logger,
+	s store.Shift,
+) (queries graphql.Fields, mutations graphql.Fields) {
+
+	// return error
+	r, _ := build.NewResolver(ctx, logger, s)
+	// if err != nil {
+	// 	return err
+	// }
 
 	buildArgs := graphql.FieldConfigArgument{
 		"team": &graphql.ArgumentConfig{
@@ -151,12 +153,12 @@ func newBuildSchema(
 	}
 
 	queries = graphql.Fields{
-		"build": utils.MakeListType("BuildList", buildType, r.FetchBuild, buildArgs),
+		"build": utils.MakeListType("BuildList", BuildType, r.FetchBuild, buildArgs),
 	}
 
 	mutations = graphql.Fields{
 		"triggerBuild": &graphql.Field{
-			Type: buildType,
+			Type: BuildType,
 			Args: graphql.FieldConfigArgument{
 				"repository_id": &graphql.ArgumentConfig{
 					Type:        graphql.NewNonNull(graphql.String),

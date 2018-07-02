@@ -30,12 +30,14 @@ var (
 // Resolver ...
 type Resolver interface {
 	FetchRepository(params graphql.ResolveParams) (interface{}, error)
+	FetchBuild(params graphql.ResolveParams) (interface{}, error)
 	AddRepository(params graphql.ResolveParams) (interface{}, error)
 }
 
 type resolver struct {
 	store     store.Repository
 	teamStore store.Team
+	buildStore store.Build
 	logger    logrus.Logger
 	providers providers.Providers
 }
@@ -45,6 +47,8 @@ func NewResolver(ctx context.Context, logger logrus.Logger, s store.Shift) (Reso
 
 	r := &resolver{
 		store:  s.Repository,
+		teamStore: s.Team,
+		buildStore: s.Build,
 		logger: logger,
 	}
 	return r, nil
@@ -62,6 +66,21 @@ func (r resolver) FetchRepository(params graphql.ResolveParams) (interface{}, er
 	result, err := r.store.GetRepository(teamName, vcsID)
 
 	var res types.RepositoryList
+	res.Nodes = result
+	res.Count = len(res.Nodes)
+
+	return &res, err
+}
+
+func (r resolver) FetchBuild(params graphql.ResolveParams) (interface{}, error) {
+
+	id := params.Source.(types.Repository).ID.Hex()
+	result, err := r.buildStore.FetchBuildByRepositoryID(id)
+	if err != nil && !strings.EqualFold("not found", err.Error()){
+		return nil, err
+	}
+
+	var res types.BuildList
 	res.Nodes = result
 	res.Count = len(res.Nodes)
 

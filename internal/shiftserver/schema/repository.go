@@ -9,9 +9,9 @@ import (
 	"github.com/Sirupsen/logrus"
 	"github.com/graphql-go/graphql"
 	"gitlab.com/conspico/elasticshift/api/types"
+	"gitlab.com/conspico/elasticshift/internal/pkg/utils"
 	"gitlab.com/conspico/elasticshift/internal/shiftserver/repository"
 	"gitlab.com/conspico/elasticshift/internal/shiftserver/store"
-	"gitlab.com/conspico/elasticshift/internal/pkg/utils"
 )
 
 func newRepositorySchema(
@@ -78,6 +78,18 @@ func newRepositorySchema(
 			Type:        graphql.String,
 			Description: "Represent the source code language reside in this repository",
 		},
+
+		"build": &graphql.Field{
+			Type: graphql.NewObject(graphql.ObjectConfig{
+			Name: "builds",
+			Fields: graphql.Fields{
+				"nodes": &graphql.Field{Type: graphql.NewList(BuildType)},
+				"count": &graphql.Field{Type: graphql.Int},
+			},
+		}),
+		Resolve: r.FetchBuild,
+	},
+
 	}
 
 	repositoryType := graphql.NewObject(

@@ -20,6 +20,7 @@ type Build interface {
 
 	FetchBuild(team, repositoryID, branch string, status types.BuildStatus) ([]types.Build, error)
 	FetchBuildByID(id string) (types.Build, error)
+	FetchBuildByRepositoryID(id string) ([]types.Build, error)
 	UpdateBuildLog(id bson.ObjectId, log string) error
 	UpdateBuildStatus(id bson.ObjectId, s types.BuildStatus) error
 	UpdateContainerID(id bson.ObjectId, containerID string) error
@@ -37,7 +38,7 @@ func (s *build) FetchBuild(team, repositoryID, branch string, status types.Build
 
 	q := bson.M{"team": team}
 	if repositoryID != "" {
-		q["repositoryID"] = repositoryID
+		q["repository_id"] = repositoryID
 	}
 
 	if branch != "" {
@@ -47,6 +48,19 @@ func (s *build) FetchBuild(team, repositoryID, branch string, status types.Build
 	if status > 0 {
 		q["status"] = status
 	}
+
+	var err error
+	var result []types.Build
+	s.Execute(func(c *mgo.Collection) {
+		err = c.Find(q).All(&result)
+	})
+
+	return result, err
+}
+
+func (s *build) FetchBuildByRepositoryID(id string) ([]types.Build, error) {
+
+	q := bson.M{"repository_id": id}
 
 	var err error
 	var result []types.Build
