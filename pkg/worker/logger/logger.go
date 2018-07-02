@@ -135,6 +135,8 @@ func New(ctx context.Context, buildID, teamID string, opt ...LoggerOption) (*Log
 	}
 
 	l.Writer = io.MultiWriter(writers...)
+
+	log.SetFlags(log.LstdFlags | log.Lmicroseconds | log.LUTC)
 	log.SetOutput(l.Writer)
 
 	return l, nil
