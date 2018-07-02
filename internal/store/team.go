@@ -1,25 +1,23 @@
 /*
 Copyright 2017 The Elasticshift Authors.
 */
-package team
+package store
 
 import (
 	"fmt"
 
 	"gitlab.com/conspico/elasticshift/api/types"
-	base "gitlab.com/conspico/elasticshift/pkg/store"
-	stypes "gitlab.com/conspico/elasticshift/pkg/store/types"
 	mgo "gopkg.in/mgo.v2"
 	"gopkg.in/mgo.v2/bson"
 )
 
-type store struct {
-	base.Store // store
+type team struct {
+	Store // store
 }
 
 //Store related database operations
-type Store interface {
-	base.Interface
+type Team interface {
+	Interface
 
 	//Team
 	CheckExists(name string) (bool, error)
@@ -39,14 +37,14 @@ type Store interface {
 }
 
 // NewStore related database operations
-func NewStore(d stypes.Database) Store {
-	s := &store{}
+func newTeamStore(d Database) Team {
+	s := &team{}
 	s.Database = d
 	s.CollectionName = "team"
 	return s
 }
 
-func (r *store) GetTeams(limit, offset int) ([]types.Team, error) {
+func (r *team) GetTeams(limit, offset int) ([]types.Team, error) {
 
 	list := make([]types.Team, 1)
 
@@ -55,7 +53,7 @@ func (r *store) GetTeams(limit, offset int) ([]types.Team, error) {
 	return list, nil
 }
 
-func (r *store) CheckExists(name string) (bool, error) {
+func (r *team) CheckExists(name string) (bool, error) {
 
 	var count int
 	var err error
@@ -69,7 +67,7 @@ func (r *store) CheckExists(name string) (bool, error) {
 	return count > 0, nil
 }
 
-func (r *store) GetTeam(id, name string) (types.Team, error) {
+func (r *team) GetTeam(id, name string) (types.Team, error) {
 
 	q := bson.M{}
 	if id != "" {
@@ -88,7 +86,7 @@ func (r *store) GetTeam(id, name string) (types.Team, error) {
 	return result, err
 }
 
-func (r *store) SaveVCS(team string, vcs *types.VCS) error {
+func (r *team) SaveVCS(team string, vcs *types.VCS) error {
 
 	var err error
 	r.Execute(func(c *mgo.Collection) {
@@ -100,7 +98,7 @@ func (r *store) SaveVCS(team string, vcs *types.VCS) error {
 	return err
 }
 
-func (r *store) GetVCS(team string) ([]types.VCS, error) {
+func (r *team) GetVCS(team string) ([]types.VCS, error) {
 
 	var err error
 	var t types.Team
@@ -110,7 +108,7 @@ func (r *store) GetVCS(team string) ([]types.VCS, error) {
 	return t.Accounts, err
 }
 
-func (r *store) GetVCSByID(team, id string) (types.VCS, error) {
+func (r *team) GetVCSByID(team, id string) (types.VCS, error) {
 
 	var t types.Team
 	var err error
@@ -125,7 +123,7 @@ func (r *store) GetVCSByID(team, id string) (types.VCS, error) {
 	return t.Accounts[0], err
 }
 
-func (r *store) UpdateVCS(team string, vcs types.VCS) error {
+func (r *team) UpdateVCS(team string, vcs types.VCS) error {
 
 	var err error
 	r.Execute(func(c *mgo.Collection) {
@@ -137,7 +135,7 @@ func (r *store) UpdateVCS(team string, vcs types.VCS) error {
 	return err
 }
 
-func (s *store) GetVCSByName(team, name, source string) (*types.VCS, error) {
+func (s *team) GetVCSByName(team, name, source string) (*types.VCS, error) {
 
 	var err error
 	var t types.Team
@@ -151,7 +149,7 @@ func (s *store) GetVCSByName(team, name, source string) (*types.VCS, error) {
 	return &t.Accounts[0], err
 }
 
-func (s *store) SaveKubeConfig(team string, f types.KubeConfig) error {
+func (s *team) SaveKubeConfig(team string, f types.KubeConfig) error {
 
 	var err error
 	s.Execute(func(c *mgo.Collection) {
@@ -163,7 +161,7 @@ func (s *store) SaveKubeConfig(team string, f types.KubeConfig) error {
 	return err
 }
 
-func (r *store) GetKubeConfig(team string) (types.KubeConfig, error) {
+func (r *team) GetKubeConfig(team string) (types.KubeConfig, error) {
 
 	var err error
 	var t types.Team

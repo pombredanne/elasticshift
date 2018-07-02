@@ -6,7 +6,6 @@ package store
 import (
 	"encoding/json"
 
-	"gitlab.com/conspico/elasticshift/pkg/store/types"
 	"gitlab.com/conspico/elasticshift/pkg/utils"
 	mgo "gopkg.in/mgo.v2"
 	"gopkg.in/mgo.v2/bson"
@@ -35,16 +34,10 @@ type Interface interface {
 	GetSession() *mgo.Session
 }
 
-// New ..
-// Create a new base datasource
-func NewDatabase(dbname string, session *mgo.Session) types.Database {
-	return types.Database{Name: dbname, Session: session}
-}
-
 // Store ..
 // A base datasource that performs actualy sql interactions.
 type Store struct {
-	Database       types.Database
+	Database       Database
 	CollectionName string
 }
 

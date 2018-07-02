@@ -10,18 +10,19 @@ import (
 	"github.com/Sirupsen/logrus"
 	"github.com/graphql-go/graphql"
 	"gitlab.com/conspico/elasticshift/api/types"
+	"gitlab.com/conspico/elasticshift/internal/store"
 	mgo "gopkg.in/mgo.v2"
 	"gopkg.in/mgo.v2/bson"
 )
 
 var (
-	errNameCantBeEmpty  = errors.New("Shiftfile name cannot be empty")
+	errNameCantBeEmpty          = errors.New("Shiftfile name cannot be empty")
 	errFileContentCannotBeEmpty = errors.New("Shiftfile content is empty")
-	errTeamIDCantBeEmpty = errors.New("Team ID cannot be empty")
+	errTeamIDCantBeEmpty        = errors.New("Team ID cannot be empty")
 )
 
 type resolver struct {
-	store  Store
+	store  store.Shiftfile
 	logger logrus.Logger
 	Ctx    context.Context
 }
@@ -53,25 +54,25 @@ func (r *resolver) FetchShiftfile(params graphql.ResolveParams) (interface{}, er
 }
 
 func (r *resolver) AddShiftfile(params graphql.ResolveParams) (interface{}, error) {
-	
+
 	name, _ := params.Args["name"].(string)
 	if name == "" {
 		return nil, errNameCantBeEmpty
 	}
-	
+
 	teamID, _ := params.Args["team_id"].(string)
 	if teamID == "" {
 		return nil, errTeamIDCantBeEmpty
 	}
-	
+
 	description, _ := params.Args["description"].(string)
 	file, _ := params.Args["file"].(string)
 	if file == "" {
 		return nil, errFileContentCannotBeEmpty
 	}
-	
+
 	// TODO validate the file content
-	
+
 	sf := types.Shiftfile{}
 	sf.Name = name
 	sf.Description = description

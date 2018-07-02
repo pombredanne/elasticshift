@@ -9,15 +9,15 @@ import (
 	"github.com/Sirupsen/logrus"
 	"github.com/graphql-go/graphql"
 	"gitlab.com/conspico/elasticshift/api/types"
-	"gitlab.com/conspico/elasticshift/pkg/identity/team"
+	"gitlab.com/conspico/elasticshift/internal/store"
 	"gitlab.com/conspico/elasticshift/pkg/utils"
 )
 
-func InitSchema(logger logrus.Logger, ctx context.Context, s Store, teamStore team.Store) (queries graphql.Fields, mutations graphql.Fields) {
+func InitSchema(logger logrus.Logger, ctx context.Context, s store.Shift) (queries graphql.Fields, mutations graphql.Fields) {
 
 	r := &resolver{
-		store:     s,
-		teamStore: teamStore,
+		store:     s.Secret,
+		teamStore: s.Team,
 		logger:    logger,
 		Ctx:       ctx,
 	}

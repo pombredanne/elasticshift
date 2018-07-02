@@ -9,6 +9,7 @@ import (
 	"github.com/Sirupsen/logrus"
 	"github.com/graphql-go/graphql"
 	"gitlab.com/conspico/elasticshift/api/types"
+	"gitlab.com/conspico/elasticshift/internal/store"
 	"gitlab.com/conspico/elasticshift/pkg/identity/oauth2/providers"
 	"gitlab.com/conspico/elasticshift/pkg/identity/team"
 )
@@ -20,8 +21,8 @@ var (
 )
 
 type resolver struct {
-	store     Store
-	teamStore team.Store
+	store     store.Vcs
+	teamStore store.Team
 	logger    logrus.Logger
 	providers providers.Providers
 }

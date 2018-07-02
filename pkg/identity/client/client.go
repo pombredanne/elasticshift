@@ -11,7 +11,7 @@ import (
 	"github.com/Sirupsen/logrus"
 	"gitlab.com/conspico/elasticshift/api"
 	"gitlab.com/conspico/elasticshift/api/dex"
-	stypes "gitlab.com/conspico/elasticshift/pkg/store/types"
+	stypes "gitlab.com/conspico/elasticshift/internal/types"
 )
 
 var (

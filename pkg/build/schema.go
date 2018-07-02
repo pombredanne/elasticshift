@@ -9,35 +9,24 @@ import (
 	"github.com/Sirupsen/logrus"
 	"github.com/graphql-go/graphql"
 	"gitlab.com/conspico/elasticshift/api/types"
-	"gitlab.com/conspico/elasticshift/pkg/defaults"
-	"gitlab.com/conspico/elasticshift/pkg/identity/team"
-	"gitlab.com/conspico/elasticshift/pkg/integration"
-	"gitlab.com/conspico/elasticshift/pkg/repository"
-	"gitlab.com/conspico/elasticshift/pkg/shiftfile"
-	"gitlab.com/conspico/elasticshift/pkg/sysconf"
+	"gitlab.com/conspico/elasticshift/internal/store"
 	"gitlab.com/conspico/elasticshift/pkg/utils"
 )
 
 func InitSchema(
 	logger logrus.Logger,
 	ctx context.Context,
-	s Store,
-	repositoryStore repository.Store,
-	sysconfStore sysconf.Store,
-	teamStore team.Store,
-	integrationStore integration.Store,
-	defaultStore defaults.Store,
-	shiftfileStore shiftfile.Store,
+	s store.Shift,
 ) (queries graphql.Fields, mutations graphql.Fields) {
 
 	r := &resolver{
-		store:            s,
-		repositoryStore:  repositoryStore,
-		sysconfStore:     sysconfStore,
-		teamStore:        teamStore,
-		integrationStore: integrationStore,
-		defaultStore:     defaultStore,
-		shiftfileStore:   shiftfileStore,
+		store:            s.Build,
+		repositoryStore:  s.Repository,
+		sysconfStore:     s.Sysconf,
+		teamStore:        s.Team,
+		integrationStore: s.Integration,
+		defaultStore:     s.Defaults,
+		shiftfileStore:   s.Shiftfile,
 		logger:           logger,
 		Ctx:              ctx,
 		BuildQueue:       make(chan types.Build),

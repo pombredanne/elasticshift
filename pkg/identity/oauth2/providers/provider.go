@@ -9,6 +9,7 @@ import (
 
 	"github.com/Sirupsen/logrus"
 	"gitlab.com/conspico/elasticshift/api/types"
+	"gitlab.com/conspico/elasticshift/internal/store"
 	"gitlab.com/conspico/elasticshift/pkg/sysconf"
 	"golang.org/x/oauth2"
 )
@@ -78,11 +79,11 @@ type Provider interface {
 // Providers type
 type Providers struct {
 	logger logrus.Logger
-	store  sysconf.Store
+	store  store.Sysconf
 }
 
-func New(logger logrus.Logger, store sysconf.Store) Providers {
-	return Providers{logger: logger, store: store}
+func New(logger logrus.Logger, s store.Shift) Providers {
+	return Providers{logger: logger, store: s.Sysconf}
 }
 
 // Get the provider by namee

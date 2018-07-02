@@ -1,25 +1,24 @@
 /*
 Copyright 2018 The Elasticshift Authors.
 */
-package defaults
+package store
 
 import (
 	"strings"
 
 	"gitlab.com/conspico/elasticshift/api/types"
-	base "gitlab.com/conspico/elasticshift/pkg/store"
-	stypes "gitlab.com/conspico/elasticshift/pkg/store/types"
 	mgo "gopkg.in/mgo.v2"
 	"gopkg.in/mgo.v2/bson"
 )
 
-type store struct {
-	base.Store
+type defaults struct {
+	Store
 }
 
-// Store provides system level config
-type Store interface {
-	base.Interface
+// Defaults..
+// Store provides system level defaults
+type Defaults interface {
+	Interface
 
 	FindByReferenceId(id string) (types.Default, error)
 	GetDefaultContainerEngine(team string) (string, error)
@@ -27,14 +26,14 @@ type Store interface {
 }
 
 // NewStore ..
-func NewStore(d stypes.Database) Store {
-	s := &store{}
+func newDefaultsStore(d Database) Defaults {
+	s := &defaults{}
 	s.Database = d
 	s.CollectionName = "default"
 	return s
 }
 
-func (s *store) FindByReferenceId(id string) (types.Default, error) {
+func (s *defaults) FindByReferenceId(id string) (types.Default, error) {
 
 	var result types.Default
 	err := s.FindOne(bson.M{"reference_id": id}, &result)
@@ -54,7 +53,7 @@ func (s *store) FindByReferenceId(id string) (types.Default, error) {
 	return result, err
 }
 
-func (s *store) GetDefaultContainerEngine(team string) (string, error) {
+func (s *defaults) GetDefaultContainerEngine(team string) (string, error) {
 
 	result, err := s.FindByReferenceId(team)
 	if err != nil {
@@ -63,7 +62,7 @@ func (s *store) GetDefaultContainerEngine(team string) (string, error) {
 	return result.ContainerEngineID, nil
 }
 
-func (s *store) UpdateDefaults(referenceID string, fields bson.M) error {
+func (s *defaults) UpdateDefaults(referenceID string, fields bson.M) error {
 
 	var err error
 	s.Execute(func(c *mgo.Collection) {

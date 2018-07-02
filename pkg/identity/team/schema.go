@@ -7,12 +7,13 @@ import (
 	"github.com/Sirupsen/logrus"
 	"github.com/graphql-go/graphql"
 	"gitlab.com/conspico/elasticshift/api/types"
+	"gitlab.com/conspico/elasticshift/internal/store"
 )
 
-func InitSchema(logger logrus.Logger, s Store) (queries graphql.Fields, mutations graphql.Fields) {
+func InitSchema(logger logrus.Logger, s store.Shift) (queries graphql.Fields, mutations graphql.Fields) {
 
 	r := &resolver{
-		store:  s,
+		store:  s.Team,
 		logger: logger,
 	}
 

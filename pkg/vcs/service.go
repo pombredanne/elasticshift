@@ -15,10 +15,9 @@ import (
 	"github.com/Sirupsen/logrus"
 	"github.com/gorilla/mux"
 	"gitlab.com/conspico/elasticshift/api/types"
+	"gitlab.com/conspico/elasticshift/internal/store"
 	"gitlab.com/conspico/elasticshift/pkg/identity/oauth2/providers"
-	"gitlab.com/conspico/elasticshift/pkg/identity/team"
 	"gitlab.com/conspico/elasticshift/pkg/secret"
-	stypes "gitlab.com/conspico/elasticshift/pkg/store/types"
 )
 
 var (
@@ -52,8 +51,8 @@ const (
 )
 
 type service struct {
-	store     Store
-	teamStore team.Store
+	store     store.Vcs
+	teamStore store.Team
 	vault     secret.Vault
 	logger    logrus.Logger
 	providers providers.Providers
@@ -66,11 +65,11 @@ type Service interface {
 }
 
 // NewVCSService ..
-func NewService(logger logrus.Logger, d stypes.Database, providers providers.Providers, teamStore team.Store, vault secret.Vault) Service {
+func NewService(logger logrus.Logger, d store.Database, providers providers.Providers, s store.Shift, vault secret.Vault) Service {
 
 	return &service{
-		store:     NewStore(d),
-		teamStore: teamStore,
+		store:     s.Vcs,
+		teamStore: s.Team,
 		vault:     vault,
 		logger:    logger,
 		providers: providers,

@@ -12,7 +12,7 @@ import (
 	"github.com/Sirupsen/logrus"
 	"github.com/graphql-go/graphql"
 	"gitlab.com/conspico/elasticshift/api/types"
-	"gitlab.com/conspico/elasticshift/pkg/identity/team"
+	"gitlab.com/conspico/elasticshift/internal/store"
 	"gopkg.in/mgo.v2/bson"
 )
 
@@ -36,8 +36,8 @@ const (
 )
 
 type resolver struct {
-	store     Store
-	teamStore team.Store
+	store     store.Secret
+	teamStore store.Team
 	logger    logrus.Logger
 	Ctx       context.Context
 }

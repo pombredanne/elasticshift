@@ -12,6 +12,7 @@ import (
 	"github.com/Sirupsen/logrus"
 	"github.com/graphql-go/graphql"
 	"gitlab.com/conspico/elasticshift/api/types"
+	"gitlab.com/conspico/elasticshift/internal/store"
 )
 
 var (
@@ -30,7 +31,7 @@ const (
 )
 
 type resolver struct {
-	store  Store
+	store  store.Sysconf
 	logger logrus.Logger
 }
 

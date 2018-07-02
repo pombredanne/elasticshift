@@ -11,8 +11,7 @@ import (
 	"github.com/golang/protobuf/ptypes"
 	"gitlab.com/conspico/elasticshift/api"
 	"gitlab.com/conspico/elasticshift/api/types"
-	"gitlab.com/conspico/elasticshift/pkg/build"
-	"gitlab.com/conspico/elasticshift/pkg/repository"
+	"gitlab.com/conspico/elasticshift/internal/store"
 	"gitlab.com/conspico/elasticshift/pkg/secret"
 	"golang.org/x/net/context"
 	"gopkg.in/mgo.v2/bson"
@@ -21,13 +20,13 @@ import (
 type shift struct {
 	logger          logrus.Logger
 	Ctx             context.Context
-	buildStore      build.Store
-	repositoryStore repository.Store
+	buildStore      store.Build
+	repositoryStore store.Repository
 	vault           secret.Vault
 }
 
-func NewServer(logger logrus.Logger, ctx context.Context, buildStore build.Store, repositoryStore repository.Store, vault secret.Vault) api.ShiftServer {
-	return &shift{logger, ctx, buildStore, repositoryStore, vault}
+func NewServer(logger logrus.Logger, ctx context.Context, s store.Shift, vault secret.Vault) api.ShiftServer {
+	return &shift{logger, ctx, s.Build, s.Repository, vault}
 }
 
 func (s *shift) Register(ctx context.Context, req *api.RegisterReq) (*api.RegisterRes, error) {

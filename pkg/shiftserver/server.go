@@ -15,6 +15,7 @@ import (
 	"github.com/graphql-go/handler"
 	"gitlab.com/conspico/elasticshift/api"
 	"gitlab.com/conspico/elasticshift/api/dex"
+	"gitlab.com/conspico/elasticshift/internal/store"
 	"gitlab.com/conspico/elasticshift/pkg/build"
 	"gitlab.com/conspico/elasticshift/pkg/container"
 	"gitlab.com/conspico/elasticshift/pkg/defaults"
@@ -26,8 +27,6 @@ import (
 	"gitlab.com/conspico/elasticshift/pkg/repository"
 	"gitlab.com/conspico/elasticshift/pkg/secret"
 	"gitlab.com/conspico/elasticshift/pkg/shift"
-	"gitlab.com/conspico/elasticshift/pkg/store"
-	stypes "gitlab.com/conspico/elasticshift/pkg/store/types"
 	"gitlab.com/conspico/elasticshift/pkg/sysconf"
 	"gitlab.com/conspico/elasticshift/pkg/vcs"
 	"golang.org/x/net/context"
@@ -51,26 +50,15 @@ const (
 // Server ..
 type Server struct {
 	Logger    logrus.Logger
-	DB        stypes.Database
+	DB        store.Database
 	Router    *mux.Router
 	Dex       dex.DexClient
 	Providers providers.Providers
 	Ctx       context.Context
 
-	Vault secret.Vault
+	Shift store.Shift
 
-	TeamStore           team.Store
-	VCSStore            vcs.Store
-	SysConfStore        sysconf.Store
-	BuildStore          build.Store
-	RepositoryStore     repository.Store
-	PluginStore         plugin.Store
-	ContainerStore      container.Store
-	IntegrationStore    integration.Store
-	InfrastructureStore infrastructure.Store
-	DefaultStore        defaults.Store
-	SecretStore         secret.Store
-	ShiftfileStore      shiftfile.Store
+	Vault secret.Vault
 
 	BuildType *graphql.Object
 }
@@ -102,6 +90,7 @@ func New(ctx context.Context, c Config) (*Server, error) {
 	s.Logger = c.Logger
 
 	s.DB = store.NewDatabase(c.Store.Name, c.Session)
+	s.Shift = s.DB.InitShiftStore()
 
 	// d, err := newDexClient(ctx, c.Identity)
 	// if err != nil {
@@ -121,8 +110,7 @@ func New(ctx context.Context, c Config) (*Server, error) {
 	r.Handle("/debug/threadcreate", pprof.Handler("threadcreate"))
 	r.Handle("/debug/block", pprof.Handler("block"))
 
-	s.SysConfStore = sysconf.NewStore(s.DB)
-	s.Providers = providers.New(s.Logger, s.SysConfStore)
+	s.Providers = providers.New(s.Logger, s.Shift)
 
 	// initialize graphql based services
 	s.registerGraphQLServices()
@@ -148,7 +136,7 @@ func New(ctx context.Context, c Config) (*Server, error) {
 func (s *Server) registerEndpointServices() {
 
 	// VCS service to link repositories.
-	vcsServ := vcs.NewService(s.Logger, s.DB, s.Providers, s.TeamStore, s.Vault)
+	vcsServ := vcs.NewService(s.Logger, s.DB, s.Providers, s.Shift, s.Vault)
 
 	// Oauth2 providers
 	s.Router.HandleFunc("/api/{team}/link/{provider}", vcsServ.Authorize)
@@ -160,7 +148,7 @@ func (s *Server) registerEndpointServices() {
 	// s.Router.HandleFunc("/sysconf/upload", sysconfServ.UploadKubeConfigFile)
 
 	// Plugin bundle push
-	pluginServ := plugin.NewService(s.Logger, s.DB, s.PluginStore, s.TeamStore, s.SysConfStore)
+	pluginServ := plugin.NewService(s.Logger, s.DB, s.Shift)
 	s.Router.HandleFunc("/api/plugin/push", pluginServ.PushPlugin)
 }
 
@@ -173,102 +161,66 @@ func (s *Server) registerGraphQLServices() {
 	queries := graphql.Fields{}
 	mutations := graphql.Fields{}
 
-	// data store
-	teamStore := team.NewStore(s.DB)
-	s.TeamStore = teamStore
-
-	vcsStore := vcs.NewStore(s.DB)
-	s.VCSStore = vcsStore
-
-	sysconfStore := s.SysConfStore
-
-	repositoryStore := repository.NewStore(s.DB)
-	s.RepositoryStore = repositoryStore
-
-	buildStore := build.NewStore(s.DB)
-	s.BuildStore = buildStore
-
-	pluginStore := plugin.NewStore(s.DB)
-	s.PluginStore = pluginStore
-
-	containerStore := container.NewStore(s.DB)
-	s.ContainerStore = containerStore
-
-	integrationStore := integration.NewStore(s.DB)
-	s.IntegrationStore = integrationStore
-
-	infrastructureStore := infrastructure.NewStore(s.DB)
-	s.InfrastructureStore = infrastructureStore
-
-	defaultStore := defaults.NewStore(s.DB)
-	s.DefaultStore = defaultStore
-
-	secretStore := secret.NewStore(s.DB)
-	s.SecretStore = secretStore
-
-	vault := secret.NewVault(secretStore, logger, s.Ctx)
+	vault := secret.NewVault(s.Shift, logger, s.Ctx)
 	s.Vault = vault
 
-	shiftfileStore := shiftfile.NewStore(s.DB)
-	s.ShiftfileStore = shiftfileStore
-
 	// team fields
-	teamQ, teamM := team.InitSchema(logger, teamStore)
+	teamQ, teamM := team.InitSchema(logger, s.Shift)
 	appendFields(queries, teamQ)
 	appendFields(mutations, teamM)
 
 	// vcs fields
-	vcsQ, vcsM := vcs.InitSchema(logger, s.Providers, vcsStore, teamStore)
+	vcsQ, vcsM := vcs.InitSchema(logger, s.Providers, s.Shift)
 	appendFields(queries, vcsQ)
 	appendFields(mutations, vcsM)
 
 	// repository fields
-	repositoryQ, repositoryM := repository.InitSchema(logger, repositoryStore, teamStore)
+	repositoryQ, repositoryM := repository.InitSchema(logger, s.Shift)
 	appendFields(queries, repositoryQ)
 	appendFields(mutations, repositoryM)
 
 	// sysconf fields
-	sysconfQ, sysconfM := sysconf.InitSchema(logger, sysconfStore)
+	sysconfQ, sysconfM := sysconf.InitSchema(logger, s.Shift)
 	appendFields(queries, sysconfQ)
 	appendFields(mutations, sysconfM)
 
 	// build fields
-	buildQ, buildM := build.InitSchema(logger, s.Ctx, buildStore, repositoryStore, sysconfStore, teamStore, integrationStore, defaultStore, shiftfileStore)
+	buildQ, buildM := build.InitSchema(logger, s.Ctx, s.Shift)
 	appendFields(queries, buildQ)
 	appendFields(mutations, buildM)
 
 	// app fields
-	pluginQ, pluginM := plugin.InitSchema(logger, s.Ctx, pluginStore)
+	pluginQ, pluginM := plugin.InitSchema(logger, s.Ctx, s.Shift)
 	appendFields(queries, pluginQ)
 	appendFields(mutations, pluginM)
 
 	// container fields
-	containerQ, containerM := container.InitSchema(logger, s.Ctx, containerStore)
+	containerQ, containerM := container.InitSchema(logger, s.Ctx, s.Shift)
 	appendFields(queries, containerQ)
 	appendFields(mutations, containerM)
 
 	// integration fields
-	integrationQ, integrationM := integration.InitSchema(logger, s.Ctx, integrationStore)
+	integrationQ, integrationM := integration.InitSchema(logger, s.Ctx, s.Shift)
 	appendFields(queries, integrationQ)
 	appendFields(mutations, integrationM)
 
 	// infrastructure fields
-	infrastructureQ, infrastructureM := infrastructure.InitSchema(logger, s.Ctx, infrastructureStore)
+	infrastructureQ, infrastructureM := infrastructure.InitSchema(logger, s.Ctx, s.Shift)
 	appendFields(queries, infrastructureQ)
 	appendFields(mutations, infrastructureM)
 
 	// default fields
-	defaultQ, defaultM := defaults.InitSchema(logger, s.Ctx, defaultStore, teamStore)
+	defaultQ, defaultM := defaults.InitSchema(logger, s.Ctx, s.Shift)
 	appendFields(queries, defaultQ)
 	appendFields(mutations, defaultM)
 
 	// secret fields
-	secretQ, secretM := secret.InitSchema(logger, s.Ctx, secretStore, teamStore)
+	secretQ, secretM := secret.InitSchema(logger, s.Ctx, s.Shift)
 	appendFields(queries, secretQ)
 	appendFields(mutations, secretM)
 
 	// secret fields
-	shiftfileQ, shiftfileM := shiftfile.InitSchema(logger, s.Ctx, shiftfileStore)
+	shiftfileQ, shiftfileM := shiftfile.InitSchema(logger, s.Ctx, s.Shift)
 	appendFields(queries, shiftfileQ)
 	appendFields(mutations, shiftfileM)
 
@@ -312,7 +264,7 @@ func appendFields(fields graphql.Fields, input graphql.Fields) {
 
 // Registers the GRPC services
 func RegisterGRPCServices(grpcServer *grpc.Server, s *Server) {
-	api.RegisterShiftServer(grpcServer, shift.NewServer(s.Logger, s.Ctx, s.BuildStore, s.RepositoryStore, s.Vault))
+	api.RegisterShiftServer(grpcServer, shift.NewServer(s.Logger, s.Ctx, s.Shift, s.Vault))
 }
 
 // Registers the exposed http services

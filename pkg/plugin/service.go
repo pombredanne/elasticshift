@@ -14,9 +14,7 @@ import (
 
 	"github.com/Sirupsen/logrus"
 	"gitlab.com/conspico/elasticshift/api/types"
-	"gitlab.com/conspico/elasticshift/pkg/identity/team"
-	stypes "gitlab.com/conspico/elasticshift/pkg/store/types"
-	"gitlab.com/conspico/elasticshift/pkg/sysconf"
+	"gitlab.com/conspico/elasticshift/internal/store"
 	"gitlab.com/conspico/elasticshift/pkg/utils"
 	"gopkg.in/mgo.v2/bson"
 )
@@ -32,9 +30,9 @@ var (
 )
 
 type service struct {
-	pluginStore  Store
-	teamStore    team.Store
-	sysconfStore sysconf.Store
+	pluginStore  store.Plugin
+	teamStore    store.Team
+	sysconfStore store.Sysconf
 	logger       logrus.Logger
 }
 
@@ -44,12 +42,12 @@ type Service interface {
 }
 
 // NewVCSService ..
-func NewService(logger logrus.Logger, d stypes.Database, pluginStore Store, teamStore team.Store, sysconfStore sysconf.Store) Service {
+func NewService(logger logrus.Logger, d store.Database, s store.Shift) Service {
 
 	return &service{
-		pluginStore:  pluginStore,
-		teamStore:    teamStore,
-		sysconfStore: sysconfStore,
+		pluginStore:  s.Plugin,
+		teamStore:    s.Team,
+		sysconfStore: s.Sysconf,
 		logger:       logger,
 	}
 }

@@ -7,21 +7,18 @@ import (
 	"github.com/Sirupsen/logrus"
 	"github.com/graphql-go/graphql"
 	"gitlab.com/conspico/elasticshift/api/types"
-	"gitlab.com/conspico/elasticshift/pkg/identity/team"
+	"gitlab.com/conspico/elasticshift/internal/store"
 	"gitlab.com/conspico/elasticshift/pkg/utils"
 )
 
 func InitSchema(
 	logger logrus.Logger,
-	s Store,
-	teamStore team.Store,
-	// buildStore build.Store,
-	// buildType *graphql.Object,
+	s store.Shift,
 ) (queries graphql.Fields, mutations graphql.Fields) {
 
 	r := &resolver{
-		store:     s,
-		teamStore: teamStore,
+		store:     s.Repository,
+		teamStore: s.Team,
 		// buildStore: buildStore,
 		logger: logger,
 	}

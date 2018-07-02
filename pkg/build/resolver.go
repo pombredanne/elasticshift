@@ -14,14 +14,9 @@ import (
 	"github.com/Sirupsen/logrus"
 	"github.com/graphql-go/graphql"
 	"gitlab.com/conspico/elasticshift/api/types"
-	"gitlab.com/conspico/elasticshift/pkg/defaults"
-	"gitlab.com/conspico/elasticshift/pkg/identity/team"
-	"gitlab.com/conspico/elasticshift/pkg/integration"
-	"gitlab.com/conspico/elasticshift/pkg/repository"
-	"gitlab.com/conspico/elasticshift/pkg/shiftfile"
+	"gitlab.com/conspico/elasticshift/internal/store"
 	"gitlab.com/conspico/elasticshift/pkg/shiftfile/keys"
 	"gitlab.com/conspico/elasticshift/pkg/shiftfile/parser"
-	"gitlab.com/conspico/elasticshift/pkg/sysconf"
 	"gitlab.com/conspico/elasticshift/pkg/vcs"
 	"gopkg.in/mgo.v2/bson"
 )
@@ -38,13 +33,13 @@ var (
 )
 
 type resolver struct {
-	store            Store
-	repositoryStore  repository.Store
-	integrationStore integration.Store
-	teamStore        team.Store
-	sysconfStore     sysconf.Store
-	defaultStore     defaults.Store
-	shiftfileStore   shiftfile.Store
+	store            store.Build
+	repositoryStore  store.Repository
+	sysconfStore     store.Sysconf
+	teamStore        store.Team
+	integrationStore store.Integration
+	defaultStore     store.Defaults
+	shiftfileStore   store.Shiftfile
 	logger           logrus.Logger
 	Ctx              context.Context
 	BuildQueue       chan types.Build

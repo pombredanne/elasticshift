@@ -6,21 +6,20 @@ package vcs
 import (
 	"github.com/Sirupsen/logrus"
 	"github.com/graphql-go/graphql"
+	"gitlab.com/conspico/elasticshift/internal/store"
 	"gitlab.com/conspico/elasticshift/pkg/identity/oauth2/providers"
-	"gitlab.com/conspico/elasticshift/pkg/identity/team"
 	"gitlab.com/conspico/elasticshift/pkg/utils"
 )
 
 func InitSchema(
 	logger logrus.Logger,
 	providers providers.Providers,
-	s Store,
-	teamStore team.Store,
+	s store.Shift,
 ) (queries graphql.Fields, mutations graphql.Fields) {
 
 	r := &resolver{
-		store:     s,
-		teamStore: teamStore,
+		store:     s.Vcs,
+		teamStore: s.Team,
 		logger:    logger,
 		providers: providers,
 	}

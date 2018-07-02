@@ -10,6 +10,7 @@ import (
 	"github.com/graphql-go/graphql"
 	"gitlab.com/conspico/elasticshift/api/types"
 	"gitlab.com/conspico/elasticshift/pkg/utils"
+	"gitlab.com/conspico/elasticshift/internal/store"
 )
 
 var (
@@ -24,7 +25,7 @@ var (
 )
 
 type resolver struct {
-	store  Store
+	store  store.Team
 	logger logrus.Logger
 }
 

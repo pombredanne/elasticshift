@@ -10,6 +10,7 @@ import (
 	"github.com/Sirupsen/logrus"
 	"github.com/graphql-go/graphql"
 	"gitlab.com/conspico/elasticshift/api/types"
+	"gitlab.com/conspico/elasticshift/internal/store"
 	mgo "gopkg.in/mgo.v2"
 	"gopkg.in/mgo.v2/bson"
 )
@@ -21,7 +22,7 @@ var (
 )
 
 type resolver struct {
-	store  Store
+	store  store.Plugin
 	logger logrus.Logger
 	Ctx    context.Context
 }

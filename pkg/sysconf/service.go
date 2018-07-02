@@ -9,12 +9,11 @@ import (
 	"net/http"
 
 	"github.com/Sirupsen/logrus"
-	"gitlab.com/conspico/elasticshift/pkg/identity/team"
-	stypes "gitlab.com/conspico/elasticshift/pkg/store/types"
+	"gitlab.com/conspico/elasticshift/internal/store"
 )
 
 type service struct {
-	teamStore team.Store
+	teamStore store.Team
 	logger    logrus.Logger
 }
 
@@ -24,10 +23,10 @@ type Service interface {
 }
 
 // NewVCSService ..
-func NewService(logger logrus.Logger, d stypes.Database, teamStore team.Store) Service {
+func NewService(logger logrus.Logger, d store.Database, s store.Shift) Service {
 
 	return &service{
-		teamStore: teamStore,
+		teamStore: s.Team,
 		logger:    logger,
 	}
 }

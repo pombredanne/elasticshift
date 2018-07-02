@@ -13,7 +13,7 @@ import (
 	"github.com/Sirupsen/logrus"
 	"github.com/graphql-go/graphql"
 	"gitlab.com/conspico/elasticshift/api/types"
-	"gitlab.com/conspico/elasticshift/pkg/identity/team"
+	"gitlab.com/conspico/elasticshift/internal/store"
 	"gopkg.in/mgo.v2/bson"
 )
 
@@ -29,10 +29,10 @@ const (
 )
 
 type resolver struct {
-	store     Store
+	store     store.Defaults
 	logger    logrus.Logger
 	Ctx       context.Context
-	teamStore team.Store
+	teamStore store.Team
 }
 
 func (r *resolver) FetchDefault(params graphql.ResolveParams) (interface{}, error) {

@@ -1,35 +1,33 @@
 /*
 Copyright 2018 The Elasticshift Authors.
 */
-package secret
+package store
 
 import (
-	base "gitlab.com/conspico/elasticshift/pkg/store"
-	stypes "gitlab.com/conspico/elasticshift/pkg/store/types"
 	mgo "gopkg.in/mgo.v2"
 	"gopkg.in/mgo.v2/bson"
 )
 
-type store struct {
-	base.Store
+type secret struct {
+	Store
 }
 
 // Store provides system level config
-type Store interface {
-	base.Interface
+type Secret interface {
+	Interface
 
 	UpdateSecret(id bson.ObjectId, fields bson.M) error
 }
 
 // NewStore ..
-func NewStore(d stypes.Database) Store {
-	s := &store{}
+func newSecretStore(d Database) Secret {
+	s := &secret{}
 	s.Database = d
 	s.CollectionName = "secret"
 	return s
 }
 
-func (s *store) UpdateSecret(id bson.ObjectId, fields bson.M) error {
+func (s *secret) UpdateSecret(id bson.ObjectId, fields bson.M) error {
 
 	var err error
 	s.Execute(func(c *mgo.Collection) {

@@ -9,13 +9,14 @@ import (
 	"github.com/Sirupsen/logrus"
 	"github.com/graphql-go/graphql"
 	"gitlab.com/conspico/elasticshift/api/types"
+	"gitlab.com/conspico/elasticshift/internal/store"
 	"gitlab.com/conspico/elasticshift/pkg/utils"
 )
 
-func InitSchema(logger logrus.Logger, ctx context.Context, s Store) (queries graphql.Fields, mutations graphql.Fields) {
+func InitSchema(logger logrus.Logger, ctx context.Context, s store.Shift) (queries graphql.Fields, mutations graphql.Fields) {
 
 	r := &resolver{
-		store:  s,
+		store:  s.Shiftfile,
 		logger: logger,
 		Ctx:    ctx,
 	}
@@ -90,7 +91,7 @@ func InitSchema(logger logrus.Logger, ctx context.Context, s Store) (queries gra
 	}
 
 	mutations = graphql.Fields{
-		
+
 		"addShiftfile": &graphql.Field{
 			Type: shiftfileType,
 			Args: graphql.FieldConfigArgument{
@@ -99,7 +100,7 @@ func InitSchema(logger logrus.Logger, ctx context.Context, s Store) (queries gra
 					Description: "Name of the shiftfile",
 				},
 				"description": &graphql.ArgumentConfig{
-					Type:       graphql.String,
+					Type:        graphql.String,
 					Description: "Description about the shiftfile",
 				},
 				"file": &graphql.ArgumentConfig{
@@ -114,6 +115,6 @@ func InitSchema(logger logrus.Logger, ctx context.Context, s Store) (queries gra
 			Resolve: r.AddShiftfile,
 		},
 	}
-	
+
 	return queries, mutations
 }
