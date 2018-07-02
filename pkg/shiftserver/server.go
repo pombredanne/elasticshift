@@ -5,7 +5,6 @@ package server
 
 import (
 	"encoding/base64"
-	"log"
 	"net/http/pprof"
 	"strings"
 
@@ -15,24 +14,16 @@ import (
 	"github.com/graphql-go/handler"
 	"gitlab.com/conspico/elasticshift/api"
 	"gitlab.com/conspico/elasticshift/api/dex"
+	"gitlab.com/conspico/elasticshift/internal/pkg/identity/oauth2/providers"
+	"gitlab.com/conspico/elasticshift/internal/pkg/plugin"
+	"gitlab.com/conspico/elasticshift/internal/pkg/secret"
+	"gitlab.com/conspico/elasticshift/internal/pkg/vcs"
+	"gitlab.com/conspico/elasticshift/internal/schema"
 	"gitlab.com/conspico/elasticshift/internal/store"
-	"gitlab.com/conspico/elasticshift/pkg/build"
-	"gitlab.com/conspico/elasticshift/pkg/container"
-	"gitlab.com/conspico/elasticshift/pkg/defaults"
-	"gitlab.com/conspico/elasticshift/pkg/identity/oauth2/providers"
-	"gitlab.com/conspico/elasticshift/pkg/identity/team"
-	"gitlab.com/conspico/elasticshift/pkg/infrastructure"
-	"gitlab.com/conspico/elasticshift/pkg/integration"
-	"gitlab.com/conspico/elasticshift/pkg/plugin"
-	"gitlab.com/conspico/elasticshift/pkg/repository"
-	"gitlab.com/conspico/elasticshift/pkg/secret"
 	"gitlab.com/conspico/elasticshift/pkg/shift"
-	"gitlab.com/conspico/elasticshift/pkg/sysconf"
-	"gitlab.com/conspico/elasticshift/pkg/vcs"
 	"golang.org/x/net/context"
 	"google.golang.org/grpc"
 
-	"gitlab.com/conspico/elasticshift/pkg/shiftfile"
 	mgo "gopkg.in/mgo.v2"
 )
 
@@ -113,14 +104,17 @@ func New(ctx context.Context, c Config) (*Server, error) {
 	s.Providers = providers.New(s.Logger, s.Shift)
 
 	// initialize graphql based services
-	s.registerGraphQLServices()
+	err := s.registerGraphQLServices()
+	if err != nil {
+		return nil, err
+	}
 
 	// initialize oauth2 providers
 	s.registerEndpointServices()
 
 	s.registerWebSocketServices()
 
-	err := s.bootstrap()
+	err = s.bootstrap()
 	if err != nil {
 		return nil, err
 	}
@@ -152,99 +146,29 @@ func (s *Server) registerEndpointServices() {
 	s.Router.HandleFunc("/api/plugin/push", pluginServ.PushPlugin)
 }
 
-func (s *Server) registerGraphQLServices() {
+func (s *Server) registerGraphQLServices() error {
 
 	logger := s.Logger
 	r := s.Router
 
-	// initialize schema
-	queries := graphql.Fields{}
-	mutations := graphql.Fields{}
-
 	vault := secret.NewVault(s.Shift, logger, s.Ctx)
 	s.Vault = vault
 
-	// team fields
-	teamQ, teamM := team.InitSchema(logger, s.Shift)
-	appendFields(queries, teamQ)
-	appendFields(mutations, teamM)
-
-	// vcs fields
-	vcsQ, vcsM := vcs.InitSchema(logger, s.Providers, s.Shift)
-	appendFields(queries, vcsQ)
-	appendFields(mutations, vcsM)
-
-	// repository fields
-	repositoryQ, repositoryM := repository.InitSchema(logger, s.Shift)
-	appendFields(queries, repositoryQ)
-	appendFields(mutations, repositoryM)
-
-	// sysconf fields
-	sysconfQ, sysconfM := sysconf.InitSchema(logger, s.Shift)
-	appendFields(queries, sysconfQ)
-	appendFields(mutations, sysconfM)
-
-	// build fields
-	buildQ, buildM := build.InitSchema(logger, s.Ctx, s.Shift)
-	appendFields(queries, buildQ)
-	appendFields(mutations, buildM)
-
-	// app fields
-	pluginQ, pluginM := plugin.InitSchema(logger, s.Ctx, s.Shift)
-	appendFields(queries, pluginQ)
-	appendFields(mutations, pluginM)
-
-	// container fields
-	containerQ, containerM := container.InitSchema(logger, s.Ctx, s.Shift)
-	appendFields(queries, containerQ)
-	appendFields(mutations, containerM)
-
-	// integration fields
-	integrationQ, integrationM := integration.InitSchema(logger, s.Ctx, s.Shift)
-	appendFields(queries, integrationQ)
-	appendFields(mutations, integrationM)
-
-	// infrastructure fields
-	infrastructureQ, infrastructureM := infrastructure.InitSchema(logger, s.Ctx, s.Shift)
-	appendFields(queries, infrastructureQ)
-	appendFields(mutations, infrastructureM)
-
-	// default fields
-	defaultQ, defaultM := defaults.InitSchema(logger, s.Ctx, s.Shift)
-	appendFields(queries, defaultQ)
-	appendFields(mutations, defaultM)
-
-	// secret fields
-	secretQ, secretM := secret.InitSchema(logger, s.Ctx, s.Shift)
-	appendFields(queries, secretQ)
-	appendFields(mutations, secretM)
-
-	// secret fields
-	shiftfileQ, shiftfileM := shiftfile.InitSchema(logger, s.Ctx, s.Shift)
-	appendFields(queries, shiftfileQ)
-	appendFields(mutations, shiftfileM)
-
-	rootQuery := graphql.ObjectConfig{Name: "RootQuery", Fields: queries}
-	rootMutation := graphql.ObjectConfig{Name: "RootMutation", Fields: mutations}
-
-	schemaConfig := graphql.SchemaConfig{
-		Query:    graphql.NewObject(rootQuery),
-		Mutation: graphql.NewObject(rootMutation),
-	}
-
-	schema, err := graphql.NewSchema(schemaConfig)
+	schm, err := schema.Construct(s.Ctx, s.Logger, s.Providers, s.Shift, s.Vault)
 	if err != nil {
-		log.Fatalf("Failed to create schema due to errors :v", err)
+		return err
 	}
 
 	// initialize graphql
 	h := handler.New(&handler.Config{
-		Schema:   &schema,
+		Schema:   schm,
 		Pretty:   true,
 		GraphiQL: true,
 	})
 	r.Handle("/graphql", h)
 	r.Handle("/graphql/", h)
+
+	return nil
 }
 
 func (s *Server) registerWebSocketServices() {
@@ -252,14 +176,6 @@ func (s *Server) registerWebSocketServices() {
 	//r := s.Router
 	//r.HandleFunc("/api/ws/")
 
-}
-
-// Utility method to append fields
-func appendFields(fields graphql.Fields, input graphql.Fields) {
-
-	for k, v := range input {
-		fields[k] = v
-	}
 }
 
 // Registers the GRPC services

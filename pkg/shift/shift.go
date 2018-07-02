@@ -11,8 +11,8 @@ import (
 	"github.com/golang/protobuf/ptypes"
 	"gitlab.com/conspico/elasticshift/api"
 	"gitlab.com/conspico/elasticshift/api/types"
+	"gitlab.com/conspico/elasticshift/internal/pkg/secret"
 	"gitlab.com/conspico/elasticshift/internal/store"
-	"gitlab.com/conspico/elasticshift/pkg/secret"
 	"golang.org/x/net/context"
 	"gopkg.in/mgo.v2/bson"
 )
