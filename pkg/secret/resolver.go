@@ -13,7 +13,6 @@ import (
 	"github.com/graphql-go/graphql"
 	"gitlab.com/conspico/elasticshift/api/types"
 	"gitlab.com/conspico/elasticshift/pkg/identity/team"
-	"gitlab.com/conspico/elasticshift/pkg/vcs/repository"
 	"gopkg.in/mgo.v2/bson"
 )
 
@@ -37,11 +36,10 @@ const (
 )
 
 type resolver struct {
-	store           Store
-	teamStore       team.Store
-	repositoryStore repository.Store
-	logger          logrus.Logger
-	Ctx             context.Context
+	store     Store
+	teamStore team.Store
+	logger    logrus.Logger
+	Ctx       context.Context
 }
 
 func (r *resolver) FetchSecret(params graphql.ResolveParams) (interface{}, error) {

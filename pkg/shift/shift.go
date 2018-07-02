@@ -12,8 +12,8 @@ import (
 	"gitlab.com/conspico/elasticshift/api"
 	"gitlab.com/conspico/elasticshift/api/types"
 	"gitlab.com/conspico/elasticshift/pkg/build"
+	"gitlab.com/conspico/elasticshift/pkg/repository"
 	"gitlab.com/conspico/elasticshift/pkg/secret"
-	"gitlab.com/conspico/elasticshift/pkg/vcs/repository"
 	"golang.org/x/net/context"
 	"gopkg.in/mgo.v2/bson"
 )

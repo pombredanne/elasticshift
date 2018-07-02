@@ -17,12 +17,12 @@ import (
 	"gitlab.com/conspico/elasticshift/pkg/defaults"
 	"gitlab.com/conspico/elasticshift/pkg/identity/team"
 	"gitlab.com/conspico/elasticshift/pkg/integration"
+	"gitlab.com/conspico/elasticshift/pkg/repository"
 	"gitlab.com/conspico/elasticshift/pkg/shiftfile"
 	"gitlab.com/conspico/elasticshift/pkg/shiftfile/keys"
 	"gitlab.com/conspico/elasticshift/pkg/shiftfile/parser"
 	"gitlab.com/conspico/elasticshift/pkg/sysconf"
 	"gitlab.com/conspico/elasticshift/pkg/vcs"
-	"gitlab.com/conspico/elasticshift/pkg/vcs/repository"
 	"gopkg.in/mgo.v2/bson"
 )
 

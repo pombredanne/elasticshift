@@ -7,7 +7,6 @@ import (
 	"fmt"
 	"net/http"
 	"strings"
-	"time"
 
 	"bytes"
 
@@ -30,9 +29,6 @@ var (
 	errGettingRepositories     = "Failed to get repositories for %s"
 	errVCSAccountAlreadyLinked = "VCS account already linked"
 )
-
-// expiryDelta determines how earlier a token should be considered
-const expiryDelta = 10 * time.Second
 
 // True or False
 const (

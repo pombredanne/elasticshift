@@ -11,17 +11,15 @@ import (
 	"gitlab.com/conspico/elasticshift/api/types"
 	"gitlab.com/conspico/elasticshift/pkg/identity/team"
 	"gitlab.com/conspico/elasticshift/pkg/utils"
-	"gitlab.com/conspico/elasticshift/pkg/vcs/repository"
 )
 
-func InitSchema(logger logrus.Logger, ctx context.Context, s Store, teamStore team.Store, repositoryStore repository.Store) (queries graphql.Fields, mutations graphql.Fields) {
+func InitSchema(logger logrus.Logger, ctx context.Context, s Store, teamStore team.Store) (queries graphql.Fields, mutations graphql.Fields) {
 
 	r := &resolver{
-		store:           s,
-		teamStore:       teamStore,
-		repositoryStore: repositoryStore,
-		logger:          logger,
-		Ctx:             ctx,
+		store:     s,
+		teamStore: teamStore,
+		logger:    logger,
+		Ctx:       ctx,
 	}
 
 	secretEnum := graphql.NewEnum(graphql.EnumConfig{

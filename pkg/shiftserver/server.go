@@ -23,13 +23,13 @@ import (
 	"gitlab.com/conspico/elasticshift/pkg/infrastructure"
 	"gitlab.com/conspico/elasticshift/pkg/integration"
 	"gitlab.com/conspico/elasticshift/pkg/plugin"
+	"gitlab.com/conspico/elasticshift/pkg/repository"
 	"gitlab.com/conspico/elasticshift/pkg/secret"
 	"gitlab.com/conspico/elasticshift/pkg/shift"
 	"gitlab.com/conspico/elasticshift/pkg/store"
 	stypes "gitlab.com/conspico/elasticshift/pkg/store/types"
 	"gitlab.com/conspico/elasticshift/pkg/sysconf"
 	"gitlab.com/conspico/elasticshift/pkg/vcs"
-	"gitlab.com/conspico/elasticshift/pkg/vcs/repository"
 	"golang.org/x/net/context"
 	"google.golang.org/grpc"
 
@@ -71,6 +71,8 @@ type Server struct {
 	DefaultStore        defaults.Store
 	SecretStore         secret.Store
 	ShiftfileStore      shiftfile.Store
+
+	BuildType *graphql.Object
 }
 
 // Config ..
@@ -216,9 +218,14 @@ func (s *Server) registerGraphQLServices() {
 	appendFields(mutations, teamM)
 
 	// vcs fields
-	vcsQ, vcsM := vcs.InitSchema(logger, s.Providers, vcsStore, teamStore, repositoryStore)
+	vcsQ, vcsM := vcs.InitSchema(logger, s.Providers, vcsStore, teamStore)
 	appendFields(queries, vcsQ)
 	appendFields(mutations, vcsM)
+
+	// repository fields
+	repositoryQ, repositoryM := repository.InitSchema(logger, repositoryStore, teamStore)
+	appendFields(queries, repositoryQ)
+	appendFields(mutations, repositoryM)
 
 	// sysconf fields
 	sysconfQ, sysconfM := sysconf.InitSchema(logger, sysconfStore)
@@ -256,7 +263,7 @@ func (s *Server) registerGraphQLServices() {
 	appendFields(mutations, defaultM)
 
 	// secret fields
-	secretQ, secretM := secret.InitSchema(logger, s.Ctx, secretStore, teamStore, repositoryStore)
+	secretQ, secretM := secret.InitSchema(logger, s.Ctx, secretStore, teamStore)
 	appendFields(queries, secretQ)
 	appendFields(mutations, secretM)
 
