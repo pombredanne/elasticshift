@@ -15,7 +15,7 @@ import (
 	"gitlab.com/conspico/elasticshift/api"
 	"gitlab.com/conspico/elasticshift/internal/worker/logger"
 	"gitlab.com/conspico/elasticshift/internal/worker/types"
-	"gitlab.com/conspico/elasticshift/pkg/builder"
+	"gitlab.com/conspico/elasticshift/internal/worker/builder"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/keepalive"
 )

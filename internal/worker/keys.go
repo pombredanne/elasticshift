@@ -13,7 +13,7 @@ import (
 	"log"
 	"os"
 
-	"gitlab.com/conspico/elasticshift/pkg/utils"
+	"gitlab.com/conspico/elasticshift/internal/pkg/utils"
 )
 
 // Generate the RSA keys

@@ -8,7 +8,7 @@ import (
 	"fmt"
 	"strings"
 
-	"gitlab.com/conspico/elasticshift/internal/pkg/identity/oauth2/providers"
+	"gitlab.com/conspico/elasticshift/internal/shiftserver/identity/oauth2/providers"
 	"gitlab.com/conspico/elasticshift/pkg/dispatch"
 )
 

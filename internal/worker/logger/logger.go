@@ -13,7 +13,7 @@ import (
 
 	"context"
 
-	"gitlab.com/conspico/elasticshift/pkg/utils"
+	"gitlab.com/conspico/elasticshift/internal/pkg/utils"
 )
 
 const (

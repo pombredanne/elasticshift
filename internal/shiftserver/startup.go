@@ -19,7 +19,7 @@ import (
 	"github.com/gorilla/handlers"
 	"github.com/gorilla/mux"
 	"github.com/justinas/alice"
-	"gitlab.com/conspico/elasticshift/internal/store"
+	"gitlab.com/conspico/elasticshift/internal/shiftserver/store"
 	"golang.org/x/net/context"
 	"google.golang.org/grpc"
 	"gopkg.in/yaml.v2"
