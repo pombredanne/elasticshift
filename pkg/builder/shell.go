@@ -16,12 +16,13 @@ func (b *builder) invokeShell(n *N) error {
 	cmds := n.Item()[keys.COMMAND].([]string)
 	for _, command := range cmds {
 
-		log.Println(fmt.Sprintf("Executing %s-%s", n.Name(), n.Description()))
+		log.Println(fmt.Sprintf("%s:%s-%s", START, n.Name(), n.Description()))
 
 		err := b.execShellCmd(n.Name(), command, nil, "")
 		if err != nil {
 			return err
 		}
+		log.Println(fmt.Sprintf("%s:%s-%s", END, n.Name(), n.Description()))
 	}
 	return nil
 }
@@ -30,17 +31,19 @@ func (b *builder) execShellCmd(prefix string, shellCmd string, env []string, dir
 
 	cmd := exec.Command("sh", "-c", shellCmd)
 
-	soutpipe, err := cmd.StdoutPipe()
-	if err != nil {
-		return err
-	}
-	newStreamer(prefix, soutpipe)
+	cmd.Stdout = newStreamer(prefix)
 
-	serrpipe, err := cmd.StderrPipe()
-	if err != nil {
-		return err
-	}
-	newStreamer(prefix, serrpipe)
+	// soutpipe, err := cmd.StdoutPipe()
+	// if err != nil {
+	// 	return err
+	// }
+	// newStreamer(prefix, soutpipe)
+
+	// serrpipe, err := cmd.StderrPipe()
+	// if err != nil {
+	// 	return err
+	// }
+	// newStreamer(prefix, serrpipe)
 
 	// combined out
 	// cout, err := cmd.CombinedOutput()

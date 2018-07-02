@@ -5,9 +5,12 @@ package builder
 
 import (
 	"fmt"
+	"log"
+	"os"
 	"testing"
 
 	"gitlab.com/conspico/elasticshift/pkg/shiftfile/parser"
+	"gitlab.com/conspico/elasticshift/pkg/worker/logger"
 )
 
 var testfileShellOnly = `
@@ -36,6 +39,7 @@ IMAGE "alphine:latest"
 	to "ghazni.nattarshah@gmail.com"
 	cc ["shahm.nattarshah@gmail.com", "shahbros@conspico.com"]
 	- echo "Notifying sendgrid"
+	- sleep 8
 }
 
 "elasticshift/shell", "Store the build archive to sftp" {
@@ -103,7 +107,8 @@ func TestRunner(t *testing.T) {
 	}
 	fmt.Println(graph.String())
 
-	b := &builder{f: f}
+	log.SetFlags(log.LstdFlags | log.Lmicroseconds | log.LUTC)
+	b := &builder{f: f, logr: &logger.Logr{Writer: os.Stdout}}
 	err = b.build(graph)
 	if err != nil {
 		fmt.Println(err)

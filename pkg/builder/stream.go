@@ -4,37 +4,23 @@ Copyright 2018 The Elasticshift Authors.
 package builder
 
 import (
-	"bufio"
-	"fmt"
-	"io"
 	"log"
 )
 
 type streamer struct {
-	name    string
-	scanner *bufio.Scanner
+	prefix string
 }
 
-func newStreamer(name string, reader io.Reader) streamer {
+func newStreamer(prefix string) streamer {
 
 	s := streamer{}
-	s.name = name
-
-	s.scanner = bufio.NewScanner(reader)
-
-	go s.stream()
-
+	s.prefix = prefix
 	return s
 }
 
-func (s *streamer) stream() {
+func (s streamer) Write(b []byte) (int, error) {
 
-	for s.scanner.Scan() {
-		log.Printf("%s: %s\n", s.name, s.scanner.Text())
-	}
-
-	err := s.scanner.Err()
-	if err != nil {
-		log.Println(fmt.Errorf("Error when streaming logs: %v", err))
-	}
+	l := len(b)
+	log.Printf("%s: %s", s.prefix, b)
+	return l, nil
 }
