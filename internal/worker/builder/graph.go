@@ -24,7 +24,7 @@ var (
 	FANOUT_DESC = "Spitting the graph for parallel execution"
 
 	FANIN      = "FANIN"
-	FANIN_DESC = "Merging the graph to continue sequential execution"
+	FANIN_DESC = "Merging the graph to continue further execution"
 )
 
 type FanN struct {
