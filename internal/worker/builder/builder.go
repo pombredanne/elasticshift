@@ -106,7 +106,7 @@ func (b *builder) run() error {
 	// 8. Fetch the secrets
 
 	// send the initial graph to server
-	b.UpdateBuildGraphToShiftServer()
+	b.UpdateBuildGraphToShiftServer("", "")
 
 	// 9. Traverse the execution map & run the actual build
 	err = b.build(graph)

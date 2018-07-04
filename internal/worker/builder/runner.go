@@ -46,13 +46,13 @@ func (b *builder) build(g *graph) error {
 				go func(n *N) {
 
 					n.Wait()
-					b.UpdateBuildGraphToShiftServer()
+					b.UpdateBuildGraphToShiftServer(statusWaiting, n.Name)
 
 					defer wg.Done()
 					parallelCh <- 1
 
 					n.Start()
-					b.UpdateBuildGraphToShiftServer()
+					b.UpdateBuildGraphToShiftServer(statusRunning, n.Name)
 
 					err := b.invokePlugin(n)
 
@@ -61,12 +61,12 @@ func (b *builder) build(g *graph) error {
 						defer errMutex.Unlock()
 						log.Printf("Error when invoking Plugin: %v\n", err)
 						n.End(statusFailed, err.Error())
-						b.UpdateBuildGraphToShiftServer()
+						b.UpdateBuildGraphToShiftServer(statusFailed, n.Name)
 					}
 
 					if n.Status != statusFailed {
 						n.End(statusSuccess, "")
-						b.UpdateBuildGraphToShiftServer()
+						b.UpdateBuildGraphToShiftServer(statusSuccess, n.Name)
 					}
 
 					<-parallelCh
@@ -80,17 +80,18 @@ func (b *builder) build(g *graph) error {
 		} else {
 
 			c.Node.Start()
-			b.UpdateBuildGraphToShiftServer()
+			b.UpdateBuildGraphToShiftServer(statusRunning, c.Node.Name)
 
 			// sequential checkpoint execution
 			err := b.invokePlugin(c.Node)
 			if err != nil {
 				c.Node.End(statusFailed, err.Error())
+				b.UpdateBuildGraphToShiftServer(statusFailed, c.Node.Name)
 				return err
 			}
 
 			c.Node.End(statusSuccess, "")
-			b.UpdateBuildGraphToShiftServer()
+			b.UpdateBuildGraphToShiftServer(statusSuccess, c.Node.Name)
 		}
 	}
 
@@ -100,18 +101,20 @@ func (b *builder) build(g *graph) error {
 	return nil
 }
 
-func (b *builder) UpdateBuildGraphToShiftServer() {
+func (b *builder) UpdateBuildGraphToShiftServer(status, checkpoint string) {
 
 	gph, err := b.g.Json()
 	if err != nil {
 		log.Println("Eror when contructing status graph: %v", err)
 	}
 
-	req := &api.UpdateBuildGraphReq{}
+	req := &api.UpdateBuildStatusReq{}
 	req.BuildId = b.config.BuildID
 	req.Graph = gph
+	req.Status = status
+	req.Checkpoint = checkpoint
 
-	_, err = b.shiftclient.UpdateBuildGraph(b.ctx, req)
+	_, err = b.shiftclient.UpdateBuildStatus(b.ctx, req)
 	if err != nil {
 		log.Println("Failed to update buld graph: %v", err)
 	}

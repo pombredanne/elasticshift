@@ -5,6 +5,7 @@ package shift
 
 import (
 	"fmt"
+	"time"
 
 	"github.com/Sirupsen/logrus"
 	"gitlab.com/conspico/elasticshift/api"
@@ -51,7 +52,7 @@ func (s *shift) Register(ctx context.Context, req *api.RegisterReq) (*api.Regist
 	return res, nil
 }
 
-func (s *shift) UpdateBuildGraph(ctx context.Context, req *api.UpdateBuildGraphReq) (*api.UpdateBuildGraphRes, error) {
+func (s *shift) UpdateBuildStatus(ctx context.Context, req *api.UpdateBuildStatusReq) (*api.UpdateBuildStatusRes, error) {
 
 	if req == nil {
 		return nil, fmt.Errorf("UpdateBuildGraphReq cannot be nil")
@@ -61,7 +62,7 @@ func (s *shift) UpdateBuildGraph(ctx context.Context, req *api.UpdateBuildGraphR
 		return nil, fmt.Errorf("BuildID is empty")
 	}
 
-	res := &api.UpdateBuildGraphRes{}
+	res := &api.UpdateBuildStatusRes{}
 
 	var b types.Build
 	var err error
@@ -70,12 +71,23 @@ func (s *shift) UpdateBuildGraph(ctx context.Context, req *api.UpdateBuildGraphR
 		return res, fmt.Errorf("Failed to fetch build by id : %v", err)
 	}
 
-	gph := req.GetGraph()
-	if b.Graph == "" {
-		err = s.buildStore.UpdateId(b.ID, bson.M{"$push": bson.M{"graph": gph}})
-	} else {
-		err = s.buildStore.UpdateId(b.ID, bson.M{"$set": bson.M{"graph": gph}})
+	b.Graph = req.GetGraph()
+	status := req.GetStatus()
+	cp := req.GetCheckpoint()
+
+	if status != "" {
+
+		if status == "F" {
+			b.Status = types.BS_FAILED
+		} else if status == "S" && cp == "END" {
+			b.Status = types.BS_SUCCESS
+		} else if status == "C" {
+			b.Status = types.BS_CANCELLED
+		}
+		b.EndedAt = time.Now()
 	}
+
+	err = s.buildStore.UpdateId(b.ID, &b)
 
 	if err != nil {
 		return res, fmt.Errorf("Failed to update the graph : %v", err)
