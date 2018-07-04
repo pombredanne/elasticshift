@@ -23,6 +23,21 @@ var (
 	githubComUrl = providers.GithubBaseURL + "/repos/:account/:repo/contents/Shiftfile"
 )
 
+func GetSource(provider string) string {
+
+	source := ""
+	if provider == providers.GithubProviderName {
+		source = GITHUB_DOT_COM
+	} else if provider == providers.GitlabProviderName {
+		source = GITLAB_DOT_COM
+	} else if provider == providers.BitbucketProviderName {
+		source = BITBUCKET_DOT_ORG
+	}
+
+	// TODO must add for enterprise versions.
+	return source
+}
+
 func GetShiftFile(source, url, branch string) ([]byte, error) {
 
 	switch source {

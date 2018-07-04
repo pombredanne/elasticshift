@@ -13,9 +13,9 @@ import (
 	"time"
 
 	"gitlab.com/conspico/elasticshift/api"
+	"gitlab.com/conspico/elasticshift/internal/worker/builder"
 	"gitlab.com/conspico/elasticshift/internal/worker/logger"
 	"gitlab.com/conspico/elasticshift/internal/worker/types"
-	"gitlab.com/conspico/elasticshift/internal/worker/builder"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/keepalive"
 )
@@ -32,7 +32,8 @@ func Run() error {
 
 	os.Setenv("SHIFT_HOST", "127.0.0.1")
 	os.Setenv("SHIFT_PORT", "5051")
-	os.Setenv("SHIFT_BUILDID", "5b0393b3dc294a2d45fa2232")
+	// os.Setenv("SHIFT_BUILDID", "5b3a6ee5dc294a2069fa6489")
+	os.Setenv("SHIFT_BUILDID", "5b3a6ed0dc294a1feda63a75")
 	os.Setenv("SHIFT_DIR", "/Users/ghazni/.elasticshift/storage")
 	os.Setenv("WORKER_PORT", "6060")
 	os.Setenv("SHIFT_TEAMID", "5a3a41f08011e098fb86b41f")
@@ -119,7 +120,7 @@ func Run() error {
 	// Start the worker
 	err = Start(ctx, logr)
 	if err != nil {
-		return fmt.Errorf("Failed to start the worker %v", err)
+		return fmt.Errorf("Failed to start the worker: %+v", err)
 	}
 
 	return nil
@@ -131,6 +132,7 @@ type W struct {
 
 	GRPCServer *grpc.Server
 	errch      chan error
+	done       chan int
 
 	// logger      logshipper.Logger
 	ShiftServer *grpc.ClientConn
@@ -150,6 +152,7 @@ func Start(ctx types.Context, logr *logger.Logr) error {
 	w.Context = ctx
 	w.Logr = logr
 	w.errch = make(chan error)
+	w.done = make(chan int)
 
 	var timeout time.Duration
 	timeout, _ = time.ParseDuration(ctx.Config.Timeout)
@@ -207,6 +210,9 @@ func Start(ctx types.Context, logr *logger.Logr) error {
 		w.Halt()
 		msg := fmt.Sprintf("Worker has been timed-out after running for about %s minutes, and all the process have been halted", ctx.Config.Timeout)
 		log.Println(msg)
+	case <-w.done:
+		log.Println("Worker finisheed the execution.")
+		w.Halt()
 	}
 
 	return nil
@@ -351,7 +357,7 @@ func (w *W) Halt() {
 
 // start the builder where the real execution happens.
 func (w *W) StartBuilder() error {
-	return builder.New(w.Context, w.ShiftServer, w.Logr)
+	return builder.New(w.Context, w.ShiftServer, w.Logr, w.done)
 }
 
 // Post the log to error channel, that denotes the startup of the worker is failed

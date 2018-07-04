@@ -7,6 +7,8 @@ import (
 	"log"
 	"runtime"
 	"sync"
+
+	"gitlab.com/conspico/elasticshift/api"
 )
 
 func (b *builder) build(g *graph) error {
@@ -30,7 +32,7 @@ func (b *builder) build(g *graph) error {
 		// run block if it is a sequential task
 		// If it's FANOUT, spawn the multiple block
 		// with in a worker group and wait for it to complete
-		edgeSize := len(c.edges)
+		edgeSize := len(c.Edges)
 		if edgeSize > 0 {
 
 			var errMutex sync.Mutex
@@ -43,8 +45,14 @@ func (b *builder) build(g *graph) error {
 
 				go func(n *N) {
 
+					n.Wait()
+					b.UpdateBuildGraphToShiftServer()
+
 					defer wg.Done()
 					parallelCh <- 1
+
+					n.Start()
+					b.UpdateBuildGraphToShiftServer()
 
 					err := b.invokePlugin(n)
 
@@ -52,10 +60,18 @@ func (b *builder) build(g *graph) error {
 						errMutex.Lock()
 						defer errMutex.Unlock()
 						log.Printf("Error when invoking Plugin: %v\n", err)
+						n.End(statusFailed, err.Error())
+						b.UpdateBuildGraphToShiftServer()
 					}
+
+					if n.Status != statusFailed {
+						n.End(statusSuccess, "")
+						b.UpdateBuildGraphToShiftServer()
+					}
+
 					<-parallelCh
-				}(c.edges[j])
-				// s += fmt.Sprintf("(%d) - %s\n", i+1, c.edges[j].Name())
+
+				}(c.Edges[j])
 			}
 
 			// wait until all the parallel tasks are finished
@@ -63,13 +79,40 @@ func (b *builder) build(g *graph) error {
 
 		} else {
 
+			c.Node.Start()
+			b.UpdateBuildGraphToShiftServer()
+
 			// sequential checkpoint execution
-			err := b.invokePlugin(c.node)
+			err := b.invokePlugin(c.Node)
 			if err != nil {
+				c.Node.End(statusFailed, err.Error())
 				return err
 			}
+
+			c.Node.End(statusSuccess, "")
+			b.UpdateBuildGraphToShiftServer()
 		}
 	}
 
+	// finishes the build
+	b.done <- 1
+
 	return nil
+}
+
+func (b *builder) UpdateBuildGraphToShiftServer() {
+
+	gph, err := b.g.Json()
+	if err != nil {
+		log.Println("Eror when contructing status graph: %v", err)
+	}
+
+	req := &api.UpdateBuildGraphReq{}
+	req.BuildId = b.config.BuildID
+	req.Graph = gph
+
+	_, err = b.shiftclient.UpdateBuildGraph(b.ctx, req)
+	if err != nil {
+		log.Println("Failed to update buld graph: %v", err)
+	}
 }

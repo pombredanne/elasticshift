@@ -4,11 +4,10 @@ Copyright 2018 The Elasticshift Authors.
 package builder
 
 import (
+	"encoding/json"
 	"fmt"
 	"sync"
 	"time"
-
-	"encoding/json"
 
 	"gitlab.com/conspico/elasticshift/internal/pkg/shiftfile/ast"
 	"gitlab.com/conspico/elasticshift/internal/pkg/shiftfile/keys"
@@ -33,19 +32,36 @@ type FanN struct {
 	out *N
 }
 
+var (
+	statusSuccess    = "S"
+	statusFailed     = "F"
+	statusWaiting    = "W"
+	statusRunning    = "R"
+	statusUnknown    = "U"
+	statusNotStarted = "N"
+)
+
 type N struct {
-	value map[string]interface{}
+	value map[string]interface{} `json:"-"`
 
-	start time.Time
-	end   time.Time
+	Name        string    `json:"name"`
+	Description string    `json:"description,omitempty"`
+	Status      string    `json:"status,omitempty"`
+	Message     string    `json:"message,omitempty"`
+	StartedAt   time.Time `json:"started_at,omitempty"`
+	EndedAt     time.Time `json:"ended_at,omitempty"`
 }
 
-func (i *N) Name() string {
-	return i.value[keys.NAME].(string)
-}
+func newN(value map[string]interface{}) *N {
 
-func (i *N) Description() string {
-	return i.value[keys.DESC].(string)
+	n := &N{}
+	n.value = value
+	n.Name = value[keys.NAME].(string)
+	n.Description = value[keys.DESC].(string)
+	if n.Name != START || n.Name != END || n.Name != FANOUT || n.Name != FANIN {
+		n.Status = statusNotStarted
+	}
+	return n
 }
 
 func (i *N) Item() map[string]interface{} {
@@ -60,25 +76,39 @@ func (i *N) HintName() string {
 	return ""
 }
 
+func (i *N) SetStatus(status string) {
+	i.Status = status
+}
+
 func (i *N) String() string {
-	return i.Name()
-}
-
-func (i *N) StartedAt() string {
-	return i.start.String()
-}
-
-func (i *N) EndedAt() string {
-	return i.end.String()
+	return i.Name
 }
 
 func (i *N) TimeTaken() string {
 	return ""
 }
 
+func (i *N) Start() {
+
+	i.Status = statusRunning
+	i.StartedAt = time.Now()
+}
+
+func (i *N) Wait() {
+	i.Status = statusWaiting
+}
+
+func (i *N) End(status, message string) {
+	i.Status = status
+	if message != "" {
+		i.Message = message
+	}
+	i.EndedAt = time.Now()
+}
+
 type Checkpoint struct {
-	node  *N
-	edges []*N
+	Node  *N   `json:"node"`
+	Edges []*N `json:"edges,omitempty"`
 }
 
 type graph struct {
@@ -119,7 +149,7 @@ func (g *graph) constructNode(name, description string) *N {
 	v[keys.NAME] = name
 	v[keys.DESC] = description
 
-	return &N{value: v}
+	return newN(v)
 }
 
 func (g *graph) constructGraph() error {
@@ -130,7 +160,7 @@ func (g *graph) constructGraph() error {
 	for g.f.HasMoreBlocks() {
 
 		b := g.f.NextBlock()
-		g.addNode(&N{value: b})
+		g.addNode(newN(b))
 	}
 
 	// add end node
@@ -214,7 +244,7 @@ func (g *graph) addCheckpoint(n *N, e *N) {
 	var found bool
 	for i := 0; i < len(g.checkpoints); i++ {
 
-		if n == g.checkpoints[i].node {
+		if n == g.checkpoints[i].Node {
 
 			cp = g.checkpoints[i]
 			found = true
@@ -226,15 +256,15 @@ func (g *graph) addCheckpoint(n *N, e *N) {
 
 		cp = &Checkpoint{}
 
-		cp.edges = make([]*N, 0)
+		cp.Edges = make([]*N, 0)
 
 		g.checkpoints = append(g.checkpoints, cp)
 	}
 
-	cp.node = n
+	cp.Node = n
 
 	if e != nil {
-		cp.edges = append(cp.edges, e)
+		cp.Edges = append(cp.Edges, e)
 	}
 }
 
@@ -242,10 +272,18 @@ func (g *graph) Checkpoints() []*Checkpoint {
 	return g.checkpoints
 }
 
-func (g *graph) Json() string {
+func (g *graph) Json() (string, error) {
 
-	nods, _ := json.Marshal(g.nodes)
-	return string(nods)
+	g.lock.RLock()
+
+	nods, err := json.Marshal(g.checkpoints)
+	if err != nil {
+		return "", err
+	}
+
+	g.lock.RUnlock()
+
+	return string(nods), nil
 }
 
 func (g *graph) String() string {
@@ -256,9 +294,9 @@ func (g *graph) String() string {
 	for i := 0; i < len(g.checkpoints); i++ {
 
 		c := g.checkpoints[i]
-		s += fmt.Sprintf("(%d) %s\n", i+1, c.node.Name())
-		for j := 0; j < len(c.edges); j++ {
-			s += fmt.Sprintf("(%d) - %s\n", i+1, c.edges[j].Name())
+		s += fmt.Sprintf("(%d) %s\n", i+1, c.Node.Name)
+		for j := 0; j < len(c.Edges); j++ {
+			s += fmt.Sprintf("(%d) - %s\n", i+1, c.Edges[j].Name)
 		}
 	}
 	g.lock.RUnlock()

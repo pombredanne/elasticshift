@@ -16,13 +16,13 @@ func (b *builder) invokeShell(n *N) error {
 	cmds := n.Item()[keys.COMMAND].([]string)
 	for _, command := range cmds {
 
-		log.Println(fmt.Sprintf("%s:%s-%s", START, n.Name(), n.Description()))
+		log.Println(fmt.Sprintf("%s:%s-%s", START, n.Name, n.Description))
 
-		err := b.execShellCmd(n.Name(), command, nil, "")
+		err := b.execShellCmd(n.Name, command, nil, "")
 		if err != nil {
 			return err
 		}
-		log.Println(fmt.Sprintf("%s:%s-%s", END, n.Name(), n.Description()))
+		log.Println(fmt.Sprintf("%s:%s-%s", END, n.Name, n.Description))
 	}
 	return nil
 }

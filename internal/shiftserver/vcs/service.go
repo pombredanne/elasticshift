@@ -15,6 +15,7 @@ import (
 	"github.com/Sirupsen/logrus"
 	"github.com/gorilla/mux"
 	"gitlab.com/conspico/elasticshift/api/types"
+	"gitlab.com/conspico/elasticshift/internal/pkg/vcs"
 	"gitlab.com/conspico/elasticshift/internal/shiftserver/identity/oauth2/providers"
 	"gitlab.com/conspico/elasticshift/internal/shiftserver/secret"
 	"gitlab.com/conspico/elasticshift/internal/shiftserver/store"
@@ -98,7 +99,11 @@ func (s service) Authorize(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	source := vcs.GetSource(provider)
+
 	var buf bytes.Buffer
+	buf.WriteString(source)
+	buf.WriteString(SEMICOLON)
 	buf.WriteString(team)
 	buf.WriteString(SEMICOLON)
 	buf.WriteString(SLASH)
@@ -131,7 +136,8 @@ func (s service) Authorized(w http.ResponseWriter, r *http.Request) {
 	escID := strings.Split(unescID, SEMICOLON)
 
 	// persist user
-	team := escID[0]
+	source := escID[0]
+	team := escID[1]
 
 	acc, err := s.teamStore.GetVCSByID(team, u.ID)
 	if strings.EqualFold(acc.ID, u.ID) {
@@ -163,7 +169,7 @@ func (s service) Authorized(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, errVCSAccountAlreadyLinked, http.StatusConflict)
 	}
 
-	u.Source = r.Host
+	u.Source = source
 
 	var sec types.Secret
 	secretID := s.saveSecret(sec, u, team, w)
@@ -185,7 +191,7 @@ func (s service) Authorized(w http.ResponseWriter, r *http.Request) {
 		// TODO return http error
 		s.logger.Errorln("SAVE VCS: ", err)
 	}
-	url := escID[1] + "/sysconf/vcs"
+	url := escID[2] + "/sysconf/vcs"
 	http.Redirect(w, r, url, http.StatusTemporaryRedirect)
 }
 

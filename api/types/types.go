@@ -6,7 +6,7 @@ package types
 import (
 	"encoding/base64"
 	"time"
-	
+
 	"gopkg.in/mgo.v2/bson"
 )
 
@@ -30,7 +30,7 @@ type GenericSysConf struct {
 }
 
 const (
-	ReadOnly  int = iota + 1
+	ReadOnly int = iota + 1
 	ReadWrite
 )
 
@@ -49,7 +49,7 @@ type VCSSysConf struct {
 	ID   bson.ObjectId `json:"id" bson:"_id,omitempty"`
 	Name string        `bson:"name,omitempty" json:"name"`
 	Kind string        `bson:"kind,omitempty" json:"kind"`
-	
+
 	Key         string `bson:"key,omitempty" json:"key"`
 	Secret      string `bson:"secret,omitempty" json:"secret"`
 	CallbackURL string `bson:"callback_url,omitempty" json:"callback_url"`
@@ -129,7 +129,7 @@ type RepositoryList struct {
 type BuildStatus int
 
 const (
-	BS_STUCK     BuildStatus = iota + 1
+	BS_STUCK BuildStatus = iota + 1
 	BS_RUNNING
 	BS_SUCCESS
 	BS_FAILED
@@ -138,13 +138,13 @@ const (
 )
 
 func (b *BuildStatus) SetBSON(raw bson.Raw) error {
-	
+
 	var result int
 	err := raw.Unmarshal(&result)
 	if err != nil {
 		return err
 	}
-	
+
 	*b = BuildStatus(result)
 	return nil
 }
@@ -173,6 +173,8 @@ type Build struct {
 	StorageID         string        `json:"-" bson:"storage_id"`
 	StoragePath       string        `json:"-" bson:"storage_path"`
 	Privatekey        string        `json:"-" bson:"private_key,omitempty"`
+	Graph             string        `json:"graph" bson:"graph,omitempty"`
+	Source            string        `json:"source" bson:"source"`
 }
 
 type BuildList struct {
@@ -190,13 +192,13 @@ const (
 )
 
 func (b *ContainerStatus) SetBSON(raw bson.Raw) error {
-	
+
 	var result int
 	err := raw.Unmarshal(&result)
 	if err != nil {
 		return err
 	}
-	
+
 	*b = ContainerStatus(result)
 	return nil
 }
@@ -331,14 +333,14 @@ func (f KubeConfig) GetBSON() (interface{}, error) {
 }
 
 func (f *KubeConfig) SetBSON(raw bson.Raw) error {
-	
+
 	var data string
 	var err error
-	
+
 	if err = raw.Unmarshal(&data); err != nil {
 		return err
 	}
-	
+
 	*f, err = base64.StdEncoding.DecodeString(data)
 	return err
 }
@@ -361,14 +363,14 @@ func (f ShiftfileType) GetBSON() (interface{}, error) {
 }
 
 func (f *ShiftfileType) SetBSON(raw bson.Raw) error {
-	
+
 	var data string
 	var err error
-	
+
 	if err = raw.Unmarshal(&data); err != nil {
 		return err
 	}
-	
+
 	*f, err = base64.StdEncoding.DecodeString(data)
 	return err
 }

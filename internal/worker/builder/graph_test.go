@@ -7,7 +7,7 @@ import (
 	"strings"
 	"testing"
 
-	"gitlab.com/conspico/elasticshift/pkg/shiftfile/parser"
+	"gitlab.com/conspico/elasticshift/internal/pkg/shiftfile/parser"
 )
 
 var file = `
@@ -83,7 +83,7 @@ IMAGE "elasticshift/java:1.9" {
 }
 `
 
-func testGraph(t *testing.T) {
+func TestGraph(t *testing.T) {
 
 	f, err := parser.AST([]byte(file))
 	if err != nil {

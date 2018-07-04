@@ -9,8 +9,8 @@ import (
 	"os"
 	"testing"
 
-	"gitlab.com/conspico/elasticshift/pkg/shiftfile/parser"
-	"gitlab.com/conspico/elasticshift/pkg/worker/logger"
+	"gitlab.com/conspico/elasticshift/internal/pkg/shiftfile/parser"
+	"gitlab.com/conspico/elasticshift/internal/worker/logger"
 )
 
 var testfileShellOnly = `
@@ -61,18 +61,18 @@ IMAGE "alphine:latest"
 
 "elasticshift/shell", "Checking out the project" {
 	- echo "git clone"
-	- sleep 4
+	#- sleep 4
 }
 
 "elasticshift/shell", "Running maven compilation" {
 	- echo "mvn clean build"
-	- sleep 5
+	#- sleep 5
 }
 
 "elasticshift/slack-notifier" ,"Send notification to slack channel" {
 	// PARALLEL:notification
 	- echo "Notifying slack.."
-	- sleep 2
+	#- sleep 2
 }
 
 "elasticshift/sendgrid", "send email via sendgrid" {
@@ -105,7 +105,6 @@ func TestRunner(t *testing.T) {
 		fmt.Println(err)
 		t.Fail()
 	}
-	fmt.Println(graph.String())
 
 	log.SetFlags(log.LstdFlags | log.Lmicroseconds | log.LUTC)
 	b := &builder{f: f, logr: &logger.Logr{Writer: os.Stdout}}
@@ -114,4 +113,5 @@ func TestRunner(t *testing.T) {
 		fmt.Println(err)
 		t.Fail()
 	}
+	fmt.Println(graph.Json())
 }

@@ -5,10 +5,8 @@ package shift
 
 import (
 	"fmt"
-	"io"
 
 	"github.com/Sirupsen/logrus"
-	"github.com/golang/protobuf/ptypes"
 	"gitlab.com/conspico/elasticshift/api"
 	"gitlab.com/conspico/elasticshift/api/types"
 	"gitlab.com/conspico/elasticshift/internal/shiftserver/secret"
@@ -53,35 +51,68 @@ func (s *shift) Register(ctx context.Context, req *api.RegisterReq) (*api.Regist
 	return res, nil
 }
 
-func (s *shift) LogShip(reqStream api.Shift_LogShipServer) error {
+func (s *shift) UpdateBuildGraph(ctx context.Context, req *api.UpdateBuildGraphReq) (*api.UpdateBuildGraphRes, error) {
 
-	for {
-
-		in, err := reqStream.Recv()
-		if err == io.EOF {
-			return nil
-		}
-
-		if err != nil {
-			return err
-		}
-
-		logTime, err := ptypes.Timestamp(in.GetTime())
-		if err != nil {
-			return err
-		}
-
-		log := types.Log{
-			Time: logTime,
-			Data: in.GetLog(),
-		}
-
-		err = s.buildStore.UpdateId(in.GetBuildId(), bson.M{"$push": bson.M{"log": log}})
-		if err != nil {
-			return err
-		}
+	if req == nil {
+		return nil, fmt.Errorf("UpdateBuildGraphReq cannot be nil")
 	}
+
+	if req.GetBuildId() == "" {
+		return nil, fmt.Errorf("BuildID is empty")
+	}
+
+	res := &api.UpdateBuildGraphRes{}
+
+	var b types.Build
+	var err error
+	err = s.buildStore.FindByID(req.GetBuildId(), &b)
+	if err != nil {
+		return res, fmt.Errorf("Failed to fetch build by id : %v", err)
+	}
+
+	gph := req.GetGraph()
+	if b.Graph == "" {
+		err = s.buildStore.UpdateId(b.ID, bson.M{"$push": bson.M{"graph": gph}})
+	} else {
+		err = s.buildStore.UpdateId(b.ID, bson.M{"$set": bson.M{"graph": gph}})
+	}
+
+	if err != nil {
+		return res, fmt.Errorf("Failed to update the graph : %v", err)
+	}
+
+	return res, nil
 }
+
+// func (s *shift) LogShip(reqStream api.Shift_LogShipServer) error {
+
+// 	for {
+
+// 		in, err := reqStream.Recv()
+// 		if err == io.EOF {
+// 			return nil
+// 		}
+
+// 		if err != nil {
+// 			return err
+// 		}
+
+// 		logTime, err := ptypes.Timestamp(in.GetTime())
+// 		if err != nil {
+// 			return err
+// 		}
+
+// 		log := types.Log{
+// 			Time: logTime,
+// 			Data: in.GetLog(),
+// 		}
+
+// 		err = s.buildStore.UpdateId(in.GetBuildId(), bson.M{"$push": bson.M{"log": log}})
+// 		if err != nil {
+// 			return err
+// 		}
+// 	}
+// }
 
 func (s *shift) GetProject(ctx context.Context, req *api.GetProjectReq) (*api.GetProjectRes, error) {
 
@@ -111,8 +142,7 @@ func (s *shift) GetProject(ctx context.Context, req *api.GetProjectReq) (*api.Ge
 	res.Language = r.Language
 	res.Name = r.Name
 	res.StoragePath = b.StoragePath
-	//TODO add source to response
-	// res.Source = b.Source
+	res.Source = b.Source
 
 	return res, nil
 }

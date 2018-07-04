@@ -1,7 +1,5 @@
 syntax = "proto3";
 
-import "google/protobuf/timestamp.proto";
-
 package api;
 
 
@@ -14,13 +12,12 @@ message RegisterRes {
 	bool registered = 1;
 }
 
-message LogShipReq {
+message UpdateBuildGraphReq {
 	string build_id = 1;
-	google.protobuf.Timestamp time = 2;
-	string log = 3;
+	string graph = 2;
 }
 
-message LogShipRes {
+message UpdateBuildGraphRes {
 }
 
 message GetProjectReq {
@@ -44,6 +41,6 @@ message GetProjectRes {
 service Shift {
 
 	rpc Register(RegisterReq) returns (RegisterRes){};
-	rpc LogShip(stream LogShipReq) returns (LogShipRes){};
 	rpc GetProject(GetProjectReq) returns (GetProjectRes){};
+	rpc UpdateBuildGraph(UpdateBuildGraphReq) returns (UpdateBuildGraphRes){};
 }
