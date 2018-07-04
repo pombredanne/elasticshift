@@ -39,6 +39,7 @@ var (
 	statusRunning    = "R"
 	statusUnknown    = "U"
 	statusNotStarted = "N"
+	statusCancelled  = "C"
 )
 
 type N struct {
