@@ -5,9 +5,7 @@ package plugin
 
 import (
 	"fmt"
-	"io"
 	"net/http"
-	"os"
 	"path/filepath"
 	"strconv"
 	"strings"
@@ -15,7 +13,7 @@ import (
 	"github.com/Sirupsen/logrus"
 	"gitlab.com/conspico/elasticshift/api/types"
 	"gitlab.com/conspico/elasticshift/internal/shiftserver/store"
-	"gitlab.com/conspico/elasticshift/internal/pkg/utils"
+	"gitlab.com/conspico/elasticshift/pkg/storage"
 	"gopkg.in/mgo.v2/bson"
 )
 
@@ -30,10 +28,12 @@ var (
 )
 
 type service struct {
-	pluginStore  store.Plugin
-	teamStore    store.Team
-	sysconfStore store.Sysconf
-	logger       logrus.Logger
+	pluginStore      store.Plugin
+	teamStore        store.Team
+	sysconfStore     store.Sysconf
+	integrationStore store.Integration
+	defaultsStore    store.Defaults
+	logger           logrus.Logger
 }
 
 // SysconfService ..
@@ -45,10 +45,12 @@ type Service interface {
 func NewService(logger logrus.Logger, d store.Database, s store.Shift) Service {
 
 	return &service{
-		pluginStore:  s.Plugin,
-		teamStore:    s.Team,
-		sysconfStore: s.Sysconf,
-		logger:       logger,
+		pluginStore:      s.Plugin,
+		teamStore:        s.Team,
+		sysconfStore:     s.Sysconf,
+		integrationStore: s.Integration,
+		defaultsStore:    s.Defaults,
+		logger:           logger,
 	}
 }
 
@@ -143,39 +145,34 @@ func (s service) PushPlugin(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	// find the system storage
-	result, err := s.sysconfStore.GetDefaultStorage()
+	teamID := team.ID.Hex()
+	// Get the default storage based on team defaults
+	def, err := s.defaultsStore.FindByReferenceId(teamID)
+	if err != nil {
+		http.Error(w, "Failed to get default storage :", http.StatusBadRequest)
+	}
+
+	// Get the details of the storeage
+	var stor types.Storage
+	err = s.integrationStore.FindByID(def.StorageID, &stor)
 	if err != nil {
 		http.Error(w, "Failed to fetch the default storage: "+err.Error(), http.StatusInternalServerError)
 		return
 	}
 
-	if result.Kind == "" {
+	// connect to default storage and upload the bundle file.
+	if stor.ID == "" {
 		http.Error(w, "Default storage has not been selected, Use web to configure it.", http.StatusInternalServerError)
 		return
 	}
 
-	// upload the file to system storage and extract them.
-	pluginDir := filepath.Join(result.Path, PLUGIN_DIR)
-	pluginTeamDir := filepath.Join(pluginDir, teamName)
+	// TODO upload the file to system storage and extract them.
+	destPath := filepath.Join(storage.DIR_PLUGIN_BUNDLE, team.Name, name, version)
 
-	err = utils.Mkdir(pluginTeamDir)
+	err = storage.WritePluginBundle(stor, file, destPath)
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 	}
-
-	plugfile, err := os.Create(filepath.Join(pluginTeamDir, name+"-"+version+BUNDLE_EXT))
-	if err != nil {
-		s.logger.Errorf("Failed to write plugin bundle to storage :%v", err)
-		http.Error(w, err.Error(), http.StatusInternalServerError)
-		return
-	}
-
-	_, err = io.Copy(plugfile, file)
-	if err != nil {
-		http.Error(w, err.Error(), http.StatusInternalServerError)
-	}
-	defer plugfile.Close()
 
 	// store the data to plugin store
 	plug := &types.Plugin{}

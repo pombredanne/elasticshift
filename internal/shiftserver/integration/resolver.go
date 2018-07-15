@@ -32,7 +32,7 @@ type Resolver interface {
 	FetchContainerEngine(params graphql.ResolveParams) (interface{}, error)
 	FetchStorage(params graphql.ResolveParams) (interface{}, error)
 	AddKubernetesCluster(params graphql.ResolveParams) (interface{}, error)
-	AddStorage(params graphql.ResolveParams) (interface{}, error) 
+	AddStorage(params graphql.ResolveParams) (interface{}, error)
 }
 
 type resolver struct {
@@ -146,8 +146,10 @@ func (r *resolver) AddKubernetesCluster(params graphql.ResolveParams) (interface
 
 func (r *resolver) AddStorage(params graphql.ResolveParams) (interface{}, error) {
 
-	name, _ := params.Args["name"].(string)
-	team, _ := params.Args["team"].(string)
+	args := params.Args["storage"].(map[string]interface{})
+
+	name, _ := args["name"].(string)
+	team, _ := args["team"].(string)
 
 	var stor types.Storage
 	err := r.store.FindOne(bson.M{"team": team, "name": name}, &stor)
@@ -159,22 +161,41 @@ func (r *resolver) AddStorage(params graphql.ResolveParams) (interface{}, error)
 		return nil, fmt.Errorf("The storage name '%s' already exist for your team", name)
 	}
 
-	kind, _ := params.Args["kind"].(int)
-	provider, _ := params.Args["provider"].(int)
-	host, _ := params.Args["host"].(string)
-	certificate, _ := params.Args["certificate"].(string)
-	accesskey, _ := params.Args["accesskey"].(string)
-	secretkey, _ := params.Args["secretkey"].(string)
+	kind, _ := args["kind"].(int)
+	provider, _ := args["provider"].(int)
+
+	source, _ := args["storage_source"].(map[string]interface{})
+	if len(source) == 0 {
+		return nil, fmt.Errorf("Storage source must be provided")
+	}
 
 	i := types.Storage{}
 	i.Name = name
 	i.Team = team
 	i.Kind = kind
-	i.Host = host
-	i.Certificate = certificate
-	i.AccessKey = accesskey
-	i.SecretKey = secretkey
 	i.Provider = provider
+
+	sourceType := types.StorageSource{}
+	if val, ok := source["nfs"].(map[string]interface{}); ok {
+
+		nfsType := &types.NFSStorage{}
+		nfsType.Server, _ = val["server"].(string)
+		nfsType.Path, _ = val["path"].(string)
+		nfsType.MountPath, _ = val["mount_path"].(string)
+		nfsType.ReadOnly, _ = val["readonly"].(bool)
+
+		sourceType.NFS = nfsType
+	} else if val, ok := source["minio"].(map[string]interface{}); ok {
+
+		minioType := &types.MinioStorage{}
+		minioType.Host, _ = val["host"].(string)
+		minioType.Certificate, _ = val["certificate"].(string)
+		minioType.AccessKey, _ = val["accesskey"].(string)
+		minioType.SecretKey, _ = val["secretkey"].(string)
+
+		sourceType.Minio = minioType
+	}
+	i.StorageSource = sourceType
 	i.InternalType = INT_Storage
 
 	err = r.store.Save(&i)

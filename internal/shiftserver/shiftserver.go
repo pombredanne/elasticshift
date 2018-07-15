@@ -5,6 +5,7 @@ package shiftserver
 
 import (
 	"encoding/base64"
+	"net/http"
 	"net/http/pprof"
 	"strings"
 
@@ -15,12 +16,13 @@ import (
 	"gitlab.com/conspico/elasticshift/api"
 	"gitlab.com/conspico/elasticshift/api/dex"
 	"gitlab.com/conspico/elasticshift/internal/shiftserver/identity/oauth2/providers"
+	"gitlab.com/conspico/elasticshift/internal/shiftserver/integration"
 	"gitlab.com/conspico/elasticshift/internal/shiftserver/plugin"
-	"gitlab.com/conspico/elasticshift/internal/shiftserver/secret"
-	"gitlab.com/conspico/elasticshift/internal/shiftserver/vcs"
 	"gitlab.com/conspico/elasticshift/internal/shiftserver/schema"
-	"gitlab.com/conspico/elasticshift/internal/shiftserver/store"
+	"gitlab.com/conspico/elasticshift/internal/shiftserver/secret"
 	"gitlab.com/conspico/elasticshift/internal/shiftserver/shift"
+	"gitlab.com/conspico/elasticshift/internal/shiftserver/store"
+	"gitlab.com/conspico/elasticshift/internal/shiftserver/vcs"
 	"golang.org/x/net/context"
 	"google.golang.org/grpc"
 
@@ -136,10 +138,15 @@ func (s *Server) registerEndpointServices() {
 	s.Router.HandleFunc("/api/{team}/link/{provider}", vcsServ.Authorize)
 	s.Router.HandleFunc("/api/link/{provider}/callback", vcsServ.Authorized)
 
+	// TODO the directory is only applicable for dev testing
+	// s.Router.Handle("/download/", http.StripPrefix("/download/", http.FileServer(http.Dir("/Users/ghazni/.elasticshift/cloud"))))
+
+	s.Router.Handle("/", http.FileServer(http.Dir("./ui")))
+
 	// TODO remove kubeconfig
 	// Sysconf Upload kube file
-	// sysconfServ := sysconf.NewService(s.Logger, s.DB, s.TeamStore)
-	// s.Router.HandleFunc("/sysconf/upload", sysconfServ.UploadKubeConfigFile)
+	integrationServ := integration.NewService(s.Logger, s.DB, s.Shift)
+	s.Router.HandleFunc("/api/integration/kubernetes", integrationServ.UploadKubeConfigFile)
 
 	// Plugin bundle push
 	pluginServ := plugin.NewService(s.Logger, s.DB, s.Shift)

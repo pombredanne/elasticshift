@@ -16,7 +16,13 @@ type CreateContainerOptions struct {
 	privileged           bool
 	RestartPolicy        string
 
-	BuildID string
+	VolumeMounts []Volume
+	BuildID      string
+}
+
+type Volume struct {
+	Name      string
+	MountPath string
 }
 
 type ContainerInfo struct {
@@ -35,6 +41,6 @@ type ContainerInfo struct {
 }
 
 type PersistentVolumeClaimOptions struct {
-	Name string
+	Name     string
 	Capacity string
 }

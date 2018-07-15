@@ -31,11 +31,10 @@ func Run() error {
 	cfg := types.Config{}
 
 	os.Setenv("SHIFT_HOST", "127.0.0.1")
-	os.Setenv("SHIFT_PORT", "5051")
-	// os.Setenv("SHIFT_BUILDID", "5b3a6ee5dc294a2069fa6489")
-	os.Setenv("SHIFT_BUILDID", "5b3a6ed0dc294a1feda63a75")
+	os.Setenv("SHIFT_PORT", "9101")
+	os.Setenv("SHIFT_BUILDID", "5b43aac6dc294aa15fa921f7")
 	os.Setenv("SHIFT_DIR", "/Users/ghazni/.elasticshift/storage")
-	os.Setenv("WORKER_PORT", "6060")
+	os.Setenv("WORKER_PORT", "9200")
 	os.Setenv("SHIFT_TEAMID", "5a3a41f08011e098fb86b41f")
 
 	buildID := os.Getenv("SHIFT_BUILDID")

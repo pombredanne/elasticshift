@@ -96,7 +96,7 @@ func (b *builder) build(g *graph) error {
 	}
 
 	// finishes the build
-	b.done <- 1
+	// b.done <- 1
 
 	return nil
 }
@@ -105,7 +105,7 @@ func (b *builder) UpdateBuildGraphToShiftServer(status, checkpoint string) {
 
 	gph, err := b.g.Json()
 	if err != nil {
-		log.Println("Eror when contructing status graph: %v", err)
+		log.Printf("Eror when contructing status graph: %v", err)
 	}
 
 	req := &api.UpdateBuildStatusReq{}
@@ -116,6 +116,6 @@ func (b *builder) UpdateBuildGraphToShiftServer(status, checkpoint string) {
 
 	_, err = b.shiftclient.UpdateBuildStatus(b.ctx, req)
 	if err != nil {
-		log.Println("Failed to update buld graph: %v", err)
+		log.Printf("Failed to update buld graph: %v", err)
 	}
 }

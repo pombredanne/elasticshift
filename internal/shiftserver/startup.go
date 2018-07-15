@@ -121,12 +121,12 @@ func Run() error {
 			},
 
 			Web: Web{
-				HTTP: "0.0.0.0:5050",
-				GRPC: "0.0.0.0:5051",
+				HTTP: "0.0.0.0:9100",
+				GRPC: "0.0.0.0:9101",
 			},
 
 			Identity: Identity{
-				HostAndPort:        "127.0.0.1:5557",
+				HostAndPort: "127.0.0.1:5557",
 				Issuer:      "http://127.0.0.1:5556/Identity",
 				ID:          "yyjw66rn2hso6wriuzlic62jiy",
 				Secret:      "l77r6wixjjtgmo4iym2kmk3jcuuxetj3afnqaw5w3rnl5nu5hehu",

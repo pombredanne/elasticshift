@@ -26,7 +26,7 @@ func ConnectMinio(logger logrus.Logger, opts types.Storage) (StorageInterface, e
 	}
 
 	var err error
-	mc.cli, err = minio.New(opts.Host, opts.AccessKey, opts.SecretKey, strings.HasPrefix(opts.Host, "https"))
+	mc.cli, err = minio.New(opts.Minio.Host, opts.Minio.AccessKey, opts.Minio.SecretKey, strings.HasPrefix(opts.Minio.Host, "https"))
 
 	return mc, err
 }

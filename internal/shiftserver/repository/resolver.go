@@ -14,8 +14,8 @@ import (
 	"github.com/graphql-go/graphql"
 	"gitlab.com/conspico/elasticshift/api/types"
 	"gitlab.com/conspico/elasticshift/internal/shiftserver/identity/oauth2/providers"
-	"gitlab.com/conspico/elasticshift/internal/shiftserver/team"
 	"gitlab.com/conspico/elasticshift/internal/shiftserver/store"
+	"gitlab.com/conspico/elasticshift/internal/shiftserver/team"
 	"gopkg.in/mgo.v2/bson"
 )
 
@@ -35,21 +35,21 @@ type Resolver interface {
 }
 
 type resolver struct {
-	store     store.Repository
-	teamStore store.Team
+	store      store.Repository
+	teamStore  store.Team
 	buildStore store.Build
-	logger    logrus.Logger
-	providers providers.Providers
+	logger     logrus.Logger
+	providers  providers.Providers
 }
 
 // NewResolver ...
 func NewResolver(ctx context.Context, logger logrus.Logger, s store.Shift) (Resolver, error) {
 
 	r := &resolver{
-		store:  s.Repository,
-		teamStore: s.Team,
+		store:      s.Repository,
+		teamStore:  s.Team,
 		buildStore: s.Build,
-		logger: logger,
+		logger:     logger,
 	}
 	return r, nil
 }
@@ -76,7 +76,7 @@ func (r resolver) FetchBuild(params graphql.ResolveParams) (interface{}, error) 
 
 	id := params.Source.(types.Repository).ID.Hex()
 	result, err := r.buildStore.FetchBuildByRepositoryID(id)
-	if err != nil && !strings.EqualFold("not found", err.Error()){
+	if err != nil && !strings.EqualFold("not found", err.Error()) {
 		return nil, err
 	}
 
@@ -124,6 +124,8 @@ func (r resolver) AddRepository(params graphql.ResolveParams) (interface{}, erro
 		vcsName = valArr[3]
 		repoName = valArr[4]
 	}
+
+	// TODO add source to repository such as github.com
 
 	// parse the repository name
 	account, err := r.teamStore.GetVCSByName(teamName, vcsName, source)

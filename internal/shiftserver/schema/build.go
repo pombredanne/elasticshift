@@ -141,6 +141,10 @@ func newBuildSchema(
 			Description: "Status of the build",
 		},
 
+		"id": &graphql.ArgumentConfig{
+			Type:        graphql.String,
+			Description: "Build Identifier",
+		},
 		"branch": &graphql.ArgumentConfig{
 			Type:        graphql.String,
 			Description: "Status of the build",

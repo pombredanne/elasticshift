@@ -9,9 +9,9 @@ import (
 	"github.com/Sirupsen/logrus"
 	"github.com/graphql-go/graphql"
 	"gitlab.com/conspico/elasticshift/api/types"
-	"gitlab.com/conspico/elasticshift/internal/shiftserver/store"
-	"gitlab.com/conspico/elasticshift/internal/shiftserver/integration"
 	"gitlab.com/conspico/elasticshift/internal/pkg/utils"
+	"gitlab.com/conspico/elasticshift/internal/shiftserver/integration"
+	"gitlab.com/conspico/elasticshift/internal/shiftserver/store"
 )
 
 func newIntegrationSchema(ctx context.Context, logger logrus.Logger, s store.Shift) (queries graphql.Fields, mutations graphql.Fields) {
@@ -72,12 +72,16 @@ func newIntegrationSchema(ctx context.Context, logger logrus.Logger, s store.Shi
 				Value: 1,
 			},
 
-			"S3": &graphql.EnumValueConfig{
+			"AmazonS3": &graphql.EnumValueConfig{
 				Value: 2,
 			},
 
-			"GCE": &graphql.EnumValueConfig{
+			"GoogleCloudStorage": &graphql.EnumValueConfig{
 				Value: 3,
+			},
+
+			"NFS": &graphql.EnumValueConfig{
+				Value: 4,
 			},
 		},
 	})
@@ -144,6 +148,88 @@ func newIntegrationSchema(ctx context.Context, logger logrus.Logger, s store.Shi
 		},
 	}
 
+	minioFields := graphql.Fields{
+
+		"certificate": &graphql.Field{
+			Type:        graphql.String,
+			Description: "Certificate to access the storage provider",
+		},
+
+		"host": &graphql.Field{
+			Type:        graphql.String,
+			Description: "Host of the storage provider",
+		},
+
+		"access_key": &graphql.Field{
+			Type:        graphql.String,
+			Description: "Token to access the storage provider",
+		},
+
+		"secret_key": &graphql.Field{
+			Type:        graphql.String,
+			Description: "Token to access the storage provider",
+		},
+	}
+
+	minioStorageType := graphql.NewObject(
+		graphql.ObjectConfig{
+			Name:        "MinioStorage",
+			Fields:      minioFields,
+			Description: "An object of Minio Storage type",
+		},
+	)
+
+	nfsFields := graphql.Fields{
+
+		"server": &graphql.Field{
+			Type:        graphql.String,
+			Description: "Host of the nfs server",
+		},
+
+		"path": &graphql.Field{
+			Type:        graphql.String,
+			Description: "Mount of the nfs server",
+		},
+
+		"readonly": &graphql.Field{
+			Type:        graphql.Boolean,
+			Description: "Indicates the mount is readonly",
+		},
+
+		"mount_path": &graphql.Field{
+			Type:        graphql.String,
+			Description: "Indicates the mount path while mounting to container as storage",
+		},
+	}
+
+	nfsStorageType := graphql.NewObject(
+		graphql.ObjectConfig{
+			Name:        "NFSStorage",
+			Fields:      nfsFields,
+			Description: "An object of NFS Storage type",
+		},
+	)
+
+	sourceFields := graphql.Fields{
+		"nfs": &graphql.Field{
+			Type:        nfsStorageType,
+			Description: "NFS Storage",
+		},
+
+		"minio": &graphql.Field{
+			Type:        minioStorageType,
+			Description: "Minio Storage",
+		},
+	}
+
+	sourceType := graphql.NewObject(
+		graphql.ObjectConfig{
+			Name:        "StorageSource",
+			Fields:      sourceFields,
+			Description: "An object of StorageSource type",
+		},
+	)
+
 	storageFields := graphql.Fields{
 		"id": &graphql.Field{
 			Type:        graphql.ID,
@@ -185,29 +271,14 @@ func newIntegrationSchema(ctx context.Context, logger logrus.Logger, s store.Shi
 			},
 		},
 
-		"certificate": &graphql.Field{
-			Type:        graphql.String,
-			Description: "Certificate to access the storage provider",
-		},
-
-		"host": &graphql.Field{
-			Type:        graphql.String,
-			Description: "Host of the storage provider",
-		},
-
-		"access_key": &graphql.Field{
-			Type:        graphql.String,
-			Description: "Token to access the storage provider",
-		},
-
-		"secret_key": &graphql.Field{
-			Type:        graphql.String,
-			Description: "Token to access the storage provider",
-		},
-
 		"team": &graphql.Field{
 			Type:        graphql.String,
 			Description: "Team Identifier",
+		},
+
+		"storage_source": &graphql.Field{
+			Type:        sourceType,
+			Description: "Source of the storage such as nfs, minio etc",
 		},
 	}
 
@@ -258,6 +329,105 @@ func newIntegrationSchema(ctx context.Context, logger logrus.Logger, s store.Shi
 		"Storage":         utils.MakeListType("StorageList", storageType, r.FetchStorage, storageArgs),
 	}
 
+	nfsInputType := graphql.NewInputObject(
+		graphql.InputObjectConfig{
+			Name: "NFSStorageInput",
+			Fields: graphql.InputObjectConfigFieldMap{
+
+				"server": &graphql.InputObjectFieldConfig{
+					Type:        graphql.String,
+					Description: "Host of the nfs server",
+				},
+
+				"path": &graphql.InputObjectFieldConfig{
+					Type:        graphql.String,
+					Description: "Mount of the nfs server",
+				},
+
+				"readonly": &graphql.InputObjectFieldConfig{
+					Type:        graphql.Boolean,
+					Description: "Indicates the mount is readonly",
+				},
+
+				"mount_path": &graphql.InputObjectFieldConfig{
+					Type:        graphql.String,
+					Description: "Mount of the nfs server when mounting to container (shift_dir)",
+				},
+			},
+		},
+	)
+
+	minioInputType := graphql.NewInputObject(
+		graphql.InputObjectConfig{
+			Name: "MinioStorageInput",
+			Fields: graphql.InputObjectConfigFieldMap{
+
+				"host": &graphql.InputObjectFieldConfig{
+					Type:        graphql.NewNonNull(graphql.String),
+					Description: "Host of the storage provider",
+				},
+				"certificate": &graphql.InputObjectFieldConfig{
+					Type:        graphql.NewNonNull(graphql.String),
+					Description: "Certificate for the storage provider",
+				},
+				"accesskey": &graphql.InputObjectFieldConfig{
+					Type:        graphql.NewNonNull(graphql.String),
+					Description: "Access key to storage provider",
+				},
+				"secretkey": &graphql.InputObjectFieldConfig{
+					Type:        graphql.NewNonNull(graphql.String),
+					Description: "secret key to storage provider",
+				},
+			},
+		},
+	)
+
+	storageSourceInputType := graphql.NewInputObject(
+		graphql.InputObjectConfig{
+			Name: "StorageSourceInput",
+			Fields: graphql.InputObjectConfigFieldMap{
+				"minio": &graphql.InputObjectFieldConfig{
+					Type:        minioInputType,
+					Description: "Minio Input",
+				},
+
+				"nfs": &graphql.InputObjectFieldConfig{
+					Type:        nfsInputType,
+					Description: "NFS Input",
+				},
+			},
+		},
+	)
+
+	storageInputType := graphql.NewInputObject(
+		graphql.InputObjectConfig{
+			Name: "StorageInput",
+			Fields: graphql.InputObjectConfigFieldMap{
+
+				"name": &graphql.InputObjectFieldConfig{
+					Type:        graphql.NewNonNull(graphql.String),
+					Description: "Name of the storage",
+				},
+				"kind": &graphql.InputObjectFieldConfig{
+					Type:        graphql.NewNonNull(storageKindEnum),
+					Description: "Type of provider where the storage cluster resides such as kubernetes, dcos or dockerswarm",
+				},
+				"provider": &graphql.InputObjectFieldConfig{
+					Type:        graphql.NewNonNull(providerEnum),
+					Description: "Provider name such as onprem, gce, azure or amazon etc",
+				},
+				"team": &graphql.InputObjectFieldConfig{
+					Type:        graphql.NewNonNull(graphql.String),
+					Description: "Team identifier",
+				},
+				"storage_source": &graphql.InputObjectFieldConfig{
+					Type:        graphql.NewNonNull(storageSourceInputType),
+					Description: "Storage source Input",
+				},
+			},
+		},
+	)
+
 	mutations = graphql.Fields{
 
 		"addKubernetesCluster": &graphql.Field{
@@ -298,38 +468,42 @@ func newIntegrationSchema(ctx context.Context, logger logrus.Logger, s store.Shi
 		"addStorage": &graphql.Field{
 			Type: storageType,
 			Args: graphql.FieldConfigArgument{
-				"name": &graphql.ArgumentConfig{
-					Type:        graphql.NewNonNull(graphql.String),
-					Description: "Name of the storage",
+				"storage": &graphql.ArgumentConfig{
+					Type:        storageInputType,
+					Description: "Storage Input",
 				},
-				"kind": &graphql.ArgumentConfig{
-					Type:        graphql.NewNonNull(storageKindEnum),
-					Description: "Type of provider where the storage cluster resides such as kubernetes, dcos or dockerswarm",
-				},
-				"provider": &graphql.ArgumentConfig{
-					Type:        graphql.NewNonNull(providerEnum),
-					Description: "Provider name such as onprem, gce, azure or amazon etc",
-				},
-				"host": &graphql.ArgumentConfig{
-					Type:        graphql.NewNonNull(graphql.String),
-					Description: "Host of the storage provider",
-				},
-				"certificate": &graphql.ArgumentConfig{
-					Type:        graphql.NewNonNull(graphql.String),
-					Description: "Certificate for the storage provider",
-				},
-				"accesskey": &graphql.ArgumentConfig{
-					Type:        graphql.NewNonNull(graphql.String),
-					Description: "Access key to storage provider",
-				},
-				"secretkey": &graphql.ArgumentConfig{
-					Type:        graphql.NewNonNull(graphql.String),
-					Description: "secret key to storage provider",
-				},
-				"team": &graphql.ArgumentConfig{
-					Type:        graphql.NewNonNull(graphql.String),
-					Description: "Team identifier",
-				},
+				// "name": &graphql.ArgumentConfig{
+				// 	Type:        graphql.NewNonNull(graphql.String),
+				// 	Description: "Name of the storage",
+				// },
+				// "kind": &graphql.ArgumentConfig{
+				// 	Type:        graphql.NewNonNull(storageKindEnum),
+				// 	Description: "Type of provider where the storage cluster resides such as kubernetes, dcos or dockerswarm",
+				// },
+				// "provider": &graphql.ArgumentConfig{
+				// 	Type:        graphql.NewNonNull(providerEnum),
+				// 	Description: "Provider name such as onprem, gce, azure or amazon etc",
+				// },
+				// "host": &graphql.ArgumentConfig{
+				// 	Type:        graphql.NewNonNull(graphql.String),
+				// 	Description: "Host of the storage provider",
+				// },
+				// "certificate": &graphql.ArgumentConfig{
+				// 	Type:        graphql.NewNonNull(graphql.String),
+				// 	Description: "Certificate for the storage provider",
+				// },
+				// "accesskey": &graphql.ArgumentConfig{
+				// 	Type:        graphql.NewNonNull(graphql.String),
+				// 	Description: "Access key to storage provider",
+				// },
+				// "secretkey": &graphql.ArgumentConfig{
+				// 	Type:        graphql.NewNonNull(graphql.String),
+				// 	Description: "secret key to storage provider",
+				// },
+				// "team": &graphql.ArgumentConfig{
+				// 	Type:        graphql.NewNonNull(graphql.String),
+				// 	Description: "Team identifier",
+				// },
 			},
 			Resolve: r.AddStorage,
 		},

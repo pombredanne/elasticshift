@@ -6,6 +6,7 @@ package build
 import (
 	"fmt"
 
+	"github.com/pkg/errors"
 	"gitlab.com/conspico/elasticshift/api/types"
 	"gitlab.com/conspico/elasticshift/internal/shiftserver/integration"
 	itypes "gitlab.com/conspico/elasticshift/internal/shiftserver/integration/types"
@@ -14,17 +15,27 @@ import (
 func (r *resolver) GetContainerEngine(team string) (integration.ContainerEngineInterface, error) {
 
 	// Get the default container engine id based on team
-	dce, err := r.defaultStore.GetDefaultContainerEngine(team)
+	def, err := r.defaultStore.FindByReferenceId(team)
 	if err != nil {
-		return nil, err
+		return nil, errors.Wrap(err, "Failed to get default container engine:")
 	}
 
 	// Get the details of the integration
 	var i types.ContainerEngine
-	err = r.integrationStore.FindByID(dce, &i)
+	err = r.integrationStore.FindByID(def.ContainerEngineID, &i)
+	if err != nil {
+		return nil, errors.Wrap(err, "Failed to get default integration:")
+	}
+
+	// Get the details of the storeage
+	var stor types.Storage
+	err = r.integrationStore.FindByID(def.StorageID, &stor)
+	if err != nil {
+		return nil, errors.Wrap(err, "Failed to get default storage:")
+	}
 
 	// connect to container engine cluster
-	return integration.NewContainerEngine(r.logger, i)
+	return integration.NewContainerEngine(r.logger, i, stor)
 }
 
 func (r *resolver) ContainerLauncher() {
@@ -117,19 +128,23 @@ func (r *resolver) ContainerLauncher() {
 			// }
 
 			envs := []itypes.Env{
-				itypes.Env{"SHIFT_HOST", "shiftserver"},
-				itypes.Env{"SHIFT_PORT", "5051"},
+				// itypes.Env{"SHIFT_HOST", "shahlab2.duckdns.org"},
+				itypes.Env{"SHIFT_HOST", "10.10.5.101"},
+				itypes.Env{"SHIFT_PORT", "9101"},
 				itypes.Env{"SHIFT_BUILDID", b.ID.Hex()},
-				itypes.Env{"SHIFT_TIMEOUT", "120m"},
-				itypes.Env{"WORKER_PORT", "6060"},
 				itypes.Env{"SHIFT_TEAMID", b.Team},
+				itypes.Env{"SHIFT_TIMEOUT", "120m"},
+				itypes.Env{"WORKER_PORT", "9200"},
+				itypes.Env{"SHIFT_DIR", "/opt/elasticshift"},
 			}
 
 			opts := &itypes.CreateContainerOptions{}
 			opts.Image = imgName
-			opts.Command = "./shift/worker"
+			// opts.Command = "curl http://shahlab2.duckdns.org:9000/downloads/worker.sh | bash"
+			opts.Command = "./opt/elasticshift/sys/worker"
 			opts.Environment = envs
 			opts.BuildID = b.ID.Hex()
+			opts.VolumeMounts = []itypes.Volume{{"localvol", "/opt/elasticshift"}}
 
 			res, err := engine.CreateContainer(opts)
 			if err != nil {

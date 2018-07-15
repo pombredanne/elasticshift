@@ -10,7 +10,9 @@ import (
 	"os"
 
 	"github.com/Sirupsen/logrus"
+	"github.com/pkg/errors"
 	uuid "github.com/satori/go.uuid"
+	"gitlab.com/conspico/elasticshift/api/types"
 	itypes "gitlab.com/conspico/elasticshift/internal/shiftserver/integration/types"
 	appsv1 "k8s.io/api/apps/v1"
 	appsv1beta1 "k8s.io/api/apps/v1beta1"
@@ -35,12 +37,18 @@ type ConnectOptions struct {
 	Token                 string
 	Namespace             string
 	InsecureSkipTLSVerify bool
+
+	Config    []byte
+	UseConfig bool
+
+	Storage types.Storage
 }
 
 var (
 	//DefaultNamespace = "elasticshift"
-	DefaultNamespace = "shiftmk"
-	DefaultContext   = "elasticshift"
+	DefaultNamespace = "default"
+	// DefaultNamespace = "shiftmk"
+	DefaultContext = "elasticshift"
 
 	KW_CREATEDBY = "createdby"
 	KW_SHIFTID   = "shiftid"
@@ -70,21 +78,36 @@ func ConnectKubernetes(logger logrus.Logger, opts *ConnectOptions) (ContainerEng
 		opts: opts,
 	}
 
-	config := clientcmdapi.NewConfig()
-	config.Clusters[DefaultContext] = &clientcmdapi.Cluster{
-		Server: opts.Host,
-		CertificateAuthorityData: []byte(opts.ServerCertificate),
+	var config *clientcmdapi.Config
+	var err error
+
+	if opts.UseConfig {
+
+		// kube config file
+		config, err = clientcmd.Load(opts.Config)
+	} else {
+
+		// use host, cert, user and token
+		config = clientcmdapi.NewConfig()
+		config.Clusters[DefaultContext] = &clientcmdapi.Cluster{
+			Server: opts.Host,
+			CertificateAuthorityData: []byte(opts.ServerCertificate),
+		}
+
+		config.AuthInfos[DefaultContext] = &clientcmdapi.AuthInfo{
+			Token: opts.Token,
+		}
+		config.Contexts[DefaultContext] = &clientcmdapi.Context{
+			Cluster:   DefaultContext,
+			AuthInfo:  DefaultContext,
+			Namespace: opts.Namespace,
+		}
+		config.CurrentContext = DefaultContext
 	}
 
-	config.AuthInfos[DefaultContext] = &clientcmdapi.AuthInfo{
-		Token: opts.Token,
+	if err != nil {
+		return nil, errors.Wrap(err, "Failed to parse the kube config: %v")
 	}
-	config.Contexts[DefaultContext] = &clientcmdapi.Context{
-		Cluster:   DefaultContext,
-		AuthInfo:  DefaultContext,
-		Namespace: opts.Namespace,
-	}
-	config.CurrentContext = DefaultContext
 
 	overrides := &clientcmd.ConfigOverrides{}
 	if opts.InsecureSkipTLSVerify {
@@ -111,6 +134,42 @@ func ConnectKubernetes(logger logrus.Logger, opts *ConnectOptions) (ContainerEng
 
 func (c *kubernetesClient) CreateContainer(opts *itypes.CreateContainerOptions) (*itypes.ContainerInfo, error) {
 
+	envs := []apiv1.EnvVar{}
+	for _, env := range opts.Environment {
+		envs = append(envs, apiv1.EnvVar{Name: env.Key, Value: env.Value})
+	}
+
+	volumeMounts := []apiv1.VolumeMount{}
+	volumes := []apiv1.Volume{}
+	for _, vol := range opts.VolumeMounts {
+		volumeMounts = append(volumeMounts, apiv1.VolumeMount{Name: vol.Name, MountPath: vol.MountPath})
+
+		if c.opts.Storage.Kind == 4 {
+
+			// vol := apiv1.Volume{
+			// 	Name: vol.Name,
+			// 	VolumeSource: apiv1.VolumeSource{
+			// 		NFS: &apiv1.NFSVolumeSource{
+			// 			Server:   c.opts.Storage.NFS.Server,
+			// 			Path:     c.opts.Storage.NFS.Path,
+			// 			ReadOnly: c.opts.Storage.NFS.ReadOnly,
+			// 		},
+			// 	},
+			// }
+
+			vol := apiv1.Volume{
+				Name: vol.Name,
+				VolumeSource: apiv1.VolumeSource{
+					HostPath: &apiv1.HostPathVolumeSource{
+						Path: "/opt/elasticshift",
+					},
+				},
+			}
+			volumes = append(volumes, vol)
+		}
+		// volumes = append(volumes, apiv1.Volume{Name: vol.Name, VolumeSource: apiv1.VolumeSource{PersistentVolumeClaim: &apiv1.PersistentVolumeClaimVolumeSource{ClaimName: vol.Claim}}})
+	}
+
 	deploymentsClient := c.Kube.AppsV1().Deployments(c.opts.Namespace)
 
 	shiftId := uuid.NewV4()
@@ -136,10 +195,14 @@ func (c *kubernetesClient) CreateContainer(opts *itypes.CreateContainerOptions) 
 				Spec: apiv1.PodSpec{
 					Containers: []apiv1.Container{
 						{
-							Name:  opts.BuildID,
-							Image: opts.Image,
+							Name:         opts.BuildID,
+							Image:        opts.Image,
+							Command:      []string{opts.Command},
+							Env:          envs,
+							VolumeMounts: volumeMounts,
 						},
 					},
+					Volumes: volumes,
 				},
 			},
 		},
@@ -195,6 +258,17 @@ func (c *kubernetesClient) CreateContainer(opts *itypes.CreateContainerOptions) 
 	}
 
 	return cinfo, nil
+}
+
+func (c *kubernetesClient) DeleteContainer(id string) error {
+
+	deletePolicy := metav1.DeletePropagationForeground
+	deploymentsClient := c.Kube.AppsV1().Deployments(c.opts.Namespace)
+	err := deploymentsClient.Delete(id, &metav1.DeleteOptions{
+		PropagationPolicy: &deletePolicy,
+	})
+
+	return err
 }
 
 //watch, err := deploymentsClient.Watch(v1.ListOptions{LabelSelector: "createdby=elasticshift"})

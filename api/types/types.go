@@ -112,6 +112,7 @@ type Repository struct {
 	CloneURL      string        `json:"clone_url" bson:"clone_url"`
 	Language      string        `json:"language" bson:"language,omitempty"`
 	Identifier    string        `json:"-" bson:"identifier"`
+	Source        string        `json:"source" bson:"source"`
 	Team          string        `json:"-" bson:"team"`
 }
 
@@ -250,11 +251,12 @@ type ContainerEngine struct {
 	Name         string        `json:"name" bson:"name"`
 	Provider     int           `json:"provider" bson:"provider"`
 	Kind         int           `json:"kind" bson:"kind"`
-	Host         string        `json:"host" bson:"host"`
-	Certificate  string        `json:"certificate" bson:"certificate"`
-	Token        string        `json:"token" bson:"token"`
+	Host         string        `json:"host" bson:"host,omitempty"`
+	Certificate  string        `json:"certificate" bson:"certificate,omitempty"`
+	Token        string        `json:"token" bson:"token,omitempty"`
 	InternalType int           `json:"-" bson:"internal_type"`
 	Team         string        `json:"team" bson:"team"`
+	KubeFile     KubeConfig    `json:"kube_config" bson:"kube_config,omitempty"`
 }
 
 type ContainerEngineList struct {
@@ -262,17 +264,33 @@ type ContainerEngineList struct {
 	Count int               `json:"count"`
 }
 
+type MinioStorage struct {
+	Host        string `json:"host" bson:"host"`
+	Certificate string `json:"certificate" bson:"certificate"`
+	AccessKey   string `json:"access_key" bson:"access_key"`
+	SecretKey   string `json:"secret_key" bson:"secret_key"`
+}
+
+type NFSStorage struct {
+	Server    string `json:"server" bson:"server"`
+	Path      string `json:"path" bson:"path"`
+	ReadOnly  bool   `json:"readonly" bson:"read_only"`
+	MountPath string `json:"mount_path" bson:"mount_path"`
+}
+
+type StorageSource struct {
+	NFS   *NFSStorage   `json:"nfs" bson:"nfs,omitempty"`
+	Minio *MinioStorage `json:"minio" bson:"minio,omitempty"`
+}
+
 type Storage struct {
-	ID           bson.ObjectId `json:"id" bson:"_id,omitempty"`
-	Name         string        `json:"name" bson:"name"`
-	Provider     int           `json:"provider" bson:"provider"`
-	Kind         int           `json:"kind" bson:"kind"`
-	Host         string        `json:"host" bson:"host"`
-	Certificate  string        `json:"certificate" bson:"certificate"`
-	AccessKey    string        `json:"access_key" bson:"access_key"`
-	SecretKey    string        `json:"secret_key" bson:"secret_key"`
-	InternalType int           `json:"-" bson:"internal_type"`
-	Team         string        `json:"team" bson:"team"`
+	ID            bson.ObjectId `json:"id" bson:"_id,omitempty"`
+	Name          string        `json:"name" bson:"name"`
+	Provider      int           `json:"provider" bson:"provider"`
+	Kind          int           `json:"kind" bson:"kind"`
+	InternalType  int           `json:"-" bson:"internal_type"`
+	Team          string        `json:"team" bson:"team"`
+	StorageSource `json:"storage_source" bson:"storage_source"`
 }
 
 type StorageList struct {

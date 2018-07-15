@@ -4,6 +4,8 @@ Copyright 2017 The Elasticshift Authors.
 package store
 
 import (
+	"fmt"
+
 	"gitlab.com/conspico/elasticshift/api/types"
 	mgo "gopkg.in/mgo.v2"
 	"gopkg.in/mgo.v2/bson"
@@ -18,7 +20,7 @@ type build struct {
 type Build interface {
 	Interface
 
-	FetchBuild(team, repositoryID, branch string, status types.BuildStatus) ([]types.Build, error)
+	FetchBuild(team, repositoryID, branch, id string, status types.BuildStatus) ([]types.Build, error)
 	FetchBuildByID(id string) (types.Build, error)
 	FetchBuildByRepositoryID(id string) ([]types.Build, error)
 	UpdateBuildLog(id bson.ObjectId, log string) error
@@ -34,7 +36,7 @@ func newBuildStore(d Database) Build {
 	return s
 }
 
-func (s *build) FetchBuild(team, repositoryID, branch string, status types.BuildStatus) ([]types.Build, error) {
+func (s *build) FetchBuild(team, repositoryID, branch, id string, status types.BuildStatus) ([]types.Build, error) {
 
 	q := bson.M{"team": team}
 	if repositoryID != "" {
@@ -49,12 +51,19 @@ func (s *build) FetchBuild(team, repositoryID, branch string, status types.Build
 		q["status"] = status
 	}
 
+	if id != "" {
+		q["_id"] = bson.ObjectIdHex(id)
+	}
+
+	fmt.Println(q)
+
 	var err error
 	var result []types.Build
 	s.Execute(func(c *mgo.Collection) {
 		err = c.Find(q).All(&result)
 	})
 
+	fmt.Println(result)
 	return result, err
 }
 

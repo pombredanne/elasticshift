@@ -4,6 +4,7 @@ Copyright 2018 The Elasticshift Authors.
 package builder
 
 import (
+	"fmt"
 	"strings"
 	"testing"
 
@@ -116,6 +117,8 @@ func TestGraph(t *testing.T) {
 (7) FANIN-archive
 (8) END
 `, graph.String())
+
+	fmt.Println(graph.Json())
 }
 
 func assertString(t *testing.T, expected string, actual string) {

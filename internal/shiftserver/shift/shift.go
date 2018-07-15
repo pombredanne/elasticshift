@@ -8,8 +8,10 @@ import (
 	"time"
 
 	"github.com/Sirupsen/logrus"
+	"github.com/pkg/errors"
 	"gitlab.com/conspico/elasticshift/api"
 	"gitlab.com/conspico/elasticshift/api/types"
+	"gitlab.com/conspico/elasticshift/internal/shiftserver/integration"
 	"gitlab.com/conspico/elasticshift/internal/shiftserver/secret"
 	"gitlab.com/conspico/elasticshift/internal/shiftserver/store"
 	"golang.org/x/net/context"
@@ -17,15 +19,18 @@ import (
 )
 
 type shift struct {
-	logger          logrus.Logger
-	Ctx             context.Context
-	buildStore      store.Build
-	repositoryStore store.Repository
-	vault           secret.Vault
+	logger           logrus.Logger
+	Ctx              context.Context
+	buildStore       store.Build
+	containerStore   store.Container
+	repositoryStore  store.Repository
+	defaultStore     store.Defaults
+	integrationStore store.Integration
+	vault            secret.Vault
 }
 
 func NewServer(logger logrus.Logger, ctx context.Context, s store.Shift, vault secret.Vault) api.ShiftServer {
-	return &shift{logger, ctx, s.Build, s.Repository, vault}
+	return &shift{logger, ctx, s.Build, s.Container, s.Repository, s.Defaults, s.Integration, vault}
 }
 
 func (s *shift) Register(ctx context.Context, req *api.RegisterReq) (*api.RegisterRes, error) {
@@ -75,12 +80,15 @@ func (s *shift) UpdateBuildStatus(ctx context.Context, req *api.UpdateBuildStatu
 	status := req.GetStatus()
 	cp := req.GetCheckpoint()
 
+	var stopContainer bool
 	if status != "" {
 
 		if status == "F" {
 			b.Status = types.BS_FAILED
+			stopContainer = true
 		} else if status == "S" && cp == "END" {
 			b.Status = types.BS_SUCCESS
+			stopContainer = true
 		} else if status == "C" {
 			b.Status = types.BS_CANCELLED
 		}
@@ -88,12 +96,52 @@ func (s *shift) UpdateBuildStatus(ctx context.Context, req *api.UpdateBuildStatu
 	}
 
 	err = s.buildStore.UpdateId(b.ID, &b)
-
 	if err != nil {
 		return res, fmt.Errorf("Failed to update the graph : %v", err)
 	}
 
+	if stopContainer {
+
+		// request container engine to stop the live container
+		ce, err := s.getContainerEngine(b.Team)
+		if err != nil {
+			return res, errors.Wrap(err, "Failed to get the default container engine: %v")
+		}
+
+		err = ce.DeleteContainer(req.GetBuildId())
+		if err != nil {
+			return res, fmt.Errorf("Failed to stop the container: %v", err)
+		}
+	}
+
 	return res, nil
+}
+
+func (s *shift) getContainerEngine(team string) (integration.ContainerEngineInterface, error) {
+
+	// Get the default container engine id based on team
+	// dce, err := s.defaultStore.GetDefaultContainerEngine(team)
+	def, err := s.defaultStore.FindByReferenceId(team)
+	if err != nil {
+		return nil, errors.Wrap(err, "Failed to get default container engine:")
+	}
+
+	// Get the details of the integration
+	var i types.ContainerEngine
+	err = s.integrationStore.FindByID(def.ContainerEngineID, &i)
+	if err != nil {
+		return nil, errors.Wrap(err, "Failed to get default integration:")
+	}
+
+	// Get the details of the storeage
+	var stor types.Storage
+	err = s.integrationStore.FindByID(def.StorageID, &stor)
+	if err != nil {
+		return nil, errors.Wrap(err, "Failed to get default storage:")
+	}
+
+	// connect to container engine cluster
+	return integration.NewContainerEngine(s.logger, i, stor)
 }
 
 // func (s *shift) LogShip(reqStream api.Shift_LogShipServer) error {

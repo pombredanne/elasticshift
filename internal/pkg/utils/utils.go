@@ -3,7 +3,10 @@ Copyright 2018 The Elasticshift Authors.
 */
 package utils
 
-import "os"
+import (
+	"log"
+	"os"
+)
 
 func Mkdir(path string) error {
 	exist, err := PathExist(path)
@@ -25,4 +28,12 @@ func PathExist(path string) (bool, error) {
 		return false, nil
 	}
 	return true, err
+}
+
+func GetWD() string {
+	dir, err := os.Getwd()
+	if err != nil {
+		log.Fatal(err)
+	}
+	return dir
 }

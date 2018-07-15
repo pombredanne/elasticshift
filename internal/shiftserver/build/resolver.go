@@ -103,7 +103,7 @@ func (r *resolver) TriggerBuild(params graphql.ResolveParams) (interface{}, erro
 	}
 
 	status := types.BS_RUNNING
-	rb, err := r.store.FetchBuild(repo.Team, repositoryID, branch, types.BS_RUNNING)
+	rb, err := r.store.FetchBuild(repo.Team, repositoryID, branch, "", types.BS_RUNNING)
 	if err != nil {
 		return nil, fmt.Errorf("Failed to validate if there are any build running", err)
 	}
@@ -125,6 +125,7 @@ func (r *resolver) TriggerBuild(params graphql.ResolveParams) (interface{}, erro
 	b.StorageID = def.StorageID
 	b.CloneURL = repo.CloneURL
 	b.Language = repo.Language
+	b.Source = repo.Source
 
 	// Build file path - (for NFS)
 	// <cache>/team-id/vcs-id/repository-id/branch-name/build-id/log
@@ -160,10 +161,11 @@ func (r *resolver) FetchBuild(params graphql.ResolveParams) (interface{}, error)
 	team, _ := params.Args["team"].(string)
 	repository_id, _ := params.Args["repository_id"].(string)
 	branch, _ := params.Args["branch"].(string)
+	id, _ := params.Args["id"].(string)
 	status, _ := params.Args["status"].(int)
 
 	result := types.BuildList{}
-	res, err := r.store.FetchBuild(team, repository_id, branch, types.BuildStatus(status))
+	res, err := r.store.FetchBuild(team, repository_id, branch, id, types.BuildStatus(status))
 	if err != nil {
 		return result, fmt.Errorf("Failed to fetch the build : %v", err)
 	}
