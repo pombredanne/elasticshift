@@ -95,6 +95,11 @@ func (s service) PushPlugin(w http.ResponseWriter, r *http.Request) {
 		errors = append(errors, "Team name must be provided")
 	}
 
+	force, err := strconv.ParseBool(r.FormValue("force"))
+	if err != nil {
+		force = false
+	}
+
 	if len(errors) > 0 {
 		http.Error(w, strings.Join(errors, "\n"), http.StatusBadRequest)
 		return
@@ -140,7 +145,7 @@ func (s service) PushPlugin(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	if p.ID.Hex() != "" {
+	if p.ID.Hex() != "" && !force {
 		http.Error(w, "Plugin with given name and version already exist on your team.", http.StatusBadRequest)
 		return
 	}
@@ -166,7 +171,7 @@ func (s service) PushPlugin(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	// TODO upload the file to system storage and extract them.
+	// storage relative path
 	destPath := filepath.Join(storage.DIR_PLUGIN_BUNDLE, team.Name, name, version)
 
 	err = storage.WritePluginBundle(stor, file, destPath)
@@ -174,27 +179,34 @@ func (s service) PushPlugin(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 	}
 
-	// store the data to plugin store
-	plug := &types.Plugin{}
-	plug.ID = bson.NewObjectId()
-	plug.Name = name
-	plug.Team = teamName
-	plug.Description = description
-	plug.Language = language
-	plug.Version = version
-	plug.Author = author
-	plug.Email = email
+	sourceURL := r.FormValue("source_url")
 
-	if sourceURL := r.FormValue("source_url"); sourceURL != "" {
+	// TODO add updated date time
+	if p.Name != "" {
+
+		// update the date time
+
+	} else {
+		// store the data to plugin store
+		plug := &types.Plugin{}
+		plug.ID = bson.NewObjectId()
+		plug.Name = name
+		plug.Team = teamName
+		plug.Description = description
+		plug.Language = language
+		plug.Version = version
+		plug.Author = author
+		plug.Email = email
+		plug.Path = destPath
 		plug.SourceURL = sourceURL
-	}
 
-	err = s.pluginStore.Save(plug)
-	if err != nil {
-		s.logger.Errorf("Failed to save plugin for team %s: %v", teamName, err)
-		http.Error(w, err.Error(), http.StatusInternalServerError)
-		return
-	}
+		err = s.pluginStore.Save(plug)
+		if err != nil {
+			s.logger.Errorf("Failed to save plugin for team %s: %v", teamName, err)
+			http.Error(w, err.Error(), http.StatusInternalServerError)
+			return
+		}
 
-	http.StatusText(http.StatusOK)
+		http.StatusText(http.StatusOK)
+	}
 }

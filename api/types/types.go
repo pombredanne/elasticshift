@@ -239,6 +239,7 @@ type Plugin struct {
 	IconURL        string        `json:"icon_url" bson:"icon_url"`
 	Ratings        string        `json:"ratings" bson:"ratings"`
 	Team           string        `json:"team" bson:"team"`
+	Path           string        `json:"path" bson:"path"`
 }
 
 type PluginList struct {

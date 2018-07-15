@@ -7,11 +7,14 @@ import (
 	"os"
 	"path/filepath"
 
+	"github.com/mholt/archiver"
 	"gitlab.com/conspico/elasticshift/api/types"
 	"gitlab.com/conspico/elasticshift/internal/pkg/utils"
 )
 
 func writeNFS(stor types.Storage, f multipart.File, destPath string) error {
+
+	destPath = filepath.Join(stor.StorageSource.NFS.MountPath, destPath)
 
 	// upload the file to system storage and extract them.
 	exist, err := utils.PathExist(destPath)
@@ -26,7 +29,8 @@ func writeNFS(stor types.Storage, f multipart.File, destPath string) error {
 		}
 	}
 
-	plugfile, err := os.Create(filepath.Join(destPath, BUNDLE_NAME))
+	bundle := filepath.Join(destPath, BUNDLE_NAME)
+	plugfile, err := os.Create(bundle)
 	if err != nil {
 		return fmt.Errorf("Failed to create bundle file: %v", err)
 	}
@@ -38,6 +42,15 @@ func writeNFS(stor types.Storage, f multipart.File, destPath string) error {
 	defer plugfile.Close()
 
 	//extract the bundle
+	err = archiver.TarGz.Open(bundle, destPath)
+	if err != nil {
+		return fmt.Errorf("Failed to extract the bundle to storage : %v", err)
+	}
+
+	err = os.Remove(bundle)
+	if err != nil {
+		return fmt.Errorf("Failed to remove the bundle after extraction : %v", err)
+	}
 
 	return nil
 }
