@@ -1,0 +1,41 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: openjdk
+spec:
+  selector:
+    matchLabels:
+      run: openjdk
+  replicas: 1
+  template:
+    metadata:
+      labels:
+        run: openjdk
+    spec:
+      containers:
+        - name: openjdk
+          image: openjdk
+          # command: ["wget --continue --output-document worker.sh http://10.10.3.94:9000/downloads/worker.sh && chmod +x worker.sh && ./worker.sh"]          
+          command: ["./opt/elasticshift/sys/worker"]
+          env:
+          - name: SHIFT_HOST
+            value: "10.10.5.101"
+          - name: SHIFT_PORT
+            value: "9101"
+          - name: SHIFT_BUILDID
+            value: "5b3a6ed0dc294a1feda63a75"
+          - name: SHIFT_TEAMID
+            value: "5ace310919177eb5f314d43b"
+          - name: SHIFT_DIR
+            value: "/opt/elasticshift"
+          - name: WORKER_PORT
+            value: "9200"
+          ports:
+            - containerPort: 9200
+          volumeMounts:
+            - name: localvol
+              mountPath: /opt/elasticshift
+      volumes:
+        - name: localvol
+          persistentVolumeClaim:
+            claimName: local-pvc

@@ -18,9 +18,9 @@ spec:
           ports:
             - containerPort: 80
           volumeMounts:
-            - name: nfsvol
+            - name: localvol
               mountPath: /opt/elasticshift
       volumes:
-        - name: nfsvol
+        - name: localvol
           persistentVolumeClaim:
-            claimName: nfs-pvc
+            claimName: local-pvc
