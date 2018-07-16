@@ -62,6 +62,10 @@ func New(ctx wtypes.Context, shiftconn *grpc.ClientConn, logr *logger.Logr, done
 
 func (b *builder) run() error {
 
+	// restore build cache if any
+	// save the cache after every successful build
+	b.restoreCache()
+
 	// Get the project information
 	proj, err := b.shiftclient.GetProject(b.ctx, &api.GetProjectReq{BuildId: b.config.BuildID})
 	if err != nil {

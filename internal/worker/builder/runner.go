@@ -103,6 +103,12 @@ func (b *builder) build(g *graph) error {
 
 func (b *builder) UpdateBuildGraphToShiftServer(status, checkpoint string) {
 
+	if END == checkpoint && statusSuccess == status {
+
+		// save cache
+		b.saveCache()
+	}
+
 	gph, err := b.g.Json()
 	if err != nil {
 		log.Printf("Eror when contructing status graph: %v", err)
