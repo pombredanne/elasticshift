@@ -31,6 +31,13 @@ IMAGE "elasticshift/java:1.9" {
 		token "isdf1i41i23iu12i"
 }
 
+#Directories to be cached
+CACHE {
+	- ~/.m2
+	- ~/.gradle
+	- ~/node-modules
+}
+
 #
 # Name of the plugin, description (this can be optional)
 # elasticshift - Name of the company who created this plugin

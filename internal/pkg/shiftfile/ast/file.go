@@ -122,6 +122,36 @@ func (f *File) Image() map[string]interface{} {
 	return iMap
 }
 
+func (f *File) CacheDirectories() []string {
+
+	var n *NodeItem
+	for _, item := range items(f.Node) {
+		if scope.Cac == item.Kind {
+			n = item
+			break
+		}
+	}
+
+	if n == nil {
+		return nil
+	}
+
+	directories := []string{}
+
+	for _, item := range n.Value.(*Cache).Node.(*Block).Node {
+
+		n := item.(*NodeItem)
+
+		switch n.Value.(type) {
+		case *Directory:
+			directories = append(directories, n.Value.(*Directory).Token.Text)
+		}
+
+	}
+
+	return directories
+}
+
 func (f *File) HasMoreBlocks() bool {
 	return f.currentBlock < f.BlockCount
 }

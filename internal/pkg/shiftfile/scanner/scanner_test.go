@@ -1,3 +1,6 @@
+/*
+Copyright 2018 The Elasticshift Authors.
+*/
 package scanner
 
 import (
@@ -6,7 +9,7 @@ import (
 	"strconv"
 	"testing"
 
-	"gitlab.com/conspico/elasticshift/pkg/shiftfile/token"
+	"gitlab.com/conspico/elasticshift/internal/pkg/shiftfile/token"
 )
 
 type Expected struct {
@@ -21,6 +24,16 @@ type tokenPair struct {
 }
 
 var tokens = map[string][]tokenPair{
+	"cache": []tokenPair{
+		{`CACHE {
+			- ~/.m2
+		}`, nil, []Expected{
+			{Line: 1, Text: "CACHE"},
+			{Line: 1, Text: "{"},
+			{Line: 2, Text: "~/.m2"},
+			{Line: 3, Text: "}"},
+		}},
+	},
 	"comments": []tokenPair{
 		{"#", nil, []Expected{
 			{Line: 1, Text: "#"},
@@ -286,6 +299,12 @@ var tokens = map[string][]tokenPair{
 				}
 			}
 
+			CACHE {
+				- ~/.m2
+				- ~/.gradle
+				- ~/node-modules
+			}
+
 			#
 			# Name of the plugin, description (this can be optional)
 			# elasticshift - Name of the company who created this plugin
@@ -350,6 +369,7 @@ var tokens = map[string][]tokenPair{
 // },
 
 var tokenTypes = []string{
+	"cache",
 	"comments",
 	"hints",
 	"bool",
@@ -373,6 +393,10 @@ func TestRealfile(t *testing.T) {
 	}
 
 	//testTokenTypes(t, token.IMAGE, tokens["image"])
+}
+
+func TestCache(t *testing.T) {
+	testTokenTypes(t, token.CACHE, tokens["cache"])
 }
 
 func TestImage(t *testing.T) {
@@ -400,7 +424,7 @@ func TestVersion(t *testing.T) {
 }
 
 func TestArg(t *testing.T) {
-	testTokenTypes(t, token.ARG, tokens["arg"])
+	testTokenTypes(t, token.ARGUMENT, tokens["arg"])
 }
 
 func TestSecret(t *testing.T) {

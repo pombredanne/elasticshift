@@ -188,16 +188,19 @@ func (p *Parser) nodeItem() (*ast.NodeItem, error) {
 	}
 
 	switch n.Kind {
-	case scope.Var, scope.Ver, scope.Nam, scope.Lan, scope.Dir, scope.Frm:
+	case scope.Var, scope.Ver, scope.Nam, scope.Lan, scope.Wdi, scope.Frm:
 		p.scan()
 		n.Value, err = p.literal()
 	case scope.Cmd:
-		// p.unscan()
 		n.Value, err = p.command()
+	case scope.Dir:
+		n.Value, err = p.directory()
 	case scope.Blk:
 		n.Value, err = p.block()
 	case scope.Img:
 		n.Value, err = p.image()
+	case scope.Cac:
+		n.Value, err = p.cache()
 	case scope.Hin:
 		n.Value, err = p.hint()
 	case scope.Vhl:
@@ -265,10 +268,17 @@ func (p *Parser) nodeKey() ([]*ast.NodeKey, error) {
 		case token.COMMAND:
 			p.kind(scope.Cmd)
 			goto exit
+		case token.DIRECTORY:
+			p.kind(scope.Dir)
+			goto exit
 		case token.IMAGE:
 			p.kind(scope.Img)
+		case token.CACHE:
+			p.kind(scope.Cac)
+			p.forceNextScan()
+			goto exit
 		case token.WORKDIR:
-			p.kind(scope.Dir)
+			p.kind(scope.Wdi)
 			p.forceNextScan()
 			goto exit
 		case token.LANGUAGE:
@@ -367,14 +377,18 @@ func (p *Parser) grabComment() *ast.Comment {
 	return comment
 }
 
+func (p *Parser) directory() (*ast.Directory, error) {
+
+	dir := &ast.Directory{}
+	dir.Token = p.tok
+	return dir, nil
+}
+
 func (p *Parser) command() (*ast.Command, error) {
 
-	// reads the literal value
-	// p.scan()
-
-	lit := &ast.Command{}
-	lit.Token = p.tok
-	return lit, nil
+	cmd := &ast.Command{}
+	cmd.Token = p.tok
+	return cmd, nil
 }
 
 func (p *Parser) literal() (*ast.Literal, error) {
@@ -382,6 +396,39 @@ func (p *Parser) literal() (*ast.Literal, error) {
 	lit := &ast.Literal{}
 	lit.Token = p.tok
 	return lit, nil
+}
+
+func (p *Parser) cache() (*ast.Cache, error) {
+
+	if token.CACHE == p.tok.Type {
+		p.scan()
+	}
+
+	if token.LBRACE != p.tok.Type {
+		return nil, &PositionErr{
+			Position: p.tok.Position,
+			Err:      fmt.Errorf("Expected: LBRACE '{', got: %s", p.tok.Type),
+		}
+	}
+
+	p.cscope = scope.Cac
+
+	cac := &ast.Cache{}
+	cac.Lbrace = p.tok.Position
+
+	// The condition fails only when there is no block defined for IMAGE block
+	if token.LBRACE == p.tok.Type {
+
+		nodes, err := p.block()
+		if err != nil {
+			return nil, err
+		}
+		cac.Node = nodes
+	}
+
+	p.cscope = 0
+
+	return cac, nil
 }
 
 func (p *Parser) image() (*ast.Image, error) {
@@ -412,7 +459,7 @@ func (p *Parser) block() (*ast.Block, error) {
 		p.scan()
 	}
 
-	if p.cscope != scope.Img {
+	if p.cscope != scope.Img && p.cscope != scope.Cac {
 		p.cscope = scope.Blk
 	}
 
@@ -445,7 +492,7 @@ func (p *Parser) block() (*ast.Block, error) {
 		blk.Number = p.f.BlockCount
 	}
 
-	if p.cscope != scope.Img {
+	if p.cscope != scope.Img && p.cscope != scope.Cac {
 		p.cscope = 0
 	}
 

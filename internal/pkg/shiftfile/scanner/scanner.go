@@ -32,6 +32,8 @@ type Scanner struct {
 	ch            rune
 	Error         ErrorFunc
 	incrementLine bool
+
+	lastIdentifier token.Type
 }
 
 // NewScanner...
@@ -124,6 +126,7 @@ func (s *Scanner) Scan() token.Token {
 	switch ch := s.ch; {
 	case isLetter(ch):
 		tok.Type, tok.Text = s.scanIdentifier()
+		s.lastIdentifier = tok.Type
 	case isDigit(ch):
 		tok.Type, tok.Text = s.scanNumber(false)
 	default:
@@ -131,7 +134,11 @@ func (s *Scanner) Scan() token.Token {
 		case '"':
 			tok.Type, tok.Text = s.scanString()
 		case '-':
-			tok.Type, tok.Text = s.scanCommand()
+			if token.CACHE == s.lastIdentifier {
+				tok.Type, tok.Text = s.scanDirectory()
+			} else {
+				tok.Type, tok.Text = s.scanCommand()
+			}
 		case '/':
 			s.next()
 			if ch == '/' && s.ch == '/' {
@@ -259,6 +266,25 @@ func (s *Scanner) scanArgumentOrSecret() (token.Type, string) {
 	s.unreadIfNotEOF(s.ch)
 
 	return ttype, string(s.src[ofs:s.pos.Offset])
+}
+
+func (s *Scanner) scanDirectory() (token.Type, string) {
+
+	ofs := s.pos.Offset
+	ch := s.ch
+	for {
+
+		ch = s.ch
+		if ch == '\n' || ch < 0 {
+			break
+		}
+		s.next()
+	}
+
+	s.unreadIfNotEOF(ch)
+
+	directory := strings.TrimSpace(string(s.src[ofs:s.pos.Offset]))
+	return token.DIRECTORY, directory
 }
 
 func (s *Scanner) scanCommand() (token.Type, string) {

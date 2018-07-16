@@ -24,6 +24,8 @@ func (i Image) node()     {}
 func (v VarHolder) node() {}
 func (a Argument) node()  {}
 func (s Secret) node()    {}
+func (c Cache) node()     {}
+func (d Directory) node() {}
 
 type Command Literal
 
@@ -122,6 +124,16 @@ func (b *Block) Position() token.Position {
 	return b.Lbrace
 }
 
+type Cache struct {
+	Lbrace token.Position // {
+	Rbrace token.Position // }
+	Node   Node
+}
+
+func (c *Cache) Position() token.Position {
+	return c.Lbrace
+}
+
 type Comment struct {
 	Start token.Position
 	Value string
@@ -177,6 +189,14 @@ type VarHolder struct {
 
 func (v *VarHolder) Position() token.Position {
 	return v.Token.Position
+}
+
+type Directory struct {
+	Token token.Token
+}
+
+func (d *Directory) Position() token.Position {
+	return d.Token.Position
 }
 
 type Argument struct {

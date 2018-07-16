@@ -68,6 +68,8 @@ const (
 	SCRIPT
 	LANGUAGE
 	COMMAND
+	CACHE
+	DIRECTORY
 	keyword_end
 )
 
@@ -105,15 +107,17 @@ var tokens = [...]string{
 	ARGUMENT: "ARGUMENT",
 	SECRET:   "SECRET",
 
-	FROM:     "FROM",
-	IMAGE:    "IMAGE",
-	NAME:     "NAME",
-	VAR:      "VAR",
-	VERSION:  "VERSION",
-	WORKDIR:  "WORKDIR",
-	SCRIPT:   "SCRIPT",
-	LANGUAGE: "LANGUAGE",
-	COMMAND:  "COMMAND",
+	FROM:      "FROM",
+	IMAGE:     "IMAGE",
+	NAME:      "NAME",
+	VAR:       "VAR",
+	VERSION:   "VERSION",
+	WORKDIR:   "WORKDIR",
+	SCRIPT:    "SCRIPT",
+	LANGUAGE:  "LANGUAGE",
+	COMMAND:   "COMMAND",
+	CACHE:     "CACHE",
+	DIRECTORY: "DIRECTORY",
 }
 
 var keywords map[string]Type

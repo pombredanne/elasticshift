@@ -1,3 +1,6 @@
+/*
+Copyright 2018 The Elasticshift Authors.
+*/
 package scope
 
 type NodeKind int
@@ -7,7 +10,7 @@ const (
 	Ver
 	Frm
 	Nam
-	Dir
+	Wdi
 	Img
 	Var
 	Lan
@@ -16,6 +19,8 @@ const (
 	Vhl
 	Hin
 	Cmd
+	Cac
+	Dir
 )
 
 var nodeKindStrings = [...]string{
@@ -23,7 +28,7 @@ var nodeKindStrings = [...]string{
 	Ver: "VERSION",
 	Frm: "FROM",
 	Nam: "NAME",
-	Dir: "DIRECTORY",
+	Wdi: "WORKDIR",
 	Img: "IMAGE",
 	Var: "VAR",
 	Lan: "LANGUAGE",
@@ -32,6 +37,8 @@ var nodeKindStrings = [...]string{
 	Vhl: "VARHOLDER",
 	Hin: "HINT",
 	Cmd: "COMMAND",
+	Cac: "CACHE",
+	Dir: "DIRECTORY",
 }
 
 func (k NodeKind) String() string {
