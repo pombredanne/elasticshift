@@ -355,6 +355,38 @@ var tokens = map[string][]tokenPair{
 			},
 		},
 	},
+	"shellfile": []tokenPair{
+		{`VERSION "1.0"
+
+		NAME "elasticshift/java18-gradle-builder"
+
+		LANGUAGE java
+
+		WORKDIR "~/code"
+
+		#comment
+		VAR proj_url "https://github.com/nshahm/hybrid.test.runner.git"
+
+		# The container where the build is going to happen
+		IMAGE "openjdk:7"
+
+		CACHE {
+			- ~/.gradle
+		}
+
+		"shell", "checking out the project" {
+			- git clone https://github.com/nshahm/hybrid.test.runner.git
+		}
+
+		"shell", "Building the project" {
+			- ./gradlew clean build
+		}
+
+		`, nil, []Expected{
+			{Line: 1, Text: "VERSION"},
+			{Line: 1, Text: "1.0"},
+		},
+		}},
 }
 
 // "string": []tokenPair{
@@ -378,8 +410,25 @@ var tokenTypes = []string{
 	"float",
 }
 
-func TestRealfile(t *testing.T) {
+func testRealfile(t *testing.T) {
 	toks := alltokens(tokens["realfile"][0].input)
+
+	i := 1
+	for _, tok := range toks {
+		if i == tok.Position.Line {
+			fmt.Print(fmt.Sprintf("%q\t", tok))
+		} else {
+			fmt.Print("\n")
+			fmt.Print(fmt.Sprintf("%q\t", tok))
+			i++
+		}
+	}
+
+	//testTokenTypes(t, token.IMAGE, tokens["image"])
+}
+
+func TestShellfile(t *testing.T) {
+	toks := alltokens(tokens["shellfile"][0].input)
 
 	i := 1
 	for _, tok := range toks {

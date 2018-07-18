@@ -53,6 +53,10 @@ func TestParser(t *testing.T) {
 			false,
 		},
 		{
+			"shell.shift",
+			false,
+		},
+		{
 			"arg_secret.shift",
 			false,
 		},

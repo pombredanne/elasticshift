@@ -11,6 +11,33 @@ import (
 	"gitlab.com/conspico/elasticshift/internal/pkg/shiftfile/keys"
 )
 
+// func TestShell(t *testing.T) {
+// 	testfileDir := "./testfiles"
+
+// 	buf, e := ioutil.ReadFile(filepath.Join(testfileDir, "shell.shift"))
+// 	if e != nil {
+// 		t.Fatalf("err: %s", e)
+// 	}
+
+// 	p := New(buf)
+
+// 	f, err := p.Parse()
+
+// 	if err != nil {
+// 		t.Fatalf("Failed %v", err)
+// 	}
+
+// 	// t.Run("block", func(t *testing.T) {
+
+// 	// 	for f.HasMoreBlocks() {
+
+// 	// 		b := f.NextBlock()
+// 	// 		// props := b[keys.COMMAND]
+// 	// 		// assertInt(t, e, len(props.([]string)))
+// 	// 	}
+// 	// })
+// }
+
 func TestFile(t *testing.T) {
 
 	testfileDir := "./testfiles"
@@ -43,6 +70,14 @@ func TestFile(t *testing.T) {
 	t.Run("blocks", func(t *testing.T) {
 		testBlock(f, t)
 	})
+
+	t.Run("workdir", func(t *testing.T) {
+		testWorkDir(f, t)
+	})
+}
+
+func testWorkDir(f *ast.File, t *testing.T) {
+	assertString(t, "~/code", f.WorkDir())
 }
 
 func testVars(f *ast.File, t *testing.T) {

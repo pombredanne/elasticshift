@@ -136,6 +136,7 @@ func (s *Scanner) Scan() token.Token {
 		case '-':
 			if token.CACHE == s.lastIdentifier {
 				tok.Type, tok.Text = s.scanDirectory()
+				s.lastIdentifier = token.ILLEGAL
 			} else {
 				tok.Type, tok.Text = s.scanCommand()
 			}

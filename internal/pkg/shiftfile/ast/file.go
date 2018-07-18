@@ -32,7 +32,7 @@ func (f *File) Language() string {
 }
 
 func (f *File) WorkDir() string {
-	return f.value(scope.Dir)
+	return f.value(scope.Wdi)
 }
 
 // TODO GET method
@@ -256,10 +256,17 @@ func items(n Node) []*NodeItem {
 
 func (f *File) value(kind scope.NodeKind) string {
 
+	var n *NodeItem
 	for _, item := range items(f.Node) {
 		if kind == item.Kind {
-			return item.Keys[0].Key.Text
+			n = item
+			break
 		}
 	}
-	return ""
+
+	if n == nil {
+		return ""
+	}
+
+	return n.Value.(*Literal).Token.Text
 }
