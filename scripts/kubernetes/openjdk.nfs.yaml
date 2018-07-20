@@ -16,16 +16,16 @@ spec:
         - name: openjdk
           image: openjdk
           # command: ["wget --continue --output-document worker.sh http://10.10.3.94:9000/downloads/worker.sh && chmod +x worker.sh && ./worker.sh"]          
-          command: ["./lab/elasticshift/sys/worker"]
+          command: ["./lab/elasticshift/sys/startup.sh"]
           env:
           - name: SHIFT_HOST
             value: "10.10.5.101"
           - name: SHIFT_PORT
             value: "9101"
           - name: SHIFT_BUILDID
-            value: "5b3a6ed0dc294a1feda63a75"
+            value: "5b4f15bedc294aad3cfdadbc"
           - name: SHIFT_TEAMID
-            value: "5ace310919177eb5f314d43b"
+            value: "5a3a41f08011e098fb86b41f"
           - name: SHIFT_DIR
             value: "/lab/elasticshift"
           - name: WORKER_PORT
@@ -33,9 +33,11 @@ spec:
           ports:
             - containerPort: 9200
           volumeMounts:
-            - name: localvol
+            - name: nfsvol
               mountPath: /lab/elasticshift
       volumes:
-        - name: localvol
-          persistentVolumeClaim:
-            claimName: local-pvc
+        - name: nfsvol
+          nfs:
+            server: 10.10.7.151
+            path: /nfs/elasticshift
+            readOnly: false

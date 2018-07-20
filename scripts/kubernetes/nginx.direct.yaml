@@ -6,7 +6,7 @@ spec:
   selector:
     matchLabels:
       run: nginx
-  replicas: 5
+  replicas: 1
   template:
     metadata:
       labels:
@@ -15,11 +15,26 @@ spec:
       containers:
         - name: nginx
           image: nginx
+          #command: ["./lab/elasticshift/sys/startup.sh"]
+          env:
+          # Minio access key and secret key
+          - name: SHIFT_DIR
+            value: "/lab/elasticshift"
+          - name: SHIFT_HOST
+            value: "10.10.5.101"
+          - name: SHIFT_PORT
+            value: "9101"
+          - name: SHIFT_BUILDID
+            value: "5b4f15bedc294aad3cfdadbc"
+          - name: SHIFT_TEAMID
+            value: "5a3a41f08011e098fb86b41f"
+          - name: WORKER_PORT
+            value: "9200"
           ports:
             - containerPort: 80
           volumeMounts:
             - name: nfsvol
-              mountPath: /opt/elasticshift
+              mountPath: /lab/elasticshift
       volumes:
         - name: nfsvol
           nfs:
