@@ -12,6 +12,10 @@ import (
 	itypes "gitlab.com/conspico/elasticshift/internal/shiftserver/integration/types"
 )
 
+var (
+	PATH_WORKER = "sys/worker"
+)
+
 func (r *resolver) GetContainerEngine(team string) (integration.ContainerEngineInterface, error) {
 
 	// Get the default container engine id based on team
@@ -88,9 +92,12 @@ func (r *resolver) ContainerLauncher() {
 			// }
 
 			// hostIp := utils.GetIP()
+			// fmt.Println("host ip : ", hostIp)
+
 			// if hostIp == "" {
 			// 	hostIp = "127.0.0.1"
 			// }
+			hostIp := "10.10.5.101"
 
 			// env := []string{
 			// 	"SHIFT_HOST=shiftserver",
@@ -129,22 +136,23 @@ func (r *resolver) ContainerLauncher() {
 
 			envs := []itypes.Env{
 				// itypes.Env{"SHIFT_HOST", "shahlab2.duckdns.org"},
-				itypes.Env{"SHIFT_HOST", "10.10.5.101"},
+				itypes.Env{"SHIFT_HOST", hostIp},
 				itypes.Env{"SHIFT_PORT", "9101"},
 				itypes.Env{"SHIFT_BUILDID", b.ID.Hex()},
 				itypes.Env{"SHIFT_TEAMID", b.Team},
 				itypes.Env{"SHIFT_TIMEOUT", "120m"},
 				itypes.Env{"WORKER_PORT", "9200"},
-				itypes.Env{"SHIFT_DIR", "/opt/elasticshift"},
+				itypes.Env{"SHIFT_LOG_LEVEL", "info"},
+				itypes.Env{"SHIFT_LOG_FORMAT", "json"},
 			}
 
 			opts := &itypes.CreateContainerOptions{}
 			opts.Image = imgName
 			// opts.Command = "curl http://shahlab2.duckdns.org:9000/downloads/worker.sh | bash"
-			opts.Command = "./opt/elasticshift/sys/worker"
+			// opts.Command = "./opt/elasticshift/sys/worker"
 			opts.Environment = envs
 			opts.BuildID = b.ID.Hex()
-			opts.VolumeMounts = []itypes.Volume{{"localvol", "/opt/elasticshift"}}
+			// opts.VolumeMounts = []itypes.Volume{{"localvol", "/opt/elasticshift"}}
 
 			res, err := engine.CreateContainer(opts)
 			if err != nil {

@@ -50,6 +50,14 @@ var (
 	// DefaultNamespace = "shiftmk"
 	DefaultContext = "elasticshift"
 
+	KEY_SHIFTDIR = "SHIFT_DIR"
+
+	STARTUP_COMMAND = "%s && %s"
+
+	DIR_SYS = "sys"
+	STARTUP = "startup.sh"
+	WORKER  = "worker"
+
 	KW_CREATEDBY = "createdby"
 	KW_SHIFTID   = "shiftid"
 	KW_BUILDID   = "buildid"
@@ -141,34 +149,44 @@ func (c *kubernetesClient) CreateContainer(opts *itypes.CreateContainerOptions) 
 
 	volumeMounts := []apiv1.VolumeMount{}
 	volumes := []apiv1.Volume{}
-	for _, vol := range opts.VolumeMounts {
-		volumeMounts = append(volumeMounts, apiv1.VolumeMount{Name: vol.Name, MountPath: vol.MountPath})
+	// for _, vol := range opts.VolumeMounts {
 
-		if c.opts.Storage.Kind == 4 {
+	var startupCmd string
+	if c.opts.Storage.Kind == 4 { //NFS
 
-			// vol := apiv1.Volume{
-			// 	Name: vol.Name,
-			// 	VolumeSource: apiv1.VolumeSource{
-			// 		NFS: &apiv1.NFSVolumeSource{
-			// 			Server:   c.opts.Storage.NFS.Server,
-			// 			Path:     c.opts.Storage.NFS.Path,
-			// 			ReadOnly: c.opts.Storage.NFS.ReadOnly,
-			// 		},
-			// 	},
-			// }
+		// set shift_dir
+		envs = append(envs, apiv1.EnvVar{Name: KEY_SHIFTDIR, Value: c.opts.Storage.NFS.MountPath})
 
-			vol := apiv1.Volume{
-				Name: vol.Name,
-				VolumeSource: apiv1.VolumeSource{
-					HostPath: &apiv1.HostPathVolumeSource{
-						Path: "/opt/elasticshift",
-					},
+		// set volume info
+		volumeMounts = append(volumeMounts, apiv1.VolumeMount{Name: c.opts.Storage.Name, MountPath: c.opts.Storage.NFS.MountPath})
+
+		// set command
+		startupCmd = fmt.Sprintf(".%s/sys/startup.sh", c.opts.Storage.NFS.MountPath)
+
+		// asociate actual volume
+		vol := apiv1.Volume{
+			Name: c.opts.Storage.Name,
+			VolumeSource: apiv1.VolumeSource{
+				NFS: &apiv1.NFSVolumeSource{
+					Server:   c.opts.Storage.NFS.Server,
+					Path:     c.opts.Storage.NFS.Path,
+					ReadOnly: c.opts.Storage.NFS.ReadOnly,
 				},
-			}
-			volumes = append(volumes, vol)
+			},
 		}
-		// volumes = append(volumes, apiv1.Volume{Name: vol.Name, VolumeSource: apiv1.VolumeSource{PersistentVolumeClaim: &apiv1.PersistentVolumeClaimVolumeSource{ClaimName: vol.Claim}}})
+
+		// vol := apiv1.Volume{
+		// 	Name: vol.Name,
+		// 	VolumeSource: apiv1.VolumeSource{
+		// 		HostPath: &apiv1.HostPathVolumeSource{
+		// 			Path: "/opt/elasticshift",
+		// 		},
+		// 	},
+		// }
+		volumes = append(volumes, vol)
 	}
+	// volumes = append(volumes, apiv1.Volume{Name: vol.Name, VolumeSource: apiv1.VolumeSource{PersistentVolumeClaim: &apiv1.PersistentVolumeClaimVolumeSource{ClaimName: vol.Claim}}})
+	// }
 
 	deploymentsClient := c.Kube.AppsV1().Deployments(c.opts.Namespace)
 
@@ -197,7 +215,7 @@ func (c *kubernetesClient) CreateContainer(opts *itypes.CreateContainerOptions) 
 						{
 							Name:         opts.BuildID,
 							Image:        opts.Image,
-							Command:      []string{opts.Command},
+							Command:      []string{startupCmd},
 							Env:          envs,
 							VolumeMounts: volumeMounts,
 						},
