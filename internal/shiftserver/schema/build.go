@@ -107,6 +107,11 @@ var (
 			Type:        graphql.String,
 			Description: "The branch to which the build is/was triggered",
 		},
+
+		"graph": &graphql.Field{
+			Type:        graphql.String,
+			Description: "Flow graph",
+		},
 	}
 
 	BuildType = graphql.NewObject(
@@ -124,11 +129,7 @@ func newBuildSchema(
 	s store.Shift,
 ) (queries graphql.Fields, mutations graphql.Fields) {
 
-	// return error
 	r, _ := build.NewResolver(ctx, logger, s)
-	// if err != nil {
-	// 	return err
-	// }
 
 	buildArgs := graphql.FieldConfigArgument{
 		"team": &graphql.ArgumentConfig{

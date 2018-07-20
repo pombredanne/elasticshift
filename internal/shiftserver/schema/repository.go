@@ -79,17 +79,21 @@ func newRepositorySchema(
 			Description: "Represent the source code language reside in this repository",
 		},
 
+		"source": &graphql.Field{
+			Type:        graphql.String,
+			Description: "The source of the repository such as github.com, gitlab.com etc",
+		},
+
 		"build": &graphql.Field{
 			Type: graphql.NewObject(graphql.ObjectConfig{
-			Name: "builds",
-			Fields: graphql.Fields{
-				"nodes": &graphql.Field{Type: graphql.NewList(BuildType)},
-				"count": &graphql.Field{Type: graphql.Int},
-			},
-		}),
-		Resolve: r.FetchBuild,
-	},
-
+				Name: "builds",
+				Fields: graphql.Fields{
+					"nodes": &graphql.Field{Type: graphql.NewList(BuildType)},
+					"count": &graphql.Field{Type: graphql.Int},
+				},
+			}),
+			Resolve: r.FetchBuild,
+		},
 	}
 
 	repositoryType := graphql.NewObject(
