@@ -6,10 +6,10 @@ package builder
 import (
 	"context"
 	"fmt"
-	"log"
 
 	"path/filepath"
 
+	"github.com/Sirupsen/logrus"
 	"github.com/pkg/errors"
 	"gitlab.com/conspico/elasticshift/api"
 	"gitlab.com/conspico/elasticshift/internal/pkg/shiftfile/ast"
@@ -44,10 +44,11 @@ type builder struct {
 	f *ast.File
 	g *graph
 
-	done chan<- int
+	done chan int
+	log  logrus.Logger
 }
 
-func New(ctx wtypes.Context, shiftconn *grpc.ClientConn, logr *logger.Logr, done chan<- int) error {
+func New(ctx wtypes.Context, shiftconn *grpc.ClientConn, logr *logger.Logr, log logrus.Logger, done chan int) error {
 
 	b := builder{}
 	b.shiftconn = shiftconn
@@ -64,7 +65,10 @@ func (b *builder) run() error {
 
 	// restore build cache if any
 	// save the cache after every successful build
-	b.restoreCache()
+	err := b.restoreCache()
+	if err != nil {
+		b.log.Errorln("Restoring cache failed:", err)
+	}
 
 	// Get the project information
 	proj, err := b.shiftclient.GetProject(b.ctx, &api.GetProjectReq{BuildId: b.config.BuildID})
@@ -73,13 +77,15 @@ func (b *builder) run() error {
 	}
 	b.project = proj
 
-	log.Printf("Project Info: %v", proj)
+	b.log.Debugln("Project Info: %v", proj)
 
 	// 1. Ensure connection to log storage is good, this container should be loaded with
 
 	// 2. Load the build cache, if available ensure it
 
 	// 3. Fetch the shiftfile
+
+	b.log.Debugln("Getting the shift file..")
 
 	f, err := vcs.GetShiftFile(proj.Source, proj.CloneUrl, proj.Branch)
 	if err != nil {
@@ -115,7 +121,7 @@ func (b *builder) run() error {
 	// 9. Traverse the execution map & run the actual build
 	err = b.build(graph)
 	if err != nil {
-		return err
+		b.log.Errorf("Build failed. %v", err)
 	}
 
 	return nil

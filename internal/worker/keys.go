@@ -12,6 +12,7 @@ import (
 	"io/ioutil"
 	"log"
 	"os"
+	"path/filepath"
 
 	"gitlab.com/conspico/elasticshift/internal/pkg/utils"
 )
@@ -25,11 +26,19 @@ func (w *W) GenerateRSAKeys() error {
 
 	key, err := rsa.GenerateKey(r, DEFAULT_BIT_SIZE)
 	if err != nil {
-		log.Println(fmt.Errorf("Failed to generate rsa keys: %v", err))
+		w.log.Errorf("Failed to generate rsa keys: %v", err)
 	}
 
+	sshdir, err := GetSSHDir()
+	if err != nil {
+		w.log.Errorf("Failed to get ssh dir: %v", err)
+	}
+
+	w.privKeyPath = filepath.Join(sshdir, PRIV_KEY_NAME)
+	w.pubKeyPath = filepath.Join(sshdir, PUB_KEY_NAME)
+
 	// creates the ssh directory
-	utils.Mkdir(DIR_SSH)
+	utils.Mkdir(sshdir)
 
 	err = w.savePrivateKey(PRIV_KEY_PATH, key)
 	if err != nil {
@@ -40,7 +49,7 @@ func (w *W) GenerateRSAKeys() error {
 	if err != nil {
 		w.Fatal(fmt.Errorf("Failed to save the public key: %v", err))
 	} else {
-		log.Println("Keys generated successfully.")
+		w.log.Infoln("Keys generated successfully.")
 	}
 
 	return nil

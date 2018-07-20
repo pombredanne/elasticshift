@@ -4,27 +4,29 @@ Copyright 2018 The Elasticshift Authors.
 package builder
 
 var (
-	SHELL = "elasticshift/shell"
+	SHELL = "shell"
 )
 
-func (b *builder) invokePlugin(n *N) error {
+func (b *builder) invokePlugin(n *N) (string, error) {
 
 	if START == n.Name || END == n.Name {
-		return nil
+		return "", nil
 	}
 
 	var err error
-	// check if the plugin is o type "elasticshift/shell"
+	var msg string
+
+	// check if the plugin is of type "shell"
 	// then include the shell commands all other properties are ignored
 	if SHELL == n.Name {
-		err = b.invokeShell(n)
+		msg, err = b.invokeShell(n)
 	}
 
 	if err != nil {
-		return err
+		return msg, err
 	}
 
 	// 1. Check if plugin already available
 
-	return nil
+	return "", nil
 }

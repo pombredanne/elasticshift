@@ -4,23 +4,34 @@ Copyright 2018 The Elasticshift Authors.
 package builder
 
 import (
-	"log"
+	"bytes"
+	"io"
 )
 
 type streamer struct {
-	prefix string
+	w      io.Writer
+	buf    bytes.Buffer
+	stderr bool
 }
 
-func newStreamer(prefix string) streamer {
+func newStreamer(w io.Writer, stderr bool) streamer {
 
 	s := streamer{}
-	s.prefix = prefix
+	s.w = w
+	if stderr {
+		s.buf = bytes.Buffer{}
+	}
 	return s
 }
 
 func (s streamer) Write(b []byte) (int, error) {
 
-	l := len(b)
-	log.Printf("%s: %s", s.prefix, b)
-	return l, nil
+	if s.stderr {
+		s.buf.Write(b)
+	}
+	return s.w.Write(b)
+}
+
+func (s streamer) Error() string {
+	return s.buf.String()
 }

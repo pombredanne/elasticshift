@@ -26,6 +26,10 @@ VAR proj_url "https://github.com/nshahm/hybrid.test.runner.git"
 # The container where the build is going to happen
 IMAGE "openjdk:7"
 
+CACHE {
+	- ~/.gradle
+}
+
 #
 # Name of the plugin, description (this can be optional)
 # elasticshift - Name of the company who created this plugin
@@ -37,7 +41,7 @@ IMAGE "openjdk:7"
 	directory "~/code"
 }
 
-"elasticshift/shell", "the build" {
+"shell", "the build" {
 	- mvn clean
 	- mvn compile
 	- mvn test
@@ -58,7 +62,7 @@ IMAGE "elasticshift/java:1.9" {
 "elasticshift/vcs", "Checking out the project" {
 	checkout (proj_url)
 }
-"elasticshift/shell", "Running maven compilation" {
+"shell", "Running maven compilation" {
 	- mvn clean build
 }
 "elasticshift/slack-notifier" ,"Send notification to slack channel" {

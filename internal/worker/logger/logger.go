@@ -96,7 +96,8 @@ func New(ctx context.Context, buildID, teamID string, opt ...LoggerOption) (*Log
 	opts.buildID = buildID
 	opts.teamID = teamID
 
-	writers := []io.Writer{os.Stdout}
+	// writers := []io.Writer{}
+	// writers := []io.Writer{os.Stdout}
 
 	var f *os.File
 	var err error
@@ -126,7 +127,9 @@ func New(ctx context.Context, buildID, teamID string, opt ...LoggerOption) (*Log
 		}
 
 		l.file = f
-		writers = append(writers, f)
+		// writers = append(writers, bufio.NewWriter(f))
+		// l.Writer = bufio.NewWriter(f)
+		l.Writer = f
 	}
 
 	if opts.minio {
@@ -134,12 +137,16 @@ func New(ctx context.Context, buildID, teamID string, opt ...LoggerOption) (*Log
 		// way to connect minio
 	}
 
-	l.Writer = io.MultiWriter(writers...)
+	// l.Writer = io.MultiWriter(writers...)
 
-	log.SetFlags(log.LstdFlags | log.Lmicroseconds | log.LUTC)
-	log.SetOutput(l.Writer)
+	// log.SetFlags(log.LstdFlags | log.Lmicroseconds | log.LUTC)
+	// log.SetOutput(l.Writer)
 
 	return l, nil
+}
+
+func (l *Logr) Log(message string) {
+	l.Writer.Write([]byte(message + "\n"))
 }
 
 func (l *Logr) Close() {

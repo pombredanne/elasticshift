@@ -4,14 +4,38 @@ Copyright 2018 The Elasticshift Authors.
 package builder
 
 import (
-	"log"
+	"os"
 	"runtime"
 	"sync"
 
+	homedir "github.com/minio/go-homedir"
 	"gitlab.com/conspico/elasticshift/api"
+	"gitlab.com/conspico/elasticshift/internal/pkg/utils"
 )
 
 func (b *builder) build(g *graph) error {
+
+	wdir := b.f.WorkDir()
+	b.log.Debugf("Working directory : %s\n", wdir)
+
+	if wdir != "" {
+		expanded, err := homedir.Expand(wdir)
+		if err != nil {
+			b.log.Errorf("Failed to expand the directory : %v\n", err)
+		}
+
+		err = utils.Mkdir(expanded)
+		if err != nil {
+			b.log.Errorf("Failed to create working directory : %v\n", err)
+		}
+
+		err = os.Chdir(expanded)
+		if err != nil {
+			b.log.Errorf("Failed to change the working directory : %v\n", err)
+		}
+	}
+
+	b.logr.Log("Working directory = " + utils.GetWD())
 
 	// set the parallel capability
 	var parallel int
@@ -22,9 +46,16 @@ func (b *builder) build(g *graph) error {
 		parallel = nCpu - 1
 	}
 
+	var failed bool
+
 	// walk through the checkpoints and execute them
 	// s := ""
 	for i := 0; i < len(g.checkpoints); i++ {
+
+		if failed {
+			b.log.Infoln("Build finished, waiting from shiftserver to receive a halt command..")
+			<-b.done
+		}
 
 		c := g.checkpoints[i]
 		// s += fmt.Sprintf("(%d) %s\n", i+1, c.node.Name())
@@ -41,6 +72,10 @@ func (b *builder) build(g *graph) error {
 
 			for j := 0; j < edgeSize; j++ {
 
+				if failed {
+					break
+				}
+
 				wg.Add(1)
 
 				go func(n *N) {
@@ -54,19 +89,24 @@ func (b *builder) build(g *graph) error {
 					n.Start()
 					b.UpdateBuildGraphToShiftServer(statusRunning, n.Name)
 
-					err := b.invokePlugin(n)
+					msg, err := b.invokePlugin(n)
 
 					if err != nil {
+
 						errMutex.Lock()
 						defer errMutex.Unlock()
-						log.Printf("Error when invoking Plugin: %v\n", err)
-						n.End(statusFailed, err.Error())
-						b.UpdateBuildGraphToShiftServer(statusFailed, n.Name)
-					}
 
-					if n.Status != statusFailed {
-						n.End(statusSuccess, "")
-						b.UpdateBuildGraphToShiftServer(statusSuccess, n.Name)
+						b.log.Errorf("Plugin error : %v\n", err)
+						n.End(statusFailed, msg)
+						b.UpdateBuildGraphToShiftServer(statusFailed, n.Name)
+
+						failed = true
+					} else {
+
+						if n.Status != statusFailed {
+							n.End(statusSuccess, "")
+							b.UpdateBuildGraphToShiftServer(statusSuccess, n.Name)
+						}
 					}
 
 					<-parallelCh
@@ -83,35 +123,38 @@ func (b *builder) build(g *graph) error {
 			b.UpdateBuildGraphToShiftServer(statusRunning, c.Node.Name)
 
 			// sequential checkpoint execution
-			err := b.invokePlugin(c.Node)
+			msg, err := b.invokePlugin(c.Node)
 			if err != nil {
-				c.Node.End(statusFailed, err.Error())
+				c.Node.End(statusFailed, msg)
+				b.log.Errorf("Plugin error : %v\n", err)
 				b.UpdateBuildGraphToShiftServer(statusFailed, c.Node.Name)
-				return err
-			}
 
-			c.Node.End(statusSuccess, "")
-			b.UpdateBuildGraphToShiftServer(statusSuccess, c.Node.Name)
+				failed = true
+			} else {
+
+				c.Node.End(statusSuccess, "")
+				b.UpdateBuildGraphToShiftServer(statusSuccess, c.Node.Name)
+			}
 		}
 	}
-
-	// finishes the build
-	// b.done <- 1
 
 	return nil
 }
 
 func (b *builder) UpdateBuildGraphToShiftServer(status, checkpoint string) {
 
-	if END == checkpoint && statusSuccess == status {
+	if statusFailed == status || (END == checkpoint && statusSuccess == status) {
 
-		// save cache
+		b.log.Infoln("Saving cache.")
+
 		b.saveCache()
+
+		b.log.Infoln("Finished saving the cache")
 	}
 
 	gph, err := b.g.Json()
 	if err != nil {
-		log.Printf("Eror when contructing status graph: %v", err)
+		b.log.Errorf("Eror when contructing status graph: %v", err)
 	}
 
 	req := &api.UpdateBuildStatusReq{}
@@ -120,8 +163,10 @@ func (b *builder) UpdateBuildGraphToShiftServer(status, checkpoint string) {
 	req.Status = status
 	req.Checkpoint = checkpoint
 
-	_, err = b.shiftclient.UpdateBuildStatus(b.ctx, req)
-	if err != nil {
-		log.Printf("Failed to update buld graph: %v", err)
+	if b.shiftclient != nil {
+		_, err = b.shiftclient.UpdateBuildStatus(b.ctx, req)
+		if err != nil {
+			b.log.Errorf("Failed to update buld graph: %v", err)
+		}
 	}
 }
