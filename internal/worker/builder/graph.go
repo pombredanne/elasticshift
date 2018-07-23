@@ -4,6 +4,7 @@ Copyright 2018 The Elasticshift Authors.
 package builder
 
 import (
+	"encoding/base64"
 	"encoding/json"
 	"fmt"
 	"sync"
@@ -105,6 +106,30 @@ func (i *N) End(status, message string) {
 		i.Message = message
 	}
 	i.EndedAt = time.Now()
+}
+
+func (i *N) MarshalJSON() ([]byte, error) {
+
+	var msg string
+	if i.Message != "" {
+		msg = base64.StdEncoding.EncodeToString([]byte(i.Message))
+	}
+
+	return json.Marshal(&struct {
+		Name        string    `json:"name"`
+		Description string    `json:"description,omitempty"`
+		Status      string    `json:"status,omitempty"`
+		Message     string    `json:"message,omitempty"`
+		StartedAt   time.Time `json:"started_at,omitempty"`
+		EndedAt     time.Time `json:"ended_at,omitempty"`
+	}{
+		Name:        i.Name,
+		Description: i.Description,
+		Status:      i.Status,
+		StartedAt:   i.StartedAt,
+		EndedAt:     i.EndedAt,
+		Message:     msg,
+	})
 }
 
 type Checkpoint struct {
