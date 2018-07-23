@@ -148,8 +148,33 @@ func (r *resolver) TriggerBuild(params graphql.ResolveParams) (interface{}, erro
 	return b, err
 }
 
+func (r *resolver) UpdateBuildStatusAsFailed(id, reason string, endedAt time.Time) {
+	r.UpdateBuildStatus(id, reason, types.BS_FAILED endedAt)
+}
+
+func (r *resolver) UpdateBuildStatus(id, reason string, status types.BuildStatus, endedAt time.Time) {
+
+	r.logger.Debugln("Updaddting the build status from callback.")
+	// should be the container startup log, if startup failed
+	// should be the err log if build failed.
+	var b types.Build
+	err := r.store.FindByID(id, &b)
+	b.Reason = reason
+	b.Status = status
+	b.EndedAt = time.Now()
+
+	err = r.store.UpdateId(b.ID, b)
+	if err != nil {
+		r.logger.Errorf("failed to update build status: %v", err)
+	}
+}
+
 func (r *resolver) SLog(id interface{}, log string) error {
 	return r.Log(id, types.Log{Time: time.Now(), Data: log})
+}
+
+func (r *resolver) UpdateReason(id interface{}, reason string) error {
+	return r.store.UpdateId(id, bson.M{"$set": bson.M{"reason": reason}})
 }
 
 func (r *resolver) Log(id interface{}, log types.Log) error {

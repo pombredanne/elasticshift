@@ -18,6 +18,8 @@ type CreateContainerOptions struct {
 
 	VolumeMounts []Volume
 	BuildID      string
+
+	FailureFunc func(string, string, time.Time)
 }
 
 type Volume struct {

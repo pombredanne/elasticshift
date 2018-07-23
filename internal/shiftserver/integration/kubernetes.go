@@ -20,6 +20,7 @@ import (
 	"k8s.io/apimachinery/pkg/api/resource"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/apimachinery/pkg/watch"
 	"k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/tools/clientcmd"
 	clientcmdapi "k8s.io/client-go/tools/clientcmd/api"
@@ -149,7 +150,6 @@ func (c *kubernetesClient) CreateContainer(opts *itypes.CreateContainerOptions) 
 
 	volumeMounts := []apiv1.VolumeMount{}
 	volumes := []apiv1.Volume{}
-	// for _, vol := range opts.VolumeMounts {
 
 	var startupCmd string
 	if c.opts.Storage.Kind == 4 { //NFS
@@ -190,7 +190,7 @@ func (c *kubernetesClient) CreateContainer(opts *itypes.CreateContainerOptions) 
 
 	deploymentsClient := c.Kube.AppsV1().Deployments(c.opts.Namespace)
 
-	shiftId := uuid.NewV4()
+	shiftID := uuid.NewV4()
 	deployment := &appsv1.Deployment{
 		ObjectMeta: metav1.ObjectMeta{
 			Name: opts.BuildID,
@@ -206,7 +206,7 @@ func (c *kubernetesClient) CreateContainer(opts *itypes.CreateContainerOptions) 
 				ObjectMeta: metav1.ObjectMeta{
 					Labels: map[string]string{
 						KW_CREATEDBY: DefaultContext,
-						KW_SHIFTID:   shiftId.String(),
+						KW_SHIFTID:   shiftID.String(),
 						KW_BUILDID:   opts.BuildID,
 					},
 				},
@@ -230,36 +230,95 @@ func (c *kubernetesClient) CreateContainer(opts *itypes.CreateContainerOptions) 
 	if err != nil {
 		return nil, fmt.Errorf("Error in creating container : %v", err)
 	}
-	c.logger.Infof("Created deployment %q.\n", result.GetObjectMeta().GetName())
+	c.logger.Debugln("Created deployment %q.\n", result.GetObjectMeta().GetName())
 
-	watch, err := deploymentsClient.Watch(v1.ListOptions{LabelSelector: "createdby=" + DefaultContext})
-	lo := &v1.ListOptions{LabelSelector: KW_SHIFTID + "=" + shiftId.String()}
-	fmt.Printf("List options : %v", lo)
-	watch, err = c.Kube.CoreV1().Pods(c.opts.Namespace).Watch(*lo)
+	wat, err := deploymentsClient.Watch(v1.ListOptions{LabelSelector: "createdby=" + DefaultContext})
+	lo := &v1.ListOptions{LabelSelector: KW_SHIFTID + "=" + shiftID.String()}
+	wat, err = c.Kube.CoreV1().Pods(c.opts.Namespace).Watch(*lo)
 	if err != nil {
-		fmt.Errorf("%v", err)
+		c.logger.Errorln("Watch failed: %v", err)
 	}
-	for {
-		select {
-		case res := <-watch.ResultChan():
-			z, err := json.Marshal(res)
 
-			if err != nil {
-				fmt.Errorf("%v", err)
+	go func() {
+
+		var terminated bool
+		for {
+
+			if terminated {
+				break
 			}
-			var out bytes.Buffer
-			json.Indent(&out, z, "=", "\t")
-			out.WriteTo(os.Stdout)
-			//fmt.Println(res.Type, string(z))
 
-			if res.Type == "Modified" {
+			select {
+			case res := <-wat.ResultChan():
+
+				// z, err := json.Marshal(res)
+
+				// if err != nil {
+				// 	fmt.Errorf("%v", err)
+				// }
+				// var out bytes.Buffer
+				// json.Indent(&out, z, "=", "\t")
+				// out.WriteTo(os.Stdout)
+				// fmt.Println(res.Type, string(z))
+
+				pod, ok := res.Object.(*apiv1.Pod)
+				if !ok {
+					continue
+				}
+
 				// Stop when the status changed to modified, in real need to check the status Running and then
 				// this should be stopped
-				watch.Stop()
+				switch res.Type {
+				case watch.Modified:
+					if pod.DeletionTimestamp != nil {
+						continue
+					}
+
+					switch pod.Status.Phase {
+					case apiv1.PodRunning:
+						for _, cs := range pod.Status.ContainerStatuses {
+
+							if cs.State.Terminated == nil {
+								continue
+							}
+							finishedAt := cs.State.Terminated.FinishedAt.Time
+
+							if cs.State.Terminated.Reason != "Completed" {
+								opts.FailureFunc(opts.BuildID, cs.State.Terminated.Reason, finishedAt)
+								terminated = true
+							}
+						}
+					case apiv1.PodFailed:
+						if len(pod.Status.ContainerStatuses) == 0 {
+
+							for _, cs := range pod.Status.ContainerStatuses {
+								if cs.State.Terminated == nil {
+									continue
+								}
+
+								finishedAt := cs.State.Terminated.FinishedAt.Time
+								opts.FailureFunc(opts.BuildID, cs.State.Terminated.Reason, finishedAt)
+								terminated = true
+							}
+						}
+					default:
+						for _, cs := range pod.Status.ContainerStatuses {
+							if cs.State.Terminated == nil {
+								continue
+							}
+
+							finishedAt := cs.State.Terminated.FinishedAt.Time
+							opts.FailureFunc(opts.BuildID, cs.State.Terminated.Reason, finishedAt)
+							terminated = true
+						}
+					}
+					if terminated {
+						wat.Stop()
+					}
+				}
 			}
 		}
-	}
-	watch.Stop()
+	}()
 
 	//Construct ContainerInfo
 	md := result.GetObjectMeta()
@@ -271,7 +330,7 @@ func (c *kubernetesClient) CreateContainer(opts *itypes.CreateContainerOptions) 
 		ImageVersion: opts.ImageVersion,
 		ClusterName:  md.GetClusterName(),
 		UID:          string(md.GetUID()),
-		ShiftID:      shiftId.String(),
+		ShiftID:      shiftID.String(),
 		Namespace:    md.GetNamespace(),
 	}
 

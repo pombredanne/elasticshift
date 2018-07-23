@@ -166,6 +166,7 @@ type Build struct {
 	EndedAt           time.Time     `json:"ended_at" bson:"ended_at"`
 	TriggeredBy       string        `json:"triggered_by" bson:"triggered_by"`
 	Status            BuildStatus   `json:"status" bson:"status"`
+	Reason            string        `json:"reason" bson:"reason,omitempty"`
 	Branch            string        `json:"branch" bson:"branch"`
 	CloneURL          string        `json:"clone_url" bson:"clone_url"`
 	Language          string        `json:"language" bson:"language"`

@@ -77,6 +77,15 @@ func (r *resolver) ContainerLauncher() {
 			if err != nil {
 				//udpate the build log and set the status to failed
 				r.logger.Errorf("Failed to connect container engine: %v", err)
+
+				b.Status = types.BS_FAILED
+				b.Reason = fmt.Sprintf("Failed to launch container: %v", err)
+
+				err := r.store.UpdateId(b.ID, &b)
+				if err != nil {
+					r.logger.Errorf("Error when updating the build status: %v", err)
+					return
+				}
 			}
 
 			// find the system storage
@@ -97,7 +106,7 @@ func (r *resolver) ContainerLauncher() {
 			// if hostIp == "" {
 			// 	hostIp = "127.0.0.1"
 			// }
-			hostIp := "10.10.5.101"
+			hostIp := "10.10.3.101"
 
 			// env := []string{
 			// 	"SHIFT_HOST=shiftserver",
@@ -152,12 +161,14 @@ func (r *resolver) ContainerLauncher() {
 			// opts.Command = "./opt/elasticshift/sys/worker"
 			opts.Environment = envs
 			opts.BuildID = b.ID.Hex()
+			opts.FailureFunc = r.UpdateBuildStatusAsFailed
+
 			// opts.VolumeMounts = []itypes.Volume{{"localvol", "/opt/elasticshift"}}
 
 			res, err := engine.CreateContainer(opts)
 			if err != nil {
-				str := fmt.Sprintf("Unable to create the container %v", err)
-				r.SLog(b.ID, str)
+				r.logger.Errorf("Create container failed: %v", err)
+				r.UpdateReason(b.ID, err.Error())
 				return
 			}
 
