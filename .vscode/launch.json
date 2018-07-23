@@ -1,15 +1,29 @@
 {
     "version": "0.2.0",
     "configurations": [
+        
         {
-            "name": "esh",
+            "name": "elasticshift",
             "type": "go",
             "request": "launch",
             "mode": "debug",
             "remotePath": "",
             "port": 2345,
             "host": "127.0.0.1",
-            "program": "${workspaceRoot}/cmd",
+            "program": "${workspaceRoot}/cmd/elasticshift",
+            "env": {"PATH":"$PATH:/usr/local/opt/go/libexec/bin"},
+            "args": [],
+            "showLog": true
+        },
+        {
+            "name": "worker",
+            "type": "go",
+            "request": "launch",
+            "mode": "debug",
+            "remotePath": "",
+            "port": 2345,
+            "host": "127.0.0.1",
+            "program": "${workspaceRoot}/cmd/worker",
             "env": {},
             "args": [],
             "showLog": true

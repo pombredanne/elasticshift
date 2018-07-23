@@ -1,7 +1,7 @@
 {
-    "go.buildOnSave": true,
-    "go.lintOnSave": true,
-    "go.vetOnSave": true,
+    "go.buildOnSave": "off",
+    "go.lintOnSave": "package",
+    "go.vetOnSave": "package",
     "go.buildTags": "",
     "go.buildFlags": [],
     "go.lintTool": "golint",
@@ -9,10 +9,23 @@
     "go.vetFlags": [],
     "go.coverOnSave": false,
     "go.useCodeSnippetsOnFunctionSuggest": false,
-    "go.formatOnSave": true, 
     "go.formatTool": "goreturns",
     "go.formatFlags": [],
-    "go.goroot": "/usr/local/go",
+    "go.goroot": "/usr/local/opt/go/libexec",
     "go.gopath": "/Users/ghazni/sandbox/projects/go",
     "go.gocodeAutoBuild": false,
+    "go.addTags": {
+        "tags": "json",
+        "options": "json=omitempty",
+        "promptForTags": false,
+        "transform": "snakecase"
+    },
+    "go.liveErrors": {
+        "enabled": false,
+        "delay": 500
+    },
+    "[go]": {
+        "editor.insertSpaces": false,
+        "editor.formatOnSave": true
+    },
 }
