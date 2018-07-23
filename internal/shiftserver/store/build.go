@@ -4,8 +4,6 @@ Copyright 2017 The Elasticshift Authors.
 package store
 
 import (
-	"fmt"
-
 	"gitlab.com/conspico/elasticshift/api/types"
 	mgo "gopkg.in/mgo.v2"
 	"gopkg.in/mgo.v2/bson"
@@ -55,15 +53,12 @@ func (s *build) FetchBuild(team, repositoryID, branch, id string, status types.B
 		q["_id"] = bson.ObjectIdHex(id)
 	}
 
-	fmt.Println(q)
-
 	var err error
 	var result []types.Build
 	s.Execute(func(c *mgo.Collection) {
 		err = c.Find(q).All(&result)
 	})
 
-	fmt.Println(result)
 	return result, err
 }
 
