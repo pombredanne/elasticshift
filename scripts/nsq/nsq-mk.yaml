@@ -1,0 +1,60 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: nsq
+spec:
+  selector:
+    matchLabels:
+      name: nsq
+  replicas: 1
+  template:
+    metadata:
+      labels:
+        name: nsq
+    spec:
+      containers:
+        - name: nsqlookup
+          image: nsqio/nsq
+          command:
+            - /nsqlookupd
+          ports:
+            - containerPort: 4160
+              name: tcp
+              protocol: TCP
+            - containerPort: 4161
+              name: http
+              protocol: TCP
+        - name: nsqd
+          image: nsqio/nsq 
+          command:
+            - /nsqd
+            - --lookupd-tcp-address=192.168.99.100:4160
+          ports:
+            - containerPort: 4150
+              name: tcp
+              protocol: TCP
+            - containerPort: 4151
+              name: http
+              protocol: TCP
+            - containerPort: 4152
+              name: https
+              protocol: TCP
+          resources:
+            limits:
+              cpu: "0.1"
+          volumeMounts:
+            - mountPath: /data
+              name: nsqvol
+        - name: nsqadmin
+          image: nsqio/nsq
+          command:
+            - /nsqadmin
+            - --lookupd-http-address=192.168.99.100:4160
+          ports:
+            - containerPort: 4171
+              name: http
+              protocol: TCP
+      volumes:
+        - name: nsqvol
+          hostPath:
+            path: /data
