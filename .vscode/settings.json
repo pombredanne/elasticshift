@@ -1,5 +1,5 @@
 {
-    "go.buildOnSave": "off",
+    "go.buildOnSave": "package",
     "go.lintOnSave": "package",
     "go.vetOnSave": "package",
     "go.buildTags": "",
@@ -27,5 +27,13 @@
     "[go]": {
         "editor.insertSpaces": false,
         "editor.formatOnSave": true
-    },
+    }
+    // "vim.handleKeys": {
+    //     "<C-d>": true
+    // },
+    // "vim.leader": ",",
+    // "vim.overrideCopy": true,
+    // "vim.scroll": 20,
+    // "vim.surround": true,
+    // "vim.useSystemClipboard": true
 }
