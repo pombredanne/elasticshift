@@ -273,17 +273,20 @@ func (r *RequestMaker) Dispatch() error {
 	}
 	defer res.Body.Close()
 
-	// read the response body
-	bits, err := ioutil.ReadAll(res.Body)
-	if err != nil {
-		return err
-	}
+	if r.response != nil {
 
-	// r.logger.Infoln("Response = ", string(bits[:]))
-	// decode to response type
-	err = json.NewDecoder(bytes.NewBuffer(bits)).Decode(r.response)
-	if err != nil {
-		return fmt.Errorf("Failed to decode respose : ", err)
+		// read the response body
+		bits, err := ioutil.ReadAll(res.Body)
+		if err != nil {
+			return err
+		}
+
+		// r.logger.Infoln("Response = ", string(bits[:]))
+		// decode to response type
+		err = json.NewDecoder(bytes.NewBuffer(bits)).Decode(r.response)
+		if err != nil {
+			return fmt.Errorf("Failed to decode respose : ", err)
+		}
 	}
 	return nil
 }

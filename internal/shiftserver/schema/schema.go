@@ -10,6 +10,7 @@ import (
 	"github.com/Sirupsen/logrus"
 	"github.com/graphql-go/graphql"
 	"gitlab.com/conspico/elasticshift/internal/shiftserver/identity/oauth2/providers"
+	"gitlab.com/conspico/elasticshift/internal/shiftserver/pubsub"
 	"gitlab.com/conspico/elasticshift/internal/shiftserver/secret"
 	"gitlab.com/conspico/elasticshift/internal/shiftserver/store"
 )
@@ -22,11 +23,13 @@ func Construct(
 	providers providers.Providers,
 	s store.Shift,
 	vault secret.Vault,
+	pb pubsub.Engine,
 ) (*graphql.Schema, error) {
 
 	// initialize schema
 	queries := graphql.Fields{}
 	mutations := graphql.Fields{}
+	subscriptions := graphql.Fields{}
 
 	// team fields
 	teamQ, teamM := newTeamSchema(ctx, logger, s)
@@ -49,9 +52,10 @@ func Construct(
 	appendFields(mutations, sysconfM)
 
 	// build fields
-	buildQ, buildM := newBuildSchema(ctx, logger, s)
+	buildQ, buildM, buildS := newBuildSchema(ctx, logger, s, pb)
 	appendFields(queries, buildQ)
 	appendFields(mutations, buildM)
+	appendFields(subscriptions, buildS)
 
 	// app fields
 	pluginQ, pluginM := newPluginSchema(ctx, logger, s)
@@ -90,15 +94,17 @@ func Construct(
 
 	rootQuery := graphql.ObjectConfig{Name: "RootQuery", Fields: queries}
 	rootMutation := graphql.ObjectConfig{Name: "RootMutation", Fields: mutations}
+	rootSubscription := graphql.ObjectConfig{Name: "RootSubscription", Fields: subscriptions}
 
 	schemaConfig := graphql.SchemaConfig{
-		Query:    graphql.NewObject(rootQuery),
-		Mutation: graphql.NewObject(rootMutation),
+		Query:        graphql.NewObject(rootQuery),
+		Mutation:     graphql.NewObject(rootMutation),
+		Subscription: graphql.NewObject(rootSubscription),
 	}
 
 	schm, err := graphql.NewSchema(schemaConfig)
 	if err != nil {
-		return nil, fmt.Errorf("Failed to create schema due to errors :v", err)
+		return nil, fmt.Errorf("Failed to create schema due to errors %v", err)
 	}
 	return &schm, nil
 }

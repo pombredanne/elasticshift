@@ -11,13 +11,13 @@ import (
 
 	"github.com/Sirupsen/logrus"
 	"github.com/gorilla/mux"
-	"github.com/graphql-go/graphql"
 	"github.com/graphql-go/handler"
 	"gitlab.com/conspico/elasticshift/api"
 	"gitlab.com/conspico/elasticshift/api/dex"
 	"gitlab.com/conspico/elasticshift/internal/shiftserver/identity/oauth2/providers"
 	"gitlab.com/conspico/elasticshift/internal/shiftserver/integration"
 	"gitlab.com/conspico/elasticshift/internal/shiftserver/plugin"
+	"gitlab.com/conspico/elasticshift/internal/shiftserver/pubsub"
 	"gitlab.com/conspico/elasticshift/internal/shiftserver/schema"
 	"gitlab.com/conspico/elasticshift/internal/shiftserver/secret"
 	"gitlab.com/conspico/elasticshift/internal/shiftserver/shift"
@@ -42,6 +42,8 @@ const (
 
 // Server ..
 type Server struct {
+	Config ServerConfig
+
 	Logger    logrus.Logger
 	DB        store.Database
 	Router    *mux.Router
@@ -49,17 +51,20 @@ type Server struct {
 	Providers providers.Providers
 	Ctx       context.Context
 
+	NSQ pubsub.NSQConfig
+
 	Shift store.Shift
 
 	Vault secret.Vault
 
-	BuildType *graphql.Object
+	Pubsub pubsub.Engine
 }
 
 // ServerConfig ..
 type ServerConfig struct {
 	Store    store.Config
 	Logger   logrus.Logger
+	NSQ      NSQ
 	Session  *mgo.Session
 	Identity Identity
 }
@@ -79,8 +84,11 @@ type Identity struct {
 func New(ctx context.Context, c ServerConfig) (*Server, error) {
 
 	s := &Server{}
+	s.Config = c
 	s.Ctx = ctx
 	s.Logger = c.Logger
+	s.NSQ.Consumer.Address = c.NSQ.ConsumerAddress
+	s.NSQ.Producer.Address = c.NSQ.ProducerAddress
 
 	s.DB = store.NewDatabase(c.Store.Name, c.Session)
 	s.Shift = s.DB.InitShiftStore()
@@ -161,7 +169,18 @@ func (s *Server) registerGraphQLServices() error {
 	vault := secret.NewVault(s.Shift, logger, s.Ctx)
 	s.Vault = vault
 
-	schm, err := schema.Construct(s.Ctx, s.Logger, s.Providers, s.Shift, s.Vault)
+	// subscription handler through websocket
+	sh := pubsub.NewSubscriptionHandler(&logger)
+
+	nsqc := pubsub.NSQConfig{}
+	nsqc.Consumer.Address = s.Config.NSQ.ConsumerAddress
+	nsqc.Producer.Address = s.Config.NSQ.ProducerAddress
+	s.NSQ = nsqc
+
+	eng := pubsub.NewEngine(logger, sh, nsqc)
+	s.Pubsub = eng
+
+	schm, err := schema.Construct(s.Ctx, s.Logger, s.Providers, s.Shift, s.Vault, s.Pubsub)
 	if err != nil {
 		return err
 	}
@@ -175,6 +194,15 @@ func (s *Server) registerGraphQLServices() error {
 	r.Handle("/graphql", h)
 	r.Handle("/graphql/", h)
 
+	// This is really important to validate the schema
+	// during subscription, and also used when pushing
+	// the results to consumers
+	s.Pubsub.Schema(schm)
+
+	// Graphql endpoint works with websocket only for subscription
+	psh := pubsub.NewGraphqlWSHandler(s.Pubsub, &logger)
+	r.Handle("/subscription", psh)
+
 	return nil
 }
 
@@ -185,9 +213,9 @@ func (s *Server) registerWebSocketServices() {
 
 }
 
-// Registers the GRPC services
+// Registers the GRPC services ...
 func RegisterGRPCServices(grpcServer *grpc.Server, s *Server) {
-	api.RegisterShiftServer(grpcServer, shift.NewServer(s.Logger, s.Ctx, s.Shift, s.Vault))
+	api.RegisterShiftServer(grpcServer, shift.NewServer(s.Logger, s.Ctx, s.Shift, s.Vault, s.Pubsub))
 }
 
 // Registers the exposed http services

@@ -8,31 +8,31 @@ import (
 	"fmt"
 	"io"
 	"log"
-	"os"
 	"sync"
 	"testing"
-
-	"github.com/Sirupsen/logrus"
-	"gitlab.com/conspico/elasticshift/api/types"
 )
 
 func testCreateBucket(t *testing.T) {
 
-	logger := logrus.New()
-	logger.Out = os.Stdout
+	// logger := logrus.New()
+	// logger.Out = os.Stdout
 
-	opts := types.Storage{
-		Host:      "127.0.0.1:9000",
-		AccessKey: "AKIAIOSFODNN7EXAMPLE",
-		SecretKey: "wJalrXUtnFEMI/K7MDENG/bPxRfiCYEXAMPLEKEY",
-	}
+	// opts := types.Storage{
+	// 	StorageSource: types.StorageSource{
+	// 		&MinioStorage{
+	// 			Host:      "127.0.0.1:9000",
+	// 			AccessKey: "AKIAIOSFODNN7EXAMPLE",
+	// 			SecretKey: "wJalrXUtnFEMI/K7MDENG/bPxRfiCYEXAMPLEKEY",
+	// 		},
+	// 	},
+	// }
 
-	mc, err := ConnectMinio(*logger, opts)
+	// mc, err := ConnectMinio(*logger, opts)
 
-	if err != nil {
-		fmt.Println(err)
-		t.Fail()
-	}
+	// if err != nil {
+	// 	fmt.Println(err)
+	// 	t.Fail()
+	// }
 
 	// var f *os.File
 	// f, err = os.OpenFile("test.txt", os.O_RDWR|os.O_CREATE|os.O_APPEND, 0666)
@@ -40,10 +40,10 @@ func testCreateBucket(t *testing.T) {
 	// 	panic(err)
 	// }
 
-	writers := []io.Writer{NewLogWriter(mc)}
-	log.SetOutput(io.MultiWriter(writers...))
+	// writers := []io.Writer{NewLogWriter(mc)}
+	// log.SetOutput(io.MultiWriter(writers...))
 
-	go dumpdata()
+	// go dumpdata()
 
 	// _, err = mc.PutObject("test", "file1.txt", r, "text/plain")
 	// if err != nil {
@@ -57,9 +57,9 @@ func testCreateBucket(t *testing.T) {
 	// 	fmt.Println(err)
 	// 	t.Fail()
 	// }
-	ch := make(chan int)
+	// ch := make(chan int)
 
-	<-ch
+	// <-ch
 }
 
 type LogWriter struct {

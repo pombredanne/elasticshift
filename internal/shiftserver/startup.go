@@ -30,6 +30,7 @@ type Config struct {
 	Web      Web      `json:"web"`
 	Logger   Logger   `json:"logger"`
 	Identity Identity `json:"dex"`
+	NSQ      NSQ
 }
 
 // Store ..
@@ -46,6 +47,12 @@ type Store struct {
 	IdleConnection int
 	MaxConnection  int
 	Log            bool
+}
+
+// NSQ ..
+type NSQ struct {
+	ConsumerAddress string `json:"consumer_address"`
+	ProducerAddress string `json:"producer_address"`
 }
 
 // Web ..
@@ -104,7 +111,8 @@ func Run() error {
 
 			Store: Store{
 
-				Server:    "127.0.0.1",
+				Server: "127.0.0.1",
+				// Server:    "10.10.7.152",
 				Name:      "elasticshift",
 				Username:  "elasticshift",
 				Password:  "3l@$t1c$h1ft",
@@ -117,6 +125,11 @@ func Run() error {
 
 				Level:  "debug",
 				Format: "json",
+			},
+
+			NSQ: NSQ{
+				ConsumerAddress: "127.0.0.1:4161",
+				ProducerAddress: "127.0.0.1:4150",
 			},
 
 			Web: Web{
@@ -156,6 +169,27 @@ func Run() error {
 		log.Println(fmt.Printf("config using log level: %s", c.Logger.Level))
 	}
 	sc.Logger = logger
+
+	// NSQ config
+	if c.NSQ.ConsumerAddress == "" {
+		return fmt.Errorf("No NSQ consumer address provided.")
+	}
+	sc.NSQ.ConsumerAddress = c.NSQ.ConsumerAddress
+
+	// override nsq consumer address
+	if consumerAddress := os.Getenv("NSQ_CONSUMER_ADDRESS"); consumerAddress != "" {
+		sc.NSQ.ConsumerAddress = consumerAddress
+	}
+
+	if c.NSQ.ProducerAddress == "" {
+		return fmt.Errorf("No NSQ producer address provided.")
+	}
+	sc.NSQ.ProducerAddress = c.NSQ.ProducerAddress
+
+	// override nsq producer address
+	if producerAddress := os.Getenv("NSQ_PRODUCER_ADDRESS"); producerAddress != "" {
+		sc.NSQ.ProducerAddress = producerAddress
+	}
 
 	// parse db config
 	sc.Store.Timeout, err = time.ParseDuration(c.Store.Timeout)

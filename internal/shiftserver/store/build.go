@@ -77,7 +77,7 @@ func (s *build) FetchBuildByRepositoryID(id string) ([]types.Build, error) {
 
 func (s *build) FetchBuildByID(id string) (types.Build, error) {
 	var b types.Build
-	err := s.FindOne(bson.M{"_id": id}, &b)
+	err := s.FindOne(bson.M{"_id": bson.ObjectIdHex(id)}, &b)
 	return b, err
 }
 

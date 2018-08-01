@@ -11,9 +11,11 @@ import (
 	"gitlab.com/conspico/elasticshift/api/types"
 	"gitlab.com/conspico/elasticshift/internal/pkg/utils"
 	"gitlab.com/conspico/elasticshift/internal/shiftserver/build"
+	"gitlab.com/conspico/elasticshift/internal/shiftserver/pubsub"
 	"gitlab.com/conspico/elasticshift/internal/shiftserver/store"
 )
 
+// type & fields
 var (
 	buildStatusEnum = graphql.NewEnum(graphql.EnumConfig{
 		Name: "BuildStatus",
@@ -127,9 +129,10 @@ func newBuildSchema(
 	ctx context.Context,
 	logger logrus.Logger,
 	s store.Shift,
-) (queries graphql.Fields, mutations graphql.Fields) {
+	ps pubsub.Engine,
+) (queries graphql.Fields, mutations graphql.Fields, subscriptions graphql.Fields) {
 
-	r, _ := build.NewResolver(ctx, logger, s)
+	r, _ := build.NewResolver(ctx, logger, s, ps)
 
 	buildArgs := graphql.FieldConfigArgument{
 		"team": &graphql.ArgumentConfig{
@@ -189,5 +192,18 @@ func newBuildSchema(
 		},
 	}
 
-	return queries, mutations
+	subscriptions = graphql.Fields{
+		pubsub.SubscribeBuildUpdate: &graphql.Field{
+			Type: BuildType,
+			Args: graphql.FieldConfigArgument{
+				"id": &graphql.ArgumentConfig{
+					Type:        graphql.NewNonNull(graphql.String),
+					Description: "Build Identifier",
+				},
+			},
+			Resolve: r.FetchBuildByID,
+		},
+	}
+
+	return queries, mutations, subscriptions
 }

@@ -12,6 +12,7 @@ import (
 	"gitlab.com/conspico/elasticshift/api"
 	"gitlab.com/conspico/elasticshift/api/types"
 	"gitlab.com/conspico/elasticshift/internal/shiftserver/integration"
+	"gitlab.com/conspico/elasticshift/internal/shiftserver/pubsub"
 	"gitlab.com/conspico/elasticshift/internal/shiftserver/secret"
 	"gitlab.com/conspico/elasticshift/internal/shiftserver/store"
 	"golang.org/x/net/context"
@@ -27,10 +28,11 @@ type shift struct {
 	defaultStore     store.Defaults
 	integrationStore store.Integration
 	vault            secret.Vault
+	ps               pubsub.Engine
 }
 
-func NewServer(logger logrus.Logger, ctx context.Context, s store.Shift, vault secret.Vault) api.ShiftServer {
-	return &shift{logger, ctx, s.Build, s.Container, s.Repository, s.Defaults, s.Integration, vault}
+func NewServer(logger logrus.Logger, ctx context.Context, s store.Shift, vault secret.Vault, ps pubsub.Engine) api.ShiftServer {
+	return &shift{logger, ctx, s.Build, s.Container, s.Repository, s.Defaults, s.Integration, vault, ps}
 }
 
 func (s *shift) Register(ctx context.Context, req *api.RegisterReq) (*api.RegisterRes, error) {
@@ -100,8 +102,16 @@ func (s *shift) UpdateBuildStatus(ctx context.Context, req *api.UpdateBuildStatu
 		return res, fmt.Errorf("Failed to update the graph : %v", err)
 	}
 
+	// publish pubsub to fetch latest update to subscribers
+	s.ps.Publish(pubsub.SubscribeBuildUpdate, req.GetBuildId())
+
 	if stopContainer {
 
+		fmt.Println("-------------------------------------------------------------")
+		fmt.Println("Stopping the container..... ")
+		fmt.Println("Status = ", status)
+		fmt.Println("Checkpoint = ", cp)
+		fmt.Println("-------------------------------------------------------------")
 		// request container engine to stop the live container
 		ce, err := s.getContainerEngine(b.Team)
 		if err != nil {

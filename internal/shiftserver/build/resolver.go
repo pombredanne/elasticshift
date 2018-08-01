@@ -17,6 +17,7 @@ import (
 	"gitlab.com/conspico/elasticshift/internal/pkg/shiftfile/keys"
 	"gitlab.com/conspico/elasticshift/internal/pkg/shiftfile/parser"
 	"gitlab.com/conspico/elasticshift/internal/pkg/vcs"
+	"gitlab.com/conspico/elasticshift/internal/shiftserver/pubsub"
 	"gitlab.com/conspico/elasticshift/internal/shiftserver/store"
 	"gopkg.in/mgo.v2/bson"
 )
@@ -51,10 +52,11 @@ type resolver struct {
 	logger           logrus.Logger
 	Ctx              context.Context
 	BuildQueue       chan types.Build
+	ps               pubsub.Engine
 }
 
 // NewResolver ...
-func NewResolver(ctx context.Context, logger logrus.Logger, s store.Shift) (Resolver, error) {
+func NewResolver(ctx context.Context, logger logrus.Logger, s store.Shift, ps pubsub.Engine) (Resolver, error) {
 
 	r := &resolver{
 		store:            s.Build,
@@ -67,6 +69,7 @@ func NewResolver(ctx context.Context, logger logrus.Logger, s store.Shift) (Reso
 		logger:           logger,
 		Ctx:              ctx,
 		BuildQueue:       make(chan types.Build),
+		ps:               ps,
 	}
 
 	// Launch a background process to launch container after build trigger.
@@ -127,12 +130,15 @@ func (r *resolver) TriggerBuild(params graphql.ResolveParams) (interface{}, erro
 	b.Language = repo.Language
 	b.Source = repo.Source
 
+	buildID := b.ID.Hex()
+	fmt.Println("Buildid = ", buildID)
+
 	// Build file path - (for NFS)
 	// <cache>/team-id/vcs-id/repository-id/branch-name/build-id/log
 	// <cache>/team-id/vcs-id/repository-id/branch-name/build-id/reports
 	// <cache>/team-id/vcs-id/repository-id/branch-name/build-id/archive.zip
 	// cache must be mounted as /elasticshift to containers
-	b.StoragePath = filepath.Join(repo.Team, repo.Identifier, repo.Name, branch, b.ID.Hex())
+	b.StoragePath = filepath.Join(repo.Team, repo.Identifier, repo.Name, branch, buildID)
 
 	err = r.store.Save(&b)
 	if err != nil {
@@ -140,6 +146,9 @@ func (r *resolver) TriggerBuild(params graphql.ResolveParams) (interface{}, erro
 	}
 
 	if b.Status == types.BS_RUNNING {
+
+		// publish to topic to push build updates to subscribers
+		r.ps.Publish(pubsub.SubscribeBuildUpdate, buildID)
 
 		// Pass the build data to builder
 		r.BuildQueue <- b
@@ -149,7 +158,7 @@ func (r *resolver) TriggerBuild(params graphql.ResolveParams) (interface{}, erro
 }
 
 func (r *resolver) UpdateBuildStatusAsFailed(id, reason string, endedAt time.Time) {
-	r.UpdateBuildStatus(id, reason, types.BS_FAILED endedAt)
+	r.UpdateBuildStatus(id, reason, types.BS_FAILED, endedAt)
 }
 
 func (r *resolver) UpdateBuildStatus(id, reason string, status types.BuildStatus, endedAt time.Time) {
@@ -251,8 +260,13 @@ func (r *resolver) findImageName(b types.Build) (string, error) {
 			return "", fmt.Errorf("Failed to fetch defaults by reference id: %v", err)
 		}
 
+		fileId := defs.Languages[b.Language]
+		if fileId == "" {
+			return "", fmt.Errorf("No default shiftfile configured for language [%s].", b.Language)
+		}
+
 		var file types.Shiftfile
-		err = r.shiftfileStore.FindByID(defs.Languages[b.Language], &file)
+		err = r.shiftfileStore.FindByID(fileId, &file)
 		if err != nil {
 			return "", fmt.Errorf("Failed to fetch the default shiftfile for language: %v", err)
 		}

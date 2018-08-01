@@ -10,6 +10,7 @@ import (
 	"gitlab.com/conspico/elasticshift/api/types"
 	"gitlab.com/conspico/elasticshift/internal/shiftserver/integration"
 	itypes "gitlab.com/conspico/elasticshift/internal/shiftserver/integration/types"
+	"gitlab.com/conspico/elasticshift/internal/shiftserver/pubsub"
 )
 
 var (
@@ -63,10 +64,20 @@ func (r *resolver) ContainerLauncher() {
 			// if err != nil {
 			// 	r.SLog(b.ID, fmt.Sprintf("Failed to connect to docker daemon: %v", err))
 			// }
+			buildID := b.ID.Hex()
 
 			imgName, err := r.findImageName(b)
 			if err != nil {
-				r.SLog(b.ID, fmt.Sprintf("Unable to find the build image from Shiftfile", b.CloneURL))
+				//r.SLog(b.ID, fmt.Sprintf("Unable to find the build image from Shiftfile", b.CloneURL))
+				b.Status = types.BS_FAILED
+				b.Reason = fmt.Sprintf("Failed to find container image name: %s", err.Error())
+
+				err := r.store.UpdateId(b.ID, &b)
+				if err != nil {
+					r.logger.Errorf("Error when updating the build status: %v", err)
+				}
+
+				r.ps.Publish(pubsub.SubscribeBuildUpdate, buildID)
 				return
 			}
 			fmt.Println("Image name: " + imgName)
@@ -84,8 +95,10 @@ func (r *resolver) ContainerLauncher() {
 				err := r.store.UpdateId(b.ID, &b)
 				if err != nil {
 					r.logger.Errorf("Error when updating the build status: %v", err)
-					return
 				}
+
+				r.ps.Publish(pubsub.SubscribeBuildUpdate, buildID)
+				return
 			}
 
 			// find the system storage
@@ -106,7 +119,7 @@ func (r *resolver) ContainerLauncher() {
 			// if hostIp == "" {
 			// 	hostIp = "127.0.0.1"
 			// }
-			hostIp := "10.10.3.101"
+			hostIp := "10.10.5.101"
 
 			// env := []string{
 			// 	"SHIFT_HOST=shiftserver",
@@ -168,7 +181,14 @@ func (r *resolver) ContainerLauncher() {
 			res, err := engine.CreateContainer(opts)
 			if err != nil {
 				r.logger.Errorf("Create container failed: %v", err)
-				r.UpdateReason(b.ID, err.Error())
+				b.Status = types.BS_FAILED
+				b.Reason = err.Error()
+				err := r.store.UpdateId(b.ID, &b)
+				if err != nil {
+					r.logger.Errorf("Error when updating the build status: %v", err)
+				}
+
+				r.ps.Publish(pubsub.SubscribeBuildUpdate, buildID)
 				return
 			}
 

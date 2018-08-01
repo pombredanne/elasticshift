@@ -3,7 +3,10 @@ Copyright 2017 The Elasticshift Authors.
 */
 package utils
 
-import "github.com/graphql-go/graphql"
+import (
+	"github.com/graphql-go/graphql"
+	"github.com/graphql-go/graphql/gqlerrors"
+)
 
 func MakeListType(name string, listType graphql.Output, resolve graphql.FieldResolveFn, args graphql.FieldConfigArgument) *graphql.Field {
 
@@ -30,4 +33,17 @@ func MakeListType(name string, listType graphql.Output, resolve graphql.FieldRes
 	}
 
 	return field
+}
+
+// Errors convert from GraphQL errors to regular errors.
+func GraphQLErrors(errors []gqlerrors.FormattedError) []error {
+	if len(errors) == 0 {
+		return nil
+	}
+
+	out := make([]error, len(errors))
+	for i := range errors {
+		out[i] = errors[i]
+	}
+	return out
 }
