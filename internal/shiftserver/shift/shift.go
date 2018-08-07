@@ -11,6 +11,7 @@ import (
 	"github.com/pkg/errors"
 	"gitlab.com/conspico/elasticshift/api"
 	"gitlab.com/conspico/elasticshift/api/types"
+	"gitlab.com/conspico/elasticshift/internal/pkg/logger"
 	"gitlab.com/conspico/elasticshift/internal/shiftserver/integration"
 	"gitlab.com/conspico/elasticshift/internal/shiftserver/pubsub"
 	"gitlab.com/conspico/elasticshift/internal/shiftserver/secret"
@@ -20,7 +21,8 @@ import (
 )
 
 type shift struct {
-	logger           logrus.Logger
+	loggr            logger.Loggr
+	logger           *logrus.Entry
 	Ctx              context.Context
 	buildStore       store.Build
 	containerStore   store.Container
@@ -31,8 +33,9 @@ type shift struct {
 	ps               pubsub.Engine
 }
 
-func NewServer(logger logrus.Logger, ctx context.Context, s store.Shift, vault secret.Vault, ps pubsub.Engine) api.ShiftServer {
-	return &shift{logger, ctx, s.Build, s.Container, s.Repository, s.Defaults, s.Integration, vault, ps}
+func NewServer(loggr logger.Loggr, ctx context.Context, s store.Shift, vault secret.Vault, ps pubsub.Engine) api.ShiftServer {
+	l := loggr.GetLogger("shiftserver/grpc")
+	return &shift{loggr, l, ctx, s.Build, s.Container, s.Repository, s.Defaults, s.Integration, vault, ps}
 }
 
 func (s *shift) Register(ctx context.Context, req *api.RegisterReq) (*api.RegisterRes, error) {
@@ -151,7 +154,7 @@ func (s *shift) getContainerEngine(team string) (integration.ContainerEngineInte
 	}
 
 	// connect to container engine cluster
-	return integration.NewContainerEngine(s.logger, i, stor)
+	return integration.NewContainerEngine(s.loggr, i, stor)
 }
 
 // func (s *shift) LogShip(reqStream api.Shift_LogShipServer) error {

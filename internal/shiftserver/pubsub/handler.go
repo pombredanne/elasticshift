@@ -8,10 +8,13 @@ import (
 
 	"github.com/Sirupsen/logrus"
 	"github.com/gorilla/websocket"
+	"gitlab.com/conspico/elasticshift/internal/pkg/logger"
 )
 
 // NewHandler ..
-func NewGraphqlWSHandler(engine Engine, logger *logrus.Logger) http.Handler {
+func NewGraphqlWSHandler(engine Engine, loggr logger.Loggr) http.Handler {
+
+	logger := loggr.GetLogger("graphql/wshandler")
 
 	upgrader := websocket.Upgrader{
 		CheckOrigin:  func(r *http.Request) bool { return true },

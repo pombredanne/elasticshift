@@ -29,7 +29,7 @@ import (
 type kubernetesClient struct {
 	opts   *ConnectOptions
 	Kube   *kubernetes.Clientset
-	logger logrus.Logger
+	logger *logrus.Entry
 }
 
 type ConnectOptions struct {
@@ -77,7 +77,7 @@ var (
 //	//GetContainerStatus(opts *ContainerInfo) string
 //}
 
-func ConnectKubernetes(logger logrus.Logger, opts *ConnectOptions) (ContainerEngineInterface, error) {
+func ConnectKubernetes(logger *logrus.Entry, opts *ConnectOptions) (ContainerEngineInterface, error) {
 
 	if opts.Namespace == "" {
 		opts.Namespace = DefaultNamespace

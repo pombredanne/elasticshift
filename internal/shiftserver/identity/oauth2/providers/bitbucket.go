@@ -8,6 +8,7 @@ import (
 	"time"
 
 	"gitlab.com/conspico/elasticshift/api/types"
+	"gitlab.com/conspico/elasticshift/internal/pkg/logger"
 	"gitlab.com/conspico/elasticshift/pkg/dispatch"
 
 	"golang.org/x/oauth2"
@@ -28,12 +29,14 @@ type Bitbucket struct {
 	CallbackURL string
 	HookURL     string
 	Config      *oauth2.Config
-	logger      logrus.Logger
+	logger      *logrus.Entry
 }
 
 // BitbucketProvider ...
 // Creates a new Github provider
-func BitbucketProvider(logger logrus.Logger, clientID, secret, callbackURL, HookURL string) *Bitbucket {
+func BitbucketProvider(loggr logger.Loggr, clientID, secret, callbackURL, HookURL string) *Bitbucket {
+
+	l := loggr.GetLogger("oauth2/bitbucket")
 
 	conf := &oauth2.Config{
 		ClientID:     clientID,
@@ -46,7 +49,7 @@ func BitbucketProvider(logger logrus.Logger, clientID, secret, callbackURL, Hook
 		callbackURL,
 		HookURL,
 		conf,
-		logger,
+		l,
 	}
 }
 

@@ -9,6 +9,7 @@ import (
 
 	"github.com/Sirupsen/logrus"
 	"gitlab.com/conspico/elasticshift/api/types"
+	"gitlab.com/conspico/elasticshift/internal/pkg/logger"
 	"gitlab.com/conspico/elasticshift/internal/shiftserver/store"
 	"gopkg.in/mgo.v2/bson"
 )
@@ -27,14 +28,14 @@ type Vault interface {
 
 type vault struct {
 	store  store.Secret
-	logger logrus.Logger
+	logger *logrus.Entry
 	ctx    context.Context
 }
 
-func NewVault(s store.Shift, logger logrus.Logger, ctx context.Context) Vault {
+func NewVault(s store.Shift, loggr logger.Loggr, ctx context.Context) Vault {
 	return &vault{
 		store:  s.Secret,
-		logger: logger,
+		logger: loggr.GetLogger("secret/vault"),
 		ctx:    ctx,
 	}
 }

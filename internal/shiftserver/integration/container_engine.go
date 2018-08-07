@@ -6,8 +6,8 @@ package integration
 import (
 	"fmt"
 
-	"github.com/Sirupsen/logrus"
 	"gitlab.com/conspico/elasticshift/api/types"
+	"gitlab.com/conspico/elasticshift/internal/pkg/logger"
 	itypes "gitlab.com/conspico/elasticshift/internal/shiftserver/integration/types"
 )
 
@@ -20,7 +20,6 @@ const (
 
 type containerEngine struct {
 	provider int
-	logger   logrus.Logger
 	i        types.ContainerEngine
 }
 
@@ -31,7 +30,7 @@ type ContainerEngineInterface interface {
 	DeleteContainer(id string) error
 }
 
-func NewContainerEngine(logger logrus.Logger, i types.ContainerEngine, s types.Storage) (ContainerEngineInterface, error) {
+func NewContainerEngine(loggr logger.Loggr, i types.ContainerEngine, s types.Storage) (ContainerEngineInterface, error) {
 
 	switch i.Kind {
 	case DCOS:
@@ -48,7 +47,7 @@ func NewContainerEngine(logger logrus.Logger, i types.ContainerEngine, s types.S
 			opts.Token = i.Token
 		}
 		opts.InsecureSkipTLSVerify = true
-		return ConnectKubernetes(logger, opts)
+		return ConnectKubernetes(loggr.GetLogger("engine/kubernetes"), opts)
 	}
 
 	return nil, fmt.Errorf("No container engine to connect.")

@@ -14,6 +14,7 @@ import (
 	"github.com/Sirupsen/logrus"
 	"github.com/graphql-go/graphql"
 	"gitlab.com/conspico/elasticshift/api/types"
+	"gitlab.com/conspico/elasticshift/internal/pkg/logger"
 	"gitlab.com/conspico/elasticshift/internal/pkg/shiftfile/keys"
 	"gitlab.com/conspico/elasticshift/internal/pkg/shiftfile/parser"
 	"gitlab.com/conspico/elasticshift/internal/pkg/vcs"
@@ -49,14 +50,15 @@ type resolver struct {
 	integrationStore store.Integration
 	defaultStore     store.Defaults
 	shiftfileStore   store.Shiftfile
-	logger           logrus.Logger
+	logger           *logrus.Entry
+	loggr            logger.Loggr
 	Ctx              context.Context
 	BuildQueue       chan types.Build
 	ps               pubsub.Engine
 }
 
 // NewResolver ...
-func NewResolver(ctx context.Context, logger logrus.Logger, s store.Shift, ps pubsub.Engine) (Resolver, error) {
+func NewResolver(ctx context.Context, loggr logger.Loggr, s store.Shift, ps pubsub.Engine) (Resolver, error) {
 
 	r := &resolver{
 		store:            s.Build,
@@ -66,7 +68,8 @@ func NewResolver(ctx context.Context, logger logrus.Logger, s store.Shift, ps pu
 		integrationStore: s.Integration,
 		defaultStore:     s.Defaults,
 		shiftfileStore:   s.Shiftfile,
-		logger:           logger,
+		logger:           loggr.GetLogger("graphql/build"),
+		loggr:            loggr,
 		Ctx:              ctx,
 		BuildQueue:       make(chan types.Build),
 		ps:               ps,

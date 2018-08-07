@@ -13,6 +13,7 @@ import (
 	"github.com/Sirupsen/logrus"
 	"github.com/graphql-go/graphql"
 	"gitlab.com/conspico/elasticshift/api/types"
+	"gitlab.com/conspico/elasticshift/internal/pkg/logger"
 	"gitlab.com/conspico/elasticshift/internal/shiftserver/identity/oauth2/providers"
 	"gitlab.com/conspico/elasticshift/internal/shiftserver/store"
 	"gitlab.com/conspico/elasticshift/internal/shiftserver/team"
@@ -38,18 +39,18 @@ type resolver struct {
 	store      store.Repository
 	teamStore  store.Team
 	buildStore store.Build
-	logger     logrus.Logger
+	logger     *logrus.Entry
 	providers  providers.Providers
 }
 
 // NewResolver ...
-func NewResolver(ctx context.Context, logger logrus.Logger, s store.Shift) (Resolver, error) {
+func NewResolver(ctx context.Context, loggr logger.Loggr, s store.Shift) (Resolver, error) {
 
 	r := &resolver{
 		store:      s.Repository,
 		teamStore:  s.Team,
 		buildStore: s.Build,
-		logger:     logger,
+		logger:     loggr.GetLogger("graphql/repository"),
 	}
 	return r, nil
 }

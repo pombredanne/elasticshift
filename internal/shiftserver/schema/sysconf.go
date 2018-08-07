@@ -6,16 +6,16 @@ package schema
 import (
 	"context"
 
-	"github.com/Sirupsen/logrus"
 	"github.com/graphql-go/graphql"
 	"gitlab.com/conspico/elasticshift/api/types"
-	"gitlab.com/conspico/elasticshift/internal/shiftserver/sysconf"
+	"gitlab.com/conspico/elasticshift/internal/pkg/logger"
 	"gitlab.com/conspico/elasticshift/internal/shiftserver/store"
+	"gitlab.com/conspico/elasticshift/internal/shiftserver/sysconf"
 )
 
-func newSysconfSchema(ctx context.Context, logger logrus.Logger, s store.Shift) (queries graphql.Fields, mutations graphql.Fields) {
+func newSysconfSchema(ctx context.Context, loggr logger.Loggr, s store.Shift) (queries graphql.Fields, mutations graphql.Fields) {
 
-	r, _ := sysconf.NewResolver(ctx, logger, s)
+	r, _ := sysconf.NewResolver(ctx, loggr, s)
 
 	vcsSysconfFields := graphql.Fields{
 		"id": &graphql.Field{

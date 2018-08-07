@@ -6,18 +6,18 @@ package schema
 import (
 	"context"
 
-	"github.com/Sirupsen/logrus"
 	"github.com/graphql-go/graphql"
 	"gitlab.com/conspico/elasticshift/api/types"
-	"gitlab.com/conspico/elasticshift/internal/shiftserver/store"
-	"gitlab.com/conspico/elasticshift/internal/shiftserver/container"
+	"gitlab.com/conspico/elasticshift/internal/pkg/logger"
 	"gitlab.com/conspico/elasticshift/internal/pkg/utils"
+	"gitlab.com/conspico/elasticshift/internal/shiftserver/container"
+	"gitlab.com/conspico/elasticshift/internal/shiftserver/store"
 )
 
-func newContainerSchema(ctx context.Context, logger logrus.Logger, s store.Shift) (queries graphql.Fields, mutations graphql.Fields) {
+func newContainerSchema(ctx context.Context, loggr logger.Loggr, s store.Shift) (queries graphql.Fields, mutations graphql.Fields) {
 
 	// return error
-	r, _ := container.NewResolver(ctx, logger, s)
+	r, _ := container.NewResolver(ctx, loggr, s)
 	// if err != nil {
 	// 	return err
 	// }

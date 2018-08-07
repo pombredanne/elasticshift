@@ -7,16 +7,16 @@ import (
 	"context"
 	"encoding/json"
 
-	"github.com/Sirupsen/logrus"
 	"github.com/graphql-go/graphql"
 	"gitlab.com/conspico/elasticshift/api/types"
-	"gitlab.com/conspico/elasticshift/internal/shiftserver/store"
+	"gitlab.com/conspico/elasticshift/internal/pkg/logger"
 	"gitlab.com/conspico/elasticshift/internal/shiftserver/defaults"
+	"gitlab.com/conspico/elasticshift/internal/shiftserver/store"
 )
 
-func newDefaultsSchema(ctx context.Context, logger logrus.Logger, s store.Shift) (queries graphql.Fields, mutations graphql.Fields) {
+func newDefaultsSchema(ctx context.Context, loggr logger.Loggr, s store.Shift) (queries graphql.Fields, mutations graphql.Fields) {
 
-	r, _ := defaults.NewResolver(ctx, logger, s)
+	r, _ := defaults.NewResolver(ctx, loggr, s)
 	// if err != nil {
 	// 	return err
 	// }

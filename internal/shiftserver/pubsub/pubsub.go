@@ -8,6 +8,7 @@ import (
 
 	"github.com/Sirupsen/logrus"
 	"github.com/graphql-go/graphql"
+	"gitlab.com/conspico/elasticshift/internal/pkg/logger"
 	"gitlab.com/conspico/elasticshift/pkg/dispatch"
 )
 
@@ -17,7 +18,8 @@ var (
 )
 
 type engine struct {
-	logger    logrus.Logger
+	loggr     logger.Loggr
+	logger    *logrus.Entry
 	sh        SubscriptionHandler
 	schema    *graphql.Schema
 	conf      NSQConfig
@@ -37,12 +39,14 @@ type Engine interface {
 }
 
 // NewEngine ..
-func NewEngine(logger logrus.Logger, sh SubscriptionHandler, conf NSQConfig) Engine {
+func NewEngine(loggr logger.Loggr, sh SubscriptionHandler, conf NSQConfig) Engine {
 
+	l := loggr.GetLogger("pubsub/engine")
 	return &engine{
-		logger:    logger,
+		logger:    l,
 		sh:        sh,
 		conf:      conf,
+		loggr:     loggr,
 		producers: make(map[string]Producer),
 	}
 }
@@ -53,11 +57,11 @@ func (e *engine) Schema(schema *graphql.Schema) {
 }
 
 func (e *engine) Producer() (Producer, error) {
-	return NewProducer(e.conf, e.sh, e.logger)
+	return NewProducer(e.conf, e.sh, e.loggr)
 }
 
 func (e *engine) Consumer() Consumer {
-	return NewConsumer(e.conf, e.sh, e.logger, e.schema)
+	return NewConsumer(e.conf, e.sh, e.loggr, e.schema)
 }
 
 func (e *engine) SubscriptionHandler() SubscriptionHandler {

@@ -10,6 +10,7 @@ import (
 	"github.com/Sirupsen/logrus"
 	"github.com/graphql-go/graphql"
 	"gitlab.com/conspico/elasticshift/api/types"
+	"gitlab.com/conspico/elasticshift/internal/pkg/logger"
 	"gitlab.com/conspico/elasticshift/internal/shiftserver/store"
 	mgo "gopkg.in/mgo.v2"
 	"gopkg.in/mgo.v2/bson"
@@ -29,17 +30,17 @@ type Resolver interface {
 
 type resolver struct {
 	store  store.Shiftfile
-	logger logrus.Logger
+	logger *logrus.Entry
 	Ctx    context.Context
 }
 
 // NewResolver ...
-func NewResolver(ctx context.Context, logger logrus.Logger, s store.Shift) (Resolver, error) {
+func NewResolver(ctx context.Context, loggr logger.Loggr, s store.Shift) (Resolver, error) {
 
 	r := &resolver{
-		store:     s.Shiftfile,
-		logger:    logger,
-		Ctx:       ctx,
+		store:  s.Shiftfile,
+		logger: loggr.GetLogger("graphql/shiftfile"),
+		Ctx:    ctx,
 	}
 	return r, nil
 }

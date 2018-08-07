@@ -10,6 +10,7 @@ import (
 	"github.com/Sirupsen/logrus"
 
 	"gitlab.com/conspico/elasticshift/api/types"
+	"gitlab.com/conspico/elasticshift/internal/pkg/logger"
 	"gitlab.com/conspico/elasticshift/pkg/dispatch"
 	"golang.org/x/oauth2"
 	gh "golang.org/x/oauth2/github"
@@ -45,7 +46,7 @@ type Github struct {
 	CallbackURL string
 	HookURL     string
 	Config      *oauth2.Config
-	logger      logrus.Logger
+	logger      *logrus.Entry
 }
 
 // GithubUser ..
@@ -58,9 +59,11 @@ type githubUser struct {
 
 // GithubProvider ...
 // Creates a new Github provider
-func GithubProvider(logger logrus.Logger, clientID, secret, callbackURL, hookURL string) *Github {
+func GithubProvider(loggr logger.Loggr, clientID, secret, callbackURL, hookURL string) *Github {
 
-	logger.Warnln("Initializing GithubProvider")
+	l := loggr.GetLogger("oauth2/github")
+
+	l.Warnln("Initializing GithubProvider")
 	conf := &oauth2.Config{
 		ClientID:     clientID,
 		ClientSecret: secret,
@@ -68,12 +71,12 @@ func GithubProvider(logger logrus.Logger, clientID, secret, callbackURL, hookURL
 		Endpoint:     gh.Endpoint,
 	}
 
-	logger.Warnln("oauth config initialized")
+	l.Warnln("oauth config initialized")
 	return &Github{
 		callbackURL,
 		hookURL,
 		conf,
-		logger,
+		l,
 	}
 }
 

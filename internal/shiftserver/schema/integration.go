@@ -6,17 +6,17 @@ package schema
 import (
 	"context"
 
-	"github.com/Sirupsen/logrus"
 	"github.com/graphql-go/graphql"
 	"gitlab.com/conspico/elasticshift/api/types"
+	"gitlab.com/conspico/elasticshift/internal/pkg/logger"
 	"gitlab.com/conspico/elasticshift/internal/pkg/utils"
 	"gitlab.com/conspico/elasticshift/internal/shiftserver/integration"
 	"gitlab.com/conspico/elasticshift/internal/shiftserver/store"
 )
 
-func newIntegrationSchema(ctx context.Context, logger logrus.Logger, s store.Shift) (queries graphql.Fields, mutations graphql.Fields) {
+func newIntegrationSchema(ctx context.Context, loggr logger.Loggr, s store.Shift) (queries graphql.Fields, mutations graphql.Fields) {
 
-	r, _ := integration.NewResolver(ctx, logger, s)
+	r, _ := integration.NewResolver(ctx, loggr, s)
 
 	providerEnum := graphql.NewEnum(graphql.EnumConfig{
 		Name: "Provider",

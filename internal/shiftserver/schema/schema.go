@@ -7,8 +7,8 @@ import (
 	"context"
 	"fmt"
 
-	"github.com/Sirupsen/logrus"
 	"github.com/graphql-go/graphql"
+	"gitlab.com/conspico/elasticshift/internal/pkg/logger"
 	"gitlab.com/conspico/elasticshift/internal/shiftserver/identity/oauth2/providers"
 	"gitlab.com/conspico/elasticshift/internal/shiftserver/pubsub"
 	"gitlab.com/conspico/elasticshift/internal/shiftserver/secret"
@@ -19,7 +19,7 @@ import (
 // Construct the graphql schema
 func Construct(
 	ctx context.Context,
-	logger logrus.Logger,
+	loggr logger.Loggr,
 	providers providers.Providers,
 	s store.Shift,
 	vault secret.Vault,
@@ -32,63 +32,63 @@ func Construct(
 	subscriptions := graphql.Fields{}
 
 	// team fields
-	teamQ, teamM := newTeamSchema(ctx, logger, s)
+	teamQ, teamM := newTeamSchema(ctx, loggr, s)
 	appendFields(queries, teamQ)
 	appendFields(mutations, teamM)
 
 	// vcs fields
-	vcsQ, vcsM := newVcsSchema(ctx, logger, providers, s)
+	vcsQ, vcsM := newVcsSchema(ctx, loggr, providers, s)
 	appendFields(queries, vcsQ)
 	appendFields(mutations, vcsM)
 
 	// repository fields
-	repositoryQ, repositoryM := newRepositorySchema(ctx, logger, s)
+	repositoryQ, repositoryM := newRepositorySchema(ctx, loggr, s)
 	appendFields(queries, repositoryQ)
 	appendFields(mutations, repositoryM)
 
 	// sysconf fields
-	sysconfQ, sysconfM := newSysconfSchema(ctx, logger, s)
+	sysconfQ, sysconfM := newSysconfSchema(ctx, loggr, s)
 	appendFields(queries, sysconfQ)
 	appendFields(mutations, sysconfM)
 
 	// build fields
-	buildQ, buildM, buildS := newBuildSchema(ctx, logger, s, pb)
+	buildQ, buildM, buildS := newBuildSchema(ctx, loggr, s, pb)
 	appendFields(queries, buildQ)
 	appendFields(mutations, buildM)
 	appendFields(subscriptions, buildS)
 
 	// app fields
-	pluginQ, pluginM := newPluginSchema(ctx, logger, s)
+	pluginQ, pluginM := newPluginSchema(ctx, loggr, s)
 	appendFields(queries, pluginQ)
 	appendFields(mutations, pluginM)
 
 	// container fields
-	containerQ, containerM := newContainerSchema(ctx, logger, s)
+	containerQ, containerM := newContainerSchema(ctx, loggr, s)
 	appendFields(queries, containerQ)
 	appendFields(mutations, containerM)
 
 	// integration fields
-	integrationQ, integrationM := newIntegrationSchema(ctx, logger, s)
+	integrationQ, integrationM := newIntegrationSchema(ctx, loggr, s)
 	appendFields(queries, integrationQ)
 	appendFields(mutations, integrationM)
 
 	// infrastructure fields
-	infrastructureQ, infrastructureM := newInfrastructureSchema(ctx, logger, s)
+	infrastructureQ, infrastructureM := newInfrastructureSchema(ctx, loggr, s)
 	appendFields(queries, infrastructureQ)
 	appendFields(mutations, infrastructureM)
 
 	// default fields
-	defaultQ, defaultM := newDefaultsSchema(ctx, logger, s)
+	defaultQ, defaultM := newDefaultsSchema(ctx, loggr, s)
 	appendFields(queries, defaultQ)
 	appendFields(mutations, defaultM)
 
 	// secret fields
-	secretQ, secretM := newSecretSchema(ctx, logger, s)
+	secretQ, secretM := newSecretSchema(ctx, loggr, s)
 	appendFields(queries, secretQ)
 	appendFields(mutations, secretM)
 
 	// secret fields
-	shiftfileQ, shiftfileM := newShiftfileSchema(ctx, logger, s)
+	shiftfileQ, shiftfileM := newShiftfileSchema(ctx, loggr, s)
 	appendFields(queries, shiftfileQ)
 	appendFields(mutations, shiftfileM)
 

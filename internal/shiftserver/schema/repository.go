@@ -6,9 +6,9 @@ package schema
 import (
 	"context"
 
-	"github.com/Sirupsen/logrus"
 	"github.com/graphql-go/graphql"
 	"gitlab.com/conspico/elasticshift/api/types"
+	"gitlab.com/conspico/elasticshift/internal/pkg/logger"
 	"gitlab.com/conspico/elasticshift/internal/pkg/utils"
 	"gitlab.com/conspico/elasticshift/internal/shiftserver/repository"
 	"gitlab.com/conspico/elasticshift/internal/shiftserver/store"
@@ -16,11 +16,11 @@ import (
 
 func newRepositorySchema(
 	ctx context.Context,
-	logger logrus.Logger,
+	loggr logger.Loggr,
 	s store.Shift,
 ) (queries graphql.Fields, mutations graphql.Fields) {
 
-	r, _ := repository.NewResolver(ctx, logger, s)
+	r, _ := repository.NewResolver(ctx, loggr, s)
 
 	fields := graphql.Fields{
 		"id": &graphql.Field{

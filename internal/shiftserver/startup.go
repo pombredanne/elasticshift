@@ -124,7 +124,7 @@ func Run() error {
 			Logger: Logger{
 
 				Level:  "debug",
-				Format: "json",
+				Format: "text",
 			},
 
 			NSQ: NSQ{
@@ -160,7 +160,7 @@ func Run() error {
 
 	sc := ServerConfig{}
 	// logger
-	logger, err := logger.New(c.Logger.Level, c.Logger.Format)
+	loggr, err := logger.New(c.Logger.Level, c.Logger.Format)
 	if err != nil {
 		return fmt.Errorf("invalid config: %v", err)
 	}
@@ -168,27 +168,31 @@ func Run() error {
 	if c.Logger.Level != "" {
 		log.Println(fmt.Printf("config using log level: %s", c.Logger.Level))
 	}
-	sc.Logger = logger
+	sc.Logger = loggr
+
+	logger := loggr.GetLogger("main")
 
 	// NSQ config
-	if c.NSQ.ConsumerAddress == "" {
-		return fmt.Errorf("No NSQ consumer address provided.")
-	}
-	sc.NSQ.ConsumerAddress = c.NSQ.ConsumerAddress
-
 	// override nsq consumer address
 	if consumerAddress := os.Getenv("NSQ_CONSUMER_ADDRESS"); consumerAddress != "" {
 		sc.NSQ.ConsumerAddress = consumerAddress
+	} else {
+		sc.NSQ.ConsumerAddress = c.NSQ.ConsumerAddress
 	}
 
-	if c.NSQ.ProducerAddress == "" {
-		return fmt.Errorf("No NSQ producer address provided.")
+	if sc.NSQ.ConsumerAddress == "" {
+		return fmt.Errorf("No NSQ consumer address provided.")
 	}
-	sc.NSQ.ProducerAddress = c.NSQ.ProducerAddress
 
 	// override nsq producer address
 	if producerAddress := os.Getenv("NSQ_PRODUCER_ADDRESS"); producerAddress != "" {
 		sc.NSQ.ProducerAddress = producerAddress
+	} else {
+		sc.NSQ.ProducerAddress = c.NSQ.ProducerAddress
+	}
+
+	if sc.NSQ.ProducerAddress == "" {
+		return fmt.Errorf("No NSQ producer address provided.")
 	}
 
 	// parse db config

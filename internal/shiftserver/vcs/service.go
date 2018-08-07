@@ -15,6 +15,7 @@ import (
 	"github.com/Sirupsen/logrus"
 	"github.com/gorilla/mux"
 	"gitlab.com/conspico/elasticshift/api/types"
+	"gitlab.com/conspico/elasticshift/internal/pkg/logger"
 	"gitlab.com/conspico/elasticshift/internal/pkg/vcs"
 	"gitlab.com/conspico/elasticshift/internal/shiftserver/identity/oauth2/providers"
 	"gitlab.com/conspico/elasticshift/internal/shiftserver/secret"
@@ -55,7 +56,7 @@ type service struct {
 	store     store.Vcs
 	teamStore store.Team
 	vault     secret.Vault
-	logger    logrus.Logger
+	logger    *logrus.Entry
 	providers providers.Providers
 }
 
@@ -66,13 +67,14 @@ type Service interface {
 }
 
 // NewVCSService ..
-func NewService(logger logrus.Logger, d store.Database, providers providers.Providers, s store.Shift, vault secret.Vault) Service {
+func NewService(loggr logger.Loggr, d store.Database, providers providers.Providers, s store.Shift, vault secret.Vault) Service {
 
+	l := loggr.GetLogger("service/vcs")
 	return &service{
 		store:     s.Vcs,
 		teamStore: s.Team,
 		vault:     vault,
-		logger:    logger,
+		logger:    l,
 		providers: providers,
 	}
 }

@@ -11,6 +11,7 @@ import (
 	"github.com/graphql-go/graphql"
 	"github.com/graphql-go/graphql/language/ast"
 	"github.com/graphql-go/graphql/language/parser"
+	"gitlab.com/conspico/elasticshift/internal/pkg/logger"
 	"gitlab.com/conspico/elasticshift/internal/pkg/utils"
 )
 
@@ -31,7 +32,7 @@ type SubscriptionHandler interface {
 type subscriptionHandler struct {
 	schema        *graphql.Schema
 	subscriptions Subscriptions
-	logger        *logrus.Logger
+	logger        *logrus.Entry
 }
 
 // PushResponseFunc ..
@@ -55,10 +56,10 @@ type ConnectionSubscriptions map[string]*Subscription
 type Subscriptions map[Connection]ConnectionSubscriptions
 
 // NewSubscriptionHandler ..
-func NewSubscriptionHandler(logger *logrus.Logger) SubscriptionHandler {
+func NewSubscriptionHandler(loggr logger.Loggr) SubscriptionHandler {
 
 	sh := &subscriptionHandler{}
-	sh.logger = logger
+	sh.logger = loggr.GetLogger("graphql/subscriptions")
 	sh.subscriptions = make(Subscriptions)
 	return sh
 }

@@ -6,17 +6,17 @@ package schema
 import (
 	"context"
 
-	"github.com/Sirupsen/logrus"
 	"github.com/graphql-go/graphql"
 	"gitlab.com/conspico/elasticshift/api/types"
-	"gitlab.com/conspico/elasticshift/internal/shiftserver/store"
-	"gitlab.com/conspico/elasticshift/internal/shiftserver/infrastructure"
+	"gitlab.com/conspico/elasticshift/internal/pkg/logger"
 	"gitlab.com/conspico/elasticshift/internal/pkg/utils"
+	"gitlab.com/conspico/elasticshift/internal/shiftserver/infrastructure"
+	"gitlab.com/conspico/elasticshift/internal/shiftserver/store"
 )
 
-func newInfrastructureSchema(ctx context.Context, logger logrus.Logger, s store.Shift) (queries graphql.Fields, mutations graphql.Fields) {
+func newInfrastructureSchema(ctx context.Context, loggr logger.Loggr, s store.Shift) (queries graphql.Fields, mutations graphql.Fields) {
 
-	r, _ := infrastructure.NewResolver(ctx, logger, s)
+	r, _ := infrastructure.NewResolver(ctx, loggr, s)
 
 	fields := graphql.Fields{
 		"id": &graphql.Field{

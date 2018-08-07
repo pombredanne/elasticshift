@@ -6,9 +6,9 @@ package schema
 import (
 	"context"
 
-	"github.com/Sirupsen/logrus"
 	"github.com/graphql-go/graphql"
 	"gitlab.com/conspico/elasticshift/api/types"
+	"gitlab.com/conspico/elasticshift/internal/pkg/logger"
 	"gitlab.com/conspico/elasticshift/internal/pkg/utils"
 	"gitlab.com/conspico/elasticshift/internal/shiftserver/build"
 	"gitlab.com/conspico/elasticshift/internal/shiftserver/pubsub"
@@ -127,12 +127,12 @@ var (
 
 func newBuildSchema(
 	ctx context.Context,
-	logger logrus.Logger,
+	loggr logger.Loggr,
 	s store.Shift,
 	ps pubsub.Engine,
 ) (queries graphql.Fields, mutations graphql.Fields, subscriptions graphql.Fields) {
 
-	r, _ := build.NewResolver(ctx, logger, s, ps)
+	r, _ := build.NewResolver(ctx, loggr, s, ps)
 
 	buildArgs := graphql.FieldConfigArgument{
 		"team": &graphql.ArgumentConfig{

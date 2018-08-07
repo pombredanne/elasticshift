@@ -9,8 +9,9 @@ import (
 
 	"github.com/Sirupsen/logrus"
 	"gitlab.com/conspico/elasticshift/api/types"
-	"gitlab.com/conspico/elasticshift/internal/shiftserver/sysconf"
+	"gitlab.com/conspico/elasticshift/internal/pkg/logger"
 	"gitlab.com/conspico/elasticshift/internal/shiftserver/store"
+	"gitlab.com/conspico/elasticshift/internal/shiftserver/sysconf"
 	"golang.org/x/oauth2"
 )
 
@@ -78,12 +79,13 @@ type Provider interface {
 
 // Providers type
 type Providers struct {
-	logger logrus.Logger
+	logger *logrus.Entry
+	loggr  logger.Loggr
 	store  store.Sysconf
 }
 
-func New(logger logrus.Logger, s store.Shift) Providers {
-	return Providers{logger: logger, store: s.Sysconf}
+func New(loggr logger.Loggr, s store.Shift) Providers {
+	return Providers{loggr: loggr, logger: loggr.GetLogger("oauth2/providers"), store: s.Sysconf}
 }
 
 // Get the provider by namee
@@ -99,11 +101,11 @@ func (p Providers) Get(name string) (Provider, error) {
 
 	switch conf.Name {
 	case GithubProviderName:
-		return GithubProvider(p.logger, conf.Key, conf.Secret, conf.CallbackURL, conf.HookURL), nil
+		return GithubProvider(p.loggr, conf.Key, conf.Secret, conf.CallbackURL, conf.HookURL), nil
 	case GitlabProviderName:
-		return GitlabProvider(p.logger, conf.Key, conf.Secret, conf.CallbackURL, conf.HookURL), nil
+		return GitlabProvider(p.loggr, conf.Key, conf.Secret, conf.CallbackURL, conf.HookURL), nil
 	case BitbucketProviderName:
-		return BitbucketProvider(p.logger, conf.Key, conf.Secret, conf.CallbackURL, conf.HookURL), nil
+		return BitbucketProvider(p.loggr, conf.Key, conf.Secret, conf.CallbackURL, conf.HookURL), nil
 	}
 
 	return nil, fmt.Errorf("No provider found for ", name)

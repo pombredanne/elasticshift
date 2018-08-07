@@ -40,7 +40,7 @@ func (r *resolver) GetContainerEngine(team string) (integration.ContainerEngineI
 	}
 
 	// connect to container engine cluster
-	return integration.NewContainerEngine(r.logger, i, stor)
+	return integration.NewContainerEngine(r.loggr, i, stor)
 }
 
 func (r *resolver) ContainerLauncher() {

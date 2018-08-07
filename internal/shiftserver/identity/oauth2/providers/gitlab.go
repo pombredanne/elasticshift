@@ -13,6 +13,7 @@ import (
 	"time"
 
 	"gitlab.com/conspico/elasticshift/api/types"
+	"gitlab.com/conspico/elasticshift/internal/pkg/logger"
 	"gitlab.com/conspico/elasticshift/pkg/dispatch"
 
 	"golang.org/x/oauth2"
@@ -36,12 +37,14 @@ type Gitlab struct {
 	CallbackURL string
 	HookURL     string
 	Config      *oauth2.Config
-	logger      logrus.Logger
+	logger      *logrus.Entry
 }
 
 // GitlabProvider ...
 // Creates a new Gitlab provider
-func GitlabProvider(logger logrus.Logger, clientID, secret, callbackURL, hookURL string) *Gitlab {
+func GitlabProvider(loggr logger.Loggr, clientID, secret, callbackURL, hookURL string) *Gitlab {
+
+	l := loggr.GetLogger("oauth2/gitlab")
 
 	conf := &oauth2.Config{
 		ClientID:     clientID,
@@ -57,7 +60,7 @@ func GitlabProvider(logger logrus.Logger, clientID, secret, callbackURL, hookURL
 		callbackURL,
 		hookURL,
 		conf,
-		logger,
+		l,
 	}
 }
 

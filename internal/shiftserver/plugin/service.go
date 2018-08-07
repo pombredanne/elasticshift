@@ -12,6 +12,7 @@ import (
 
 	"github.com/Sirupsen/logrus"
 	"gitlab.com/conspico/elasticshift/api/types"
+	"gitlab.com/conspico/elasticshift/internal/pkg/logger"
 	"gitlab.com/conspico/elasticshift/internal/shiftserver/store"
 	"gitlab.com/conspico/elasticshift/pkg/storage"
 	"gopkg.in/mgo.v2/bson"
@@ -33,7 +34,7 @@ type service struct {
 	sysconfStore     store.Sysconf
 	integrationStore store.Integration
 	defaultsStore    store.Defaults
-	logger           logrus.Logger
+	logger           *logrus.Entry
 }
 
 // SysconfService ..
@@ -42,15 +43,16 @@ type Service interface {
 }
 
 // NewVCSService ..
-func NewService(logger logrus.Logger, d store.Database, s store.Shift) Service {
+func NewService(loggr logger.Loggr, d store.Database, s store.Shift) Service {
 
+	l := loggr.GetLogger("service/plugin")
 	return &service{
 		pluginStore:      s.Plugin,
 		teamStore:        s.Team,
 		sysconfStore:     s.Sysconf,
 		integrationStore: s.Integration,
 		defaultsStore:    s.Defaults,
-		logger:           logger,
+		logger:           l,
 	}
 }
 

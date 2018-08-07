@@ -10,6 +10,7 @@ import (
 	"github.com/Sirupsen/logrus"
 	"github.com/graphql-go/graphql"
 	"gitlab.com/conspico/elasticshift/api/types"
+	"gitlab.com/conspico/elasticshift/internal/pkg/logger"
 	"gitlab.com/conspico/elasticshift/internal/shiftserver/store"
 	mgo "gopkg.in/mgo.v2"
 	"gopkg.in/mgo.v2/bson"
@@ -19,23 +20,24 @@ var (
 	errIDCantBeEmpty     = errors.New("Container ID cannot be empty")
 	errTeamCannotBeEmpty = errors.New("Team must be provided")
 )
+
 // Resolver ...
 type Resolver interface {
-	FetchContainer(params graphql.ResolveParams) (interface{}, error) 
+	FetchContainer(params graphql.ResolveParams) (interface{}, error)
 }
 
 type resolver struct {
 	store  store.Container
-	logger logrus.Logger
+	logger *logrus.Entry
 	Ctx    context.Context
 }
 
 // NewResolver ...
-func NewResolver(ctx context.Context, logger logrus.Logger, s store.Shift) (Resolver, error) {
+func NewResolver(ctx context.Context, loggr logger.Loggr, s store.Shift) (Resolver, error) {
 
 	r := &resolver{
 		store:  s.Container,
-		logger: logger,
+		logger: loggr.GetLogger("graphql/container"),
 		Ctx:    ctx,
 	}
 	return r, nil

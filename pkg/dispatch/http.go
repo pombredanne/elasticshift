@@ -53,7 +53,7 @@ type RequestMaker struct {
 	username            string
 	password            string
 	contentType         string
-	logger              logrus.Logger
+	logger              *logrus.Entry
 	verbose             bool
 }
 
@@ -142,7 +142,7 @@ func (r *RequestMaker) SetContentType(contentType string) *RequestMaker {
 
 // SetLogger ..
 // Set the logger
-func (r *RequestMaker) SetLogger(logger logrus.Logger) *RequestMaker {
+func (r *RequestMaker) SetLogger(logger *logrus.Entry) *RequestMaker {
 	r.logger = logger
 	return r
 }

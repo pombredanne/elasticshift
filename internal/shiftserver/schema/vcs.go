@@ -6,22 +6,22 @@ package schema
 import (
 	"context"
 
-	"github.com/Sirupsen/logrus"
 	"github.com/graphql-go/graphql"
-	"gitlab.com/conspico/elasticshift/internal/shiftserver/identity/oauth2/providers"
-	"gitlab.com/conspico/elasticshift/internal/shiftserver/vcs"
-	"gitlab.com/conspico/elasticshift/internal/shiftserver/store"
+	"gitlab.com/conspico/elasticshift/internal/pkg/logger"
 	"gitlab.com/conspico/elasticshift/internal/pkg/utils"
+	"gitlab.com/conspico/elasticshift/internal/shiftserver/identity/oauth2/providers"
+	"gitlab.com/conspico/elasticshift/internal/shiftserver/store"
+	"gitlab.com/conspico/elasticshift/internal/shiftserver/vcs"
 )
 
 func newVcsSchema(
 	ctx context.Context,
-	logger logrus.Logger,
+	loggr logger.Loggr,
 	providers providers.Providers,
 	s store.Shift,
 ) (queries graphql.Fields, mutations graphql.Fields) {
 
-	r, _ := vcs.NewResolver(ctx, logger, s, providers)
+	r, _ := vcs.NewResolver(ctx, loggr, s, providers)
 
 	fields := graphql.Fields{
 		"id": &graphql.Field{

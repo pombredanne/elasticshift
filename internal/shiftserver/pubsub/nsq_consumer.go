@@ -12,6 +12,7 @@ import (
 	"github.com/Sirupsen/logrus"
 	"github.com/graphql-go/graphql"
 	"github.com/nsqio/go-nsq"
+	"gitlab.com/conspico/elasticshift/internal/pkg/logger"
 	"gitlab.com/conspico/elasticshift/internal/pkg/utils"
 )
 
@@ -28,7 +29,7 @@ type Consumer interface {
 }
 
 type consumer struct {
-	logger logrus.Logger
+	logger *logrus.Entry
 	sh     SubscriptionHandler
 	cfg    NSQConfig
 	schema *graphql.Schema
@@ -41,12 +42,12 @@ type consumer struct {
 }
 
 // NewConsumer ..
-func NewConsumer(cfg NSQConfig, sh SubscriptionHandler, logger logrus.Logger, schema *graphql.Schema) Consumer {
+func NewConsumer(cfg NSQConfig, sh SubscriptionHandler, loggr logger.Loggr, schema *graphql.Schema) Consumer {
 
 	// TODO connect to topic broker
 	c := &consumer{}
 	c.sh = sh
-	c.logger = logger
+	c.logger = loggr.GetLogger("pubsub/consumer")
 	c.cfg = cfg
 	c.schema = schema
 
@@ -115,9 +116,9 @@ func (c *consumer) HandleMessage() nsq.Handler {
 					if name == "" {
 						name = c.channel
 					}
-					fmt.Println("OperationName = ", subscription.OperationName)
-					fmt.Println("Chanel name = ", name)
-					fmt.Println("Vars = ", subscription.Variables)
+					c.logger.Println("OperationName = ", subscription.OperationName)
+					c.logger.Println("Chanel name = ", name)
+					c.logger.Println("Vars = ", subscription.Variables)
 
 					// Re-execute the subscription query
 					params := graphql.Params{
@@ -142,7 +143,7 @@ func (c *consumer) HandleMessage() nsq.Handler {
 		}
 		// invoke graphql and send websocket response
 
-		fmt.Println("Finished callback execution.")
+		c.logger.Println("Finished callback execution.")
 		return nil
 	})
 }

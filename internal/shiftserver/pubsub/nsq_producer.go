@@ -7,6 +7,7 @@ import (
 	"github.com/Sirupsen/logrus"
 	nsq "github.com/nsqio/go-nsq"
 	"github.com/pkg/errors"
+	"gitlab.com/conspico/elasticshift/internal/pkg/logger"
 )
 
 // Producer ..
@@ -15,7 +16,7 @@ type Producer interface {
 }
 
 type producer struct {
-	logger logrus.Logger
+	logger *logrus.Entry
 	sh     SubscriptionHandler
 	cfg    NSQConfig
 
@@ -23,12 +24,12 @@ type producer struct {
 }
 
 // NewProducer ..
-func NewProducer(cfg NSQConfig, sh SubscriptionHandler, logger logrus.Logger) (Producer, error) {
+func NewProducer(cfg NSQConfig, sh SubscriptionHandler, loggr logger.Loggr) (Producer, error) {
 
 	// TODO connect to topic broker
 	p := &producer{}
 	p.sh = sh
-	p.logger = logger
+	p.logger = loggr.GetLogger("pubsub/producer")
 	p.cfg = cfg
 
 	conf := nsq.NewConfig()

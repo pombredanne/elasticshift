@@ -14,6 +14,7 @@ import (
 	"github.com/graphql-go/handler"
 	"gitlab.com/conspico/elasticshift/api"
 	"gitlab.com/conspico/elasticshift/api/dex"
+	"gitlab.com/conspico/elasticshift/internal/pkg/logger"
 	"gitlab.com/conspico/elasticshift/internal/shiftserver/identity/oauth2/providers"
 	"gitlab.com/conspico/elasticshift/internal/shiftserver/integration"
 	"gitlab.com/conspico/elasticshift/internal/shiftserver/plugin"
@@ -44,7 +45,8 @@ const (
 type Server struct {
 	Config ServerConfig
 
-	Logger    logrus.Logger
+	Loggr     logger.Loggr
+	Logger    *logrus.Entry
 	DB        store.Database
 	Router    *mux.Router
 	Dex       dex.DexClient
@@ -63,7 +65,7 @@ type Server struct {
 // ServerConfig ..
 type ServerConfig struct {
 	Store    store.Config
-	Logger   logrus.Logger
+	Logger   logger.Loggr
 	NSQ      NSQ
 	Session  *mgo.Session
 	Identity Identity
@@ -86,7 +88,8 @@ func New(ctx context.Context, c ServerConfig) (*Server, error) {
 	s := &Server{}
 	s.Config = c
 	s.Ctx = ctx
-	s.Logger = c.Logger
+	s.Loggr = c.Logger
+	s.Logger = s.Loggr.GetLogger("shiftserver")
 	s.NSQ.Consumer.Address = c.NSQ.ConsumerAddress
 	s.NSQ.Producer.Address = c.NSQ.ProducerAddress
 
@@ -111,7 +114,7 @@ func New(ctx context.Context, c ServerConfig) (*Server, error) {
 	r.Handle("/debug/threadcreate", pprof.Handler("threadcreate"))
 	r.Handle("/debug/block", pprof.Handler("block"))
 
-	s.Providers = providers.New(s.Logger, s.Shift)
+	s.Providers = providers.New(s.Loggr, s.Shift)
 
 	// initialize graphql based services
 	err := s.registerGraphQLServices()
@@ -140,7 +143,7 @@ func New(ctx context.Context, c ServerConfig) (*Server, error) {
 func (s *Server) registerEndpointServices() {
 
 	// VCS service to link repositories.
-	vcsServ := vcs.NewService(s.Logger, s.DB, s.Providers, s.Shift, s.Vault)
+	vcsServ := vcs.NewService(s.Loggr, s.DB, s.Providers, s.Shift, s.Vault)
 
 	// Oauth2 providers
 	s.Router.HandleFunc("/api/{team}/link/{provider}", vcsServ.Authorize)
@@ -153,34 +156,33 @@ func (s *Server) registerEndpointServices() {
 
 	// TODO remove kubeconfig
 	// Sysconf Upload kube file
-	integrationServ := integration.NewService(s.Logger, s.DB, s.Shift)
+	integrationServ := integration.NewService(s.Loggr, s.DB, s.Shift)
 	s.Router.HandleFunc("/api/integration/kubernetes", integrationServ.UploadKubeConfigFile)
 
 	// Plugin bundle push
-	pluginServ := plugin.NewService(s.Logger, s.DB, s.Shift)
+	pluginServ := plugin.NewService(s.Loggr, s.DB, s.Shift)
 	s.Router.HandleFunc("/api/plugin/push", pluginServ.PushPlugin)
 }
 
 func (s *Server) registerGraphQLServices() error {
 
-	logger := s.Logger
 	r := s.Router
 
-	vault := secret.NewVault(s.Shift, logger, s.Ctx)
+	vault := secret.NewVault(s.Shift, s.Loggr, s.Ctx)
 	s.Vault = vault
 
 	// subscription handler through websocket
-	sh := pubsub.NewSubscriptionHandler(&logger)
+	sh := pubsub.NewSubscriptionHandler(s.Loggr)
 
 	nsqc := pubsub.NSQConfig{}
 	nsqc.Consumer.Address = s.Config.NSQ.ConsumerAddress
 	nsqc.Producer.Address = s.Config.NSQ.ProducerAddress
 	s.NSQ = nsqc
 
-	eng := pubsub.NewEngine(logger, sh, nsqc)
+	eng := pubsub.NewEngine(s.Loggr, sh, nsqc)
 	s.Pubsub = eng
 
-	schm, err := schema.Construct(s.Ctx, s.Logger, s.Providers, s.Shift, s.Vault, s.Pubsub)
+	schm, err := schema.Construct(s.Ctx, s.Loggr, s.Providers, s.Shift, s.Vault, s.Pubsub)
 	if err != nil {
 		return err
 	}
@@ -200,7 +202,7 @@ func (s *Server) registerGraphQLServices() error {
 	s.Pubsub.Schema(schm)
 
 	// Graphql endpoint works with websocket only for subscription
-	psh := pubsub.NewGraphqlWSHandler(s.Pubsub, &logger)
+	psh := pubsub.NewGraphqlWSHandler(s.Pubsub, s.Loggr)
 	r.Handle("/subscription", psh)
 
 	return nil
@@ -215,7 +217,7 @@ func (s *Server) registerWebSocketServices() {
 
 // Registers the GRPC services ...
 func RegisterGRPCServices(grpcServer *grpc.Server, s *Server) {
-	api.RegisterShiftServer(grpcServer, shift.NewServer(s.Logger, s.Ctx, s.Shift, s.Vault, s.Pubsub))
+	api.RegisterShiftServer(grpcServer, shift.NewServer(s.Loggr, s.Ctx, s.Shift, s.Vault, s.Pubsub))
 }
 
 // Registers the exposed http services

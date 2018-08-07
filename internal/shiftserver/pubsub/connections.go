@@ -37,7 +37,7 @@ const (
 // Connection ..
 type connection struct {
 	id     string
-	logger *logrus.Logger
+	logger *logrus.Entry
 	ws     *websocket.Conn
 	engine Engine
 
@@ -69,7 +69,7 @@ type EventHandler struct {
 	Close       func(Connection)
 }
 
-func newConnection(ws *websocket.Conn, logger *logrus.Logger, engine Engine, eh EventHandler) Connection {
+func newConnection(ws *websocket.Conn, logger *logrus.Entry, engine Engine, eh EventHandler) Connection {
 
 	c := &connection{}
 	c.id = utils.NewUUID()
