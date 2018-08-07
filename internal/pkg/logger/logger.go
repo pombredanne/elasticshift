@@ -5,6 +5,7 @@ package logger
 
 import (
 	"fmt"
+	"os"
 	"strings"
 
 	"github.com/Sirupsen/logrus"
@@ -37,6 +38,7 @@ type Loggr interface {
 // GetLogger ..
 func (l *loggr) GetLogger(component string) *logrus.Entry {
 	logger := logrus.New()
+	logger.Out = os.Stderr
 	logger.Formatter = &l.formatter
 	logger.Level = l.logLevel
 	return logger.WithField("component", component)
@@ -69,13 +71,8 @@ func New(level string, format string) (Loggr, error) {
 		return l, fmt.Errorf("log format is not one of the supported values (%s): %s", strings.Join(logFormats, ", "), format)
 	}
 
-	/*return logrus.Logger{
-		Out:       os.Stderr,
-		Formatter: &formatter,
-		Level:     logLevel,
-	}, nil*/
-
 	l.logLevel = logLevel
 	l.formatter = formatter
+
 	return l, nil
 }
