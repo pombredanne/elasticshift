@@ -47,14 +47,13 @@ type connection struct {
 	eh     EventHandler
 
 	consumer Consumer
-	channel  string
 	topic    string
 }
 
 // Connection ..
 type Connection interface {
 	ID() string
-	SetTopicName(topic, channel string)
+	SetTopicName(topic string)
 
 	PushData(id string, response *SubscriptionResponse)
 
@@ -155,9 +154,8 @@ func (c *connection) close() {
 	}
 }
 
-func (c *connection) SetTopicName(topic, channel string) {
+func (c *connection) SetTopicName(topic string) {
 	c.topic = topic
-	c.channel = channel
 }
 
 func (c *connection) readLoop() {
@@ -204,7 +202,7 @@ func (c *connection) readLoop() {
 				// subscribe to topic
 				c.consumer = c.engine.Consumer()
 				if c.consumer != nil {
-					err := c.consumer.Subscribe(c.topic, c.channel)
+					err := c.consumer.Subscribe(c.topic)
 					c.logger.Errorf("Failed to subscribe : %v\n", err)
 				}
 			}

@@ -5,7 +5,6 @@ package pubsub
 
 import (
 	"errors"
-	"fmt"
 
 	"github.com/Sirupsen/logrus"
 	"github.com/graphql-go/graphql"
@@ -46,7 +45,8 @@ type Subscription struct {
 	OperationName string
 	Conenction    Connection
 	Push          PushResponseFunc
-	TopicID       string
+	Topic         string
+	OperationID   string
 }
 
 // ConnectionSubscriptions ..
@@ -99,17 +99,19 @@ func (sh *subscriptionHandler) Subcribe(c Connection, s *Subscription) []error {
 	opdef := doc.Definitions[0].(*ast.OperationDefinition)
 	selection := opdef.GetSelectionSet().Selections[0]
 
-	var topic string
 	switch selection.(type) {
 	case *ast.Field:
 		f := selection.(*ast.Field)
-		subName := f.Name.Value
+		topic := f.Name.Value
 		id := s.Variables["id"].(string)
-		topic = fmt.Sprintf(topicNameFormat, subName, id)
+		// topic = fmt.Sprintf(topicNameFormat, subName, id)
 
-		c.SetTopicName(topic, subName)
+		s.Topic = topic
+		s.OperationID = id
+
+		c.SetTopicName(topic)
 	}
-	s.TopicID = topic
+
 	sh.subscriptions[c][s.ID] = s
 
 	return nil

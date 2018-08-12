@@ -134,7 +134,6 @@ func (r *resolver) TriggerBuild(params graphql.ResolveParams) (interface{}, erro
 	b.Source = repo.Source
 
 	buildID := b.ID.Hex()
-	fmt.Println("Buildid = ", buildID)
 
 	// Build file path - (for NFS)
 	// <cache>/team-id/vcs-id/repository-id/branch-name/build-id/log

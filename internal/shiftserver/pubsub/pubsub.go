@@ -9,7 +9,6 @@ import (
 	"github.com/Sirupsen/logrus"
 	"github.com/graphql-go/graphql"
 	"gitlab.com/conspico/elasticshift/internal/pkg/logger"
-	"gitlab.com/conspico/elasticshift/pkg/dispatch"
 )
 
 var (
@@ -32,9 +31,8 @@ type Engine interface {
 	Consumer() Consumer
 	SubscriptionHandler() SubscriptionHandler
 
-	Publish(subscriptionName, id string) error
+	Publish(topic string, payload interface{}) error
 
-	CreateTopic(name, id string) error
 	Schema(schema *graphql.Schema)
 }
 
@@ -68,14 +66,14 @@ func (e *engine) SubscriptionHandler() SubscriptionHandler {
 	return e.sh
 }
 
-func (e *engine) Publish(subscriptionName, id string) error {
+func (e *engine) Publish(topic string, payload interface{}) error {
 
-	topic := fmt.Sprintf(topicNameFormat, subscriptionName, id)
+	// topic := fmt.Sprintf(topicNameFormat, subscriptionName, payload)
 	prod, err := e.producer(topic)
 	if err != nil {
 		return fmt.Errorf("Failed to get producer, can't publish the to topic [%s] : %v", topic, err)
 	}
-	return prod.Publish(topic, "")
+	return prod.Publish(topic, payload)
 }
 
 func (e *engine) producer(topic string) (Producer, error) {
@@ -97,14 +95,14 @@ func (e *engine) producer(topic string) (Producer, error) {
 	return prod, nil
 }
 
-func (e *engine) CreateTopic(name, id string) error {
+// func (e *engine) CreateTopic(name, id string) error {
 
-	// TODO run with https
-	r := dispatch.NewPostRequestMaker(fmt.Sprintf(topichHttpUrl, e.conf.Producer.Address))
-	r.QueryParam("topic", fmt.Sprintf(topicNameFormat, name, id))
-	r.SetLogger(e.logger)
-	r.Verbose(true)
-	r.UnescapeQueryParams(true)
+// 	// TODO run with https
+// 	r := dispatch.NewPostRequestMaker(fmt.Sprintf(topichHttpUrl, e.conf.Producer.Address))
+// 	r.QueryParam("topic", fmt.Sprintf(topicNameFormat, name, id))
+// 	r.SetLogger(e.logger)
+// 	r.Verbose(true)
+// 	r.UnescapeQueryParams(true)
 
-	return r.Dispatch()
-}
+// 	return r.Dispatch()
+// }

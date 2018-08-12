@@ -24,7 +24,7 @@ const (
 
 // Consumer ..
 type Consumer interface {
-	Subscribe(topic, channel string) error
+	Subscribe(topic string) error
 	Unsubscribe()
 }
 
@@ -54,15 +54,14 @@ func NewConsumer(cfg NSQConfig, sh SubscriptionHandler, loggr logger.Loggr, sche
 	return c
 }
 
-func (c *consumer) Subscribe(topic, channel string) error {
+func (c *consumer) Subscribe(topic string) error {
 
 	c.topic = topic
-	c.channel = channel
 
 	conf := nsq.NewConfig()
 	c.conf = conf
 
-	consumer, err := nsq.NewConsumer(topic, channel, conf)
+	consumer, err := nsq.NewConsumer(topic, topic, conf)
 	if err != nil {
 		fmt.Printf("Errror when creating new nsq consumer: %v", err)
 		return err
@@ -97,6 +96,9 @@ func (c *consumer) HandleMessage() nsq.Handler {
 
 		c.logger.Infoln("Incoming message: id=%s, payload=%s", m.Topic, m.Payload)
 
+		// operation identifier
+		operationID := m.Payload.(string)
+
 		// Get all subscripts from handler
 		subscriptions := c.sh.Subscriptions()
 
@@ -105,7 +107,7 @@ func (c *consumer) HandleMessage() nsq.Handler {
 
 			for _, subscription := range subscriptions[conn] {
 
-				if subscription.TopicID == m.Topic {
+				if subscription.Topic == m.Topic && subscription.OperationID == operationID {
 
 					// Prepare an execution context for running the query
 					ctx := context.Background()
@@ -117,7 +119,6 @@ func (c *consumer) HandleMessage() nsq.Handler {
 						name = c.channel
 					}
 					c.logger.Println("OperationName = ", subscription.OperationName)
-					c.logger.Println("Chanel name = ", name)
 					c.logger.Println("Vars = ", subscription.Variables)
 
 					// Re-execute the subscription query

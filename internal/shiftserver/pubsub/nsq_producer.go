@@ -43,6 +43,8 @@ func NewProducer(cfg NSQConfig, sh SubscriptionHandler, loggr logger.Loggr) (Pro
 
 func (p *producer) Publish(topic string, payload interface{}) error {
 
+	p.logger.Infof("Publishig to topic '%s': [%v]\n", topic, payload)
+
 	msg := Message{Topic: topic, Payload: payload}
 
 	encoded, err := msg.encode()
