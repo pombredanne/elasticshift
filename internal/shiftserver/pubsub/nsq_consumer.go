@@ -12,7 +12,6 @@ import (
 	"github.com/Sirupsen/logrus"
 	"github.com/graphql-go/graphql"
 	"github.com/nsqio/go-nsq"
-	"gitlab.com/conspico/elasticshift/internal/pkg/logger"
 	"gitlab.com/conspico/elasticshift/internal/pkg/utils"
 )
 
@@ -30,7 +29,7 @@ type Consumer interface {
 
 type consumer struct {
 	logger *logrus.Entry
-	sh     SubscriptionHandler
+
 	cfg    NSQConfig
 	schema *graphql.Schema
 
@@ -39,17 +38,19 @@ type consumer struct {
 
 	topic   string
 	channel string
+
+	consumers *consumers
 }
 
 // NewConsumer ..
-func NewConsumer(cfg NSQConfig, sh SubscriptionHandler, loggr logger.Loggr, schema *graphql.Schema) Consumer {
+func NewConsumer(cfg NSQConfig, logger *logrus.Entry, schema *graphql.Schema, consumers *consumers) Consumer {
 
 	// TODO connect to topic broker
 	c := &consumer{}
-	c.sh = sh
-	c.logger = loggr.GetLogger("pubsub/consumer")
+	c.logger = logger
 	c.cfg = cfg
 	c.schema = schema
+	c.consumers = consumers
 
 	return c
 }
@@ -93,58 +94,100 @@ func (c *consumer) HandleMessage() nsq.Handler {
 		if err != nil {
 			return err
 		}
-
 		c.logger.Infoln("Incoming message: id=%s, payload=%s", m.Topic, m.Payload)
+
+		c.logger.Infof("consumers :%v", c.consumers.topics)
+
+		c.logger.Infof("subs: %v, c.consumers.subscriptions")
 
 		// operation identifier
 		operationID := m.Payload.(string)
 
-		// Get all subscripts from handler
-		subscriptions := c.sh.Subscriptions()
+		c.logger.Infof("loop: %v", c.consumers.subscriptions[m.Topic][operationID])
 
-		// push the results to the subscribers.
-		for conn, _ := range subscriptions {
+		var data SubscriptionResponse
+		for i, subscription := range c.consumers.subscriptions[m.Topic][operationID] {
 
-			for _, subscription := range subscriptions[conn] {
+			if i == 0 {
+				// Prepare an execution context for running the query
+				ctx := context.Background()
 
-				if subscription.Topic == m.Topic && subscription.OperationID == operationID {
+				fmt.Println("Query = ", subscription.Query)
+				var name string
+				name = subscription.OperationName
+				if name == "" {
+					name = c.channel
+				}
+				c.logger.Println("OperationName = ", subscription.OperationName)
+				c.logger.Println("Vars = ", subscription.Variables)
 
-					// Prepare an execution context for running the query
-					ctx := context.Background()
+				// Re-execute the subscription query
+				params := graphql.Params{
+					Schema:         *c.schema, // The GraphQL schema
+					RequestString:  subscription.Query,
+					VariableValues: subscription.Variables,
+					OperationName:  name,
+					Context:        ctx,
+				}
+				result := graphql.Do(params)
 
-					fmt.Println("Query = ", subscription.Query)
-					var name string
-					name = subscription.OperationName
-					if name == "" {
-						name = c.channel
-					}
-					c.logger.Println("OperationName = ", subscription.OperationName)
-					c.logger.Println("Vars = ", subscription.Variables)
-
-					// Re-execute the subscription query
-					params := graphql.Params{
-						Schema:         *c.schema, // The GraphQL schema
-						RequestString:  subscription.Query,
-						VariableValues: subscription.Variables,
-						OperationName:  name,
-						Context:        ctx,
-					}
-					result := graphql.Do(params)
-
-					// Send query results back to the subscriber at any point
-					data := SubscriptionResponse{
-						// Data can be anything (interface{})
-						Data: result.Data,
-						// Errors is optional ([]error)
-						Errors: utils.GraphQLErrors(result.Errors),
-					}
-					subscription.Push(&data)
+				// Send query results back to the subscriber at any point
+				data = SubscriptionResponse{
+					// Data can be anything (interface{})
+					Data: result.Data,
+					// Errors is optional ([]error)
+					Errors: utils.GraphQLErrors(result.Errors),
 				}
 			}
+			subscription.Push(&data)
 		}
-		// invoke graphql and send websocket response
 
-		c.logger.Println("Finished callback execution.")
+		// // Get all subscripts from handler
+		// subscriptions := c.sh.Subscriptions()
+
+		// // push the results to the subscribers.
+		// for conn, _ := range subscriptions {
+
+		// 	for _, subscription := range subscriptions[conn] {
+
+		// 		if subscription.Topic == m.Topic && subscription.OperationID == operationID {
+
+		// 			// Prepare an execution context for running the query
+		// 			ctx := context.Background()
+
+		// 			fmt.Println("Query = ", subscription.Query)
+		// 			var name string
+		// 			name = subscription.OperationName
+		// 			if name == "" {
+		// 				name = c.channel
+		// 			}
+		// 			c.logger.Println("OperationName = ", subscription.OperationName)
+		// 			c.logger.Println("Vars = ", subscription.Variables)
+
+		// 			// Re-execute the subscription query
+		// 			params := graphql.Params{
+		// 				Schema:         *c.schema, // The GraphQL schema
+		// 				RequestString:  subscription.Query,
+		// 				VariableValues: subscription.Variables,
+		// 				OperationName:  name,
+		// 				Context:        ctx,
+		// 			}
+		// 			result := graphql.Do(params)
+
+		// 			// Send query results back to the subscriber at any point
+		// 			data := SubscriptionResponse{
+		// 				// Data can be anything (interface{})
+		// 				Data: result.Data,
+		// 				// Errors is optional ([]error)
+		// 				Errors: utils.GraphQLErrors(result.Errors),
+		// 			}
+		// 			subscription.Push(&data)
+		// 		}
+		// 	}
+		// }
+		// // invoke graphql and send websocket response
+
+		// c.logger.Println("Finished callback execution.")
 		return nil
 	})
 }

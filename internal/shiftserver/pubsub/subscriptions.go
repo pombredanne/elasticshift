@@ -32,6 +32,7 @@ type subscriptionHandler struct {
 	schema        *graphql.Schema
 	subscriptions Subscriptions
 	logger        *logrus.Entry
+	consumers     Consumers
 }
 
 // PushResponseFunc ..
@@ -56,11 +57,12 @@ type ConnectionSubscriptions map[string]*Subscription
 type Subscriptions map[Connection]ConnectionSubscriptions
 
 // NewSubscriptionHandler ..
-func NewSubscriptionHandler(loggr logger.Loggr) SubscriptionHandler {
+func NewSubscriptionHandler(loggr logger.Loggr, cons Consumers) SubscriptionHandler {
 
 	sh := &subscriptionHandler{}
 	sh.logger = loggr.GetLogger("graphql/subscriptions")
 	sh.subscriptions = make(Subscriptions)
+	sh.consumers = cons
 	return sh
 }
 
@@ -95,7 +97,6 @@ func (sh *subscriptionHandler) Subcribe(c Connection, s *Subscription) []error {
 		return []error{errors.New("Cannot register subscription twice")}
 	}
 
-	// TODO update to use topic
 	opdef := doc.Definitions[0].(*ast.OperationDefinition)
 	selection := opdef.GetSelectionSet().Selections[0]
 
@@ -104,22 +105,19 @@ func (sh *subscriptionHandler) Subcribe(c Connection, s *Subscription) []error {
 		f := selection.(*ast.Field)
 		topic := f.Name.Value
 		id := s.Variables["id"].(string)
-		// topic = fmt.Sprintf(topicNameFormat, subName, id)
 
 		s.Topic = topic
 		s.OperationID = id
-
-		c.SetTopicName(topic)
 	}
 
 	sh.subscriptions[c][s.ID] = s
+	sh.consumers.Add(s.Topic, s)
 
 	return nil
 }
 
 func (sh *subscriptionHandler) UnsubscribeAll(c Connection) {
 
-	// TODO update to use topic
 	sub := sh.subscriptions[c]
 	if sub != nil {
 
@@ -132,12 +130,8 @@ func (sh *subscriptionHandler) UnsubscribeAll(c Connection) {
 }
 
 func (sh *subscriptionHandler) Unsubscribe(c Connection, s *Subscription) {
-
-	// TODO update to use topic
 	delete(sh.subscriptions[c], s.ID)
-	if len(sh.subscriptions[c]) == 0 {
-		delete(sh.subscriptions, c)
-	}
+	sh.consumers.Remove(s.Topic, s)
 }
 
 func (sh *subscriptionHandler) Subscriptions() Subscriptions {

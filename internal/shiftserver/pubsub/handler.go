@@ -26,6 +26,7 @@ func NewGraphqlWSHandler(engine Engine, loggr logger.Loggr) http.Handler {
 	var connections = make(map[Connection]bool)
 
 	return http.HandlerFunc(
+
 		func(w http.ResponseWriter, r *http.Request) {
 
 			ws, err := upgrader.Upgrade(w, r, nil)
@@ -38,6 +39,8 @@ func NewGraphqlWSHandler(engine Engine, loggr logger.Loggr) http.Handler {
 				return
 			}
 
+			errCh := make(chan error)
+
 			conn := newConnection(ws, logger, engine, EventHandler{
 				Subscribe: func(c Connection, id string, req *SubscriptionRequest) []error {
 
@@ -46,7 +49,7 @@ func NewGraphqlWSHandler(engine Engine, loggr logger.Loggr) http.Handler {
 						"id":         id,
 					}).Debug("Start..")
 
-					return subscriptionHandler.Subcribe(c, &Subscription{
+					s := Subscription{
 						ID:            id,
 						OperationName: req.OperationName,
 						Query:         req.Query,
@@ -55,7 +58,10 @@ func NewGraphqlWSHandler(engine Engine, loggr logger.Loggr) http.Handler {
 						Push: func(res *SubscriptionResponse) {
 							c.PushData(id, res)
 						},
-					})
+					}
+
+					errs := subscriptionHandler.Subcribe(c, &s)
+					return errs
 				},
 				Unsubscribe: func(c Connection, id string) {
 					subscriptionHandler.Unsubscribe(c, &Subscription{ID: id})
@@ -69,6 +75,8 @@ func NewGraphqlWSHandler(engine Engine, loggr logger.Loggr) http.Handler {
 			})
 
 			connections[conn] = true
+
+			<-errCh
 		},
 	)
 }

@@ -46,14 +46,12 @@ type connection struct {
 	closed bool
 	eh     EventHandler
 
-	consumer Consumer
-	topic    string
+	consumers map[string]Consumer
 }
 
 // Connection ..
 type Connection interface {
 	ID() string
-	SetTopicName(topic string)
 
 	PushData(id string, response *SubscriptionResponse)
 
@@ -80,6 +78,7 @@ func newConnection(ws *websocket.Conn, logger *logrus.Entry, engine Engine, eh E
 	c.engine = engine
 
 	c.push = make(chan WebsocketMessage)
+	c.consumers = make(map[string]Consumer)
 
 	go c.readLoop()
 	go c.writeLoop()
@@ -148,14 +147,12 @@ func (c *connection) close() {
 
 		c.eh.Close(c)
 
-		if c.consumer != nil {
-			c.consumer.Unsubscribe()
+		if c.consumers != nil {
+			for _, cons := range c.consumers {
+				cons.Unsubscribe()
+			}
 		}
 	}
-}
-
-func (c *connection) SetTopicName(topic string) {
-	c.topic = topic
 }
 
 func (c *connection) readLoop() {
@@ -192,25 +189,22 @@ func (c *connection) readLoop() {
 					c.PushError(errors.New("Invalid GQL_START request"))
 					return
 				}
+				c.logger.WithFields(logrus.Fields{"ID": msg.ID, "Request": req}).Debugln("Subscription request")
 
 				errs := c.eh.Subscribe(c, msg.ID, &req)
 				if errs != nil {
 					c.PushSubscriptionError(msg.ID, errs)
 					return
 				}
-
-				// subscribe to topic
-				c.consumer = c.engine.Consumer()
-				if c.consumer != nil {
-					err := c.consumer.Subscribe(c.topic)
-					c.logger.Errorf("Failed to subscribe : %v\n", err)
-				}
 			}
 
 		case gqlUnsubscribe:
 			if c.eh.Unsubscribe != nil {
 				c.eh.Unsubscribe(c, msg.ID)
-				c.consumer.Unsubscribe()
+				cons := c.consumers[msg.ID]
+				if cons != nil {
+					cons.Unsubscribe()
+				}
 			}
 		case gqlConnectionTerminate:
 			c.logger.Info("Connection closed by client")

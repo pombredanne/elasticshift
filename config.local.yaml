@@ -12,8 +12,8 @@ logger:
   format: "json"
 
 web:
-  http: 127.0.0.1:5050
-  grpc: 127.0.0.1:5051
+  http: 127.0.0.1:9100
+  grpc: 127.0.0.1:9101
 
 identity:
   issuer: http://127.0.0.1:5556/identity

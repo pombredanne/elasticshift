@@ -171,15 +171,17 @@ func (s *Server) registerGraphQLServices() error {
 	vault := secret.NewVault(s.Shift, s.Loggr, s.Ctx)
 	s.Vault = vault
 
-	// subscription handler through websocket
-	sh := pubsub.NewSubscriptionHandler(s.Loggr)
-
 	nsqc := pubsub.NSQConfig{}
 	nsqc.Consumer.Address = s.Config.NSQ.ConsumerAddress
 	nsqc.Producer.Address = s.Config.NSQ.ProducerAddress
 	s.NSQ = nsqc
 
-	eng := pubsub.NewEngine(s.Loggr, sh, nsqc)
+	cons := pubsub.NewConsumers(nsqc, s.Loggr)
+
+	// subscription handler through websocket
+	sh := pubsub.NewSubscriptionHandler(s.Loggr, cons)
+
+	eng := pubsub.NewEngine(s.Loggr, sh, nsqc, cons)
 	s.Pubsub = eng
 
 	schm, err := schema.Construct(s.Ctx, s.Loggr, s.Providers, s.Shift, s.Vault, s.Pubsub)

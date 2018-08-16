@@ -23,12 +23,13 @@ type engine struct {
 	schema    *graphql.Schema
 	conf      NSQConfig
 	producers map[string]Producer
+	consumers Consumers
 }
 
 // Engine ..
 type Engine interface {
 	Producer() (Producer, error)
-	Consumer() Consumer
+	Consumers() Consumers
 	SubscriptionHandler() SubscriptionHandler
 
 	Publish(topic string, payload interface{}) error
@@ -37,7 +38,7 @@ type Engine interface {
 }
 
 // NewEngine ..
-func NewEngine(loggr logger.Loggr, sh SubscriptionHandler, conf NSQConfig) Engine {
+func NewEngine(loggr logger.Loggr, sh SubscriptionHandler, conf NSQConfig, cons Consumers) Engine {
 
 	l := loggr.GetLogger("pubsub/engine")
 	return &engine{
@@ -46,21 +47,30 @@ func NewEngine(loggr logger.Loggr, sh SubscriptionHandler, conf NSQConfig) Engin
 		conf:      conf,
 		loggr:     loggr,
 		producers: make(map[string]Producer),
+		consumers: cons,
 	}
 }
 
 func (e *engine) Schema(schema *graphql.Schema) {
 	e.schema = schema
-	e.sh.Schema(schema)
+	e.consumers.Schema(schema)
+	if e.sh != nil {
+		e.sh.Schema(schema)
+	}
 }
 
 func (e *engine) Producer() (Producer, error) {
 	return NewProducer(e.conf, e.sh, e.loggr)
 }
 
-func (e *engine) Consumer() Consumer {
-	return NewConsumer(e.conf, e.sh, e.loggr, e.schema)
+func (e *engine) Consumers() Consumers {
+	return e.consumers
 }
+
+// func (e *engine) Consumer() Consumer {
+// 	mh := NewMessageHandler(e.consumers)
+// 	return NewConsumer(e.conf, mh, e.loggr, e.schema)
+// }
 
 func (e *engine) SubscriptionHandler() SubscriptionHandler {
 	return e.sh

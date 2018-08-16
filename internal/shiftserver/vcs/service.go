@@ -193,8 +193,8 @@ func (s service) Authorized(w http.ResponseWriter, r *http.Request) {
 		// TODO return http error
 		s.logger.Errorln("SAVE VCS: ", err)
 	}
-	url := escID[2] + "/sysconf/vcs"
-	http.Redirect(w, r, url, http.StatusTemporaryRedirect)
+	// url := escID[2] + "/integrations"
+	http.Redirect(w, r, "/integrations", http.StatusTemporaryRedirect)
 }
 
 func (s service) saveSecret(sec types.Secret, u types.VCS, team string, w http.ResponseWriter) string {
