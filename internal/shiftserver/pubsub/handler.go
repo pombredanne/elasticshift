@@ -39,8 +39,6 @@ func NewGraphqlWSHandler(engine Engine, loggr logger.Loggr) http.Handler {
 				return
 			}
 
-			errCh := make(chan error)
-
 			conn := newConnection(ws, logger, engine, EventHandler{
 				Subscribe: func(c Connection, id string, req *SubscriptionRequest) []error {
 
@@ -69,14 +67,11 @@ func NewGraphqlWSHandler(engine Engine, loggr logger.Loggr) http.Handler {
 				Close: func(c Connection) {
 
 					subscriptionHandler.UnsubscribeAll(c)
-
 					delete(connections, c)
 				},
 			})
 
 			connections[conn] = true
-
-			<-errCh
 		},
 	)
 }

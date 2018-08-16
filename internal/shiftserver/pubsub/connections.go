@@ -45,8 +45,6 @@ type connection struct {
 	push   chan WebsocketMessage
 	closed bool
 	eh     EventHandler
-
-	consumers map[string]Consumer
 }
 
 // Connection ..
@@ -78,7 +76,6 @@ func newConnection(ws *websocket.Conn, logger *logrus.Entry, engine Engine, eh E
 	c.engine = engine
 
 	c.push = make(chan WebsocketMessage)
-	c.consumers = make(map[string]Consumer)
 
 	go c.readLoop()
 	go c.writeLoop()
@@ -144,14 +141,7 @@ func (c *connection) close() {
 	c.mutex.Unlock()
 
 	if c.eh.Close != nil {
-
 		c.eh.Close(c)
-
-		if c.consumers != nil {
-			for _, cons := range c.consumers {
-				cons.Unsubscribe()
-			}
-		}
 	}
 }
 
@@ -201,10 +191,6 @@ func (c *connection) readLoop() {
 		case gqlUnsubscribe:
 			if c.eh.Unsubscribe != nil {
 				c.eh.Unsubscribe(c, msg.ID)
-				cons := c.consumers[msg.ID]
-				if cons != nil {
-					cons.Unsubscribe()
-				}
 			}
 		case gqlConnectionTerminate:
 			c.logger.Info("Connection closed by client")

@@ -130,8 +130,10 @@ func (sh *subscriptionHandler) UnsubscribeAll(c Connection) {
 }
 
 func (sh *subscriptionHandler) Unsubscribe(c Connection, s *Subscription) {
+
+	sub := sh.subscriptions[c][s.ID]
+	sh.consumers.Remove(sub.Topic, sub)
 	delete(sh.subscriptions[c], s.ID)
-	sh.consumers.Remove(s.Topic, s)
 }
 
 func (sh *subscriptionHandler) Subscriptions() Subscriptions {
