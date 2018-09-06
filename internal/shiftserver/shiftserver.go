@@ -152,8 +152,6 @@ func (s *Server) registerEndpointServices() {
 	// TODO the directory is only applicable for dev testing
 	// s.Router.Handle("/download/", http.StripPrefix("/download/", http.FileServer(http.Dir("/Users/ghazni/.elasticshift/cloud"))))
 
-	s.Router.PathPrefix("/").Handler(http.FileServer(http.Dir("./dist/")))
-
 	// TODO remove kubeconfig
 	// Sysconf Upload kube file
 	integrationServ := integration.NewService(s.Loggr, s.DB, s.Shift)
