@@ -165,11 +165,14 @@ func (r *resolver) UpdateBuildStatusAsFailed(id, reason string, endedAt time.Tim
 
 func (r *resolver) UpdateBuildStatus(id, reason string, status types.BuildStatus, endedAt time.Time) {
 
-	r.logger.Debugln("Updaddting the build status from callback.")
 	// should be the container startup log, if startup failed
 	// should be the err log if build failed.
 	var b types.Build
 	err := r.store.FindByID(id, &b)
+	if err != nil {
+		// TODO handler error
+	}
+
 	b.Reason = reason
 	b.Status = status
 	b.EndedAt = time.Now()

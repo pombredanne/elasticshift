@@ -14,8 +14,8 @@ type CreatePersistentVolumeOptions struct {
 	
 	//NFS
 	Server       string
-	Path         string
 	MountOptions []string
+	Path         string
 	
 	// minio
 	Url         string

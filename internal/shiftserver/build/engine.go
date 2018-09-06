@@ -175,6 +175,7 @@ func (r *resolver) ContainerLauncher() {
 			opts.Environment = envs
 			opts.BuildID = b.ID.Hex()
 			opts.FailureFunc = r.UpdateBuildStatusAsFailed
+			opts.UpdateMetadata = r.UpdateBuildMetadata
 
 			// opts.VolumeMounts = []itypes.Volume{{"localvol", "/opt/elasticshift"}}
 
@@ -193,7 +194,12 @@ func (r *resolver) ContainerLauncher() {
 			}
 
 			fmt.Println("Container ID =", res.UID)
-			err = r.store.UpdateContainerID(b.ID, res.UID)
+			if b.Metadata == nil {
+				b.Metadata = &types.Metadata{}
+			}
+			b.Metadata.ContainerID = res.UID
+
+			err = r.store.UpdateId(b.ID, b)
 			if err != nil {
 				r.logger.Errorln("Failed to update the container id: ", res.UID)
 			}
@@ -206,9 +212,29 @@ func (r *resolver) ContainerLauncher() {
 	}
 }
 
+func (r *resolver) UpdateBuildMetadata(kind int, id, podname string) {
+
+	var b types.Build
+	err := r.store.FindByID(id, &b)
+	if err != nil {
+		// TODO handle error
+	}
+
+	if b.Metadata == nil {
+		b.Metadata = &types.Metadata{}
+	}
+	b.Metadata.Kind = kind
+	b.Metadata.PodName = podname
+
+	err = r.store.UpdateId(b.ID, b)
+	if err != nil {
+		r.logger.Errorf("Failed to update the build with metadata: %v", err)
+	}
+}
+
 func (r *resolver) recoverErrorIfAny() {
 
 	if err := recover(); err != nil {
-		fmt.Println("recovered : %v", err)
+		fmt.Printf("recovered : %v", err)
 	}
 }

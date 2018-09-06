@@ -5,7 +5,6 @@ package shiftserver
 
 import (
 	"encoding/base64"
-	"net/http"
 	"net/http/pprof"
 	"strings"
 
@@ -15,6 +14,7 @@ import (
 	"gitlab.com/conspico/elasticshift/api"
 	"gitlab.com/conspico/elasticshift/api/dex"
 	"gitlab.com/conspico/elasticshift/internal/pkg/logger"
+	"gitlab.com/conspico/elasticshift/internal/shiftserver/build"
 	"gitlab.com/conspico/elasticshift/internal/shiftserver/identity/oauth2/providers"
 	"gitlab.com/conspico/elasticshift/internal/shiftserver/integration"
 	"gitlab.com/conspico/elasticshift/internal/shiftserver/plugin"
@@ -162,6 +162,10 @@ func (s *Server) registerEndpointServices() {
 	// Plugin bundle push
 	pluginServ := plugin.NewService(s.Loggr, s.DB, s.Shift)
 	s.Router.HandleFunc("/api/plugin/push", pluginServ.PushPlugin)
+
+	// build log
+	buildServ := build.NewService(s.Loggr, s.Shift)
+	s.Router.HandleFunc("/api/log/{buildid}", buildServ.Viewlog)
 }
 
 func (s *Server) registerGraphQLServices() error {

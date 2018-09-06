@@ -1,6 +1,9 @@
 package types
 
-import "time"
+import (
+	"io"
+	"time"
+)
 
 type Env struct {
 	Key   string
@@ -19,7 +22,8 @@ type CreateContainerOptions struct {
 	VolumeMounts []Volume
 	BuildID      string
 
-	FailureFunc func(string, string, time.Time)
+	FailureFunc    func(string, string, time.Time)
+	UpdateMetadata func(int, string, string)
 }
 
 type Volume struct {
@@ -45,4 +49,12 @@ type ContainerInfo struct {
 type PersistentVolumeClaimOptions struct {
 	Name     string
 	Capacity string
+}
+
+type StreamLogOptions struct {
+	Follow  string
+	Pod     string
+	BuildID string
+	ShiftId string
+	W       io.Writer
 }

@@ -7,6 +7,7 @@ import (
 	"bytes"
 	"encoding/json"
 	"fmt"
+	"io"
 	"os"
 
 	"github.com/Sirupsen/logrus"
@@ -138,6 +139,8 @@ func ConnectKubernetes(logger *logrus.Entry, opts *ConnectOptions) (ContainerEng
 	}
 
 	kcli.Kube = clientset
+	kcli.logger = logger
+
 	return kcli, nil
 }
 
@@ -230,18 +233,21 @@ func (c *kubernetesClient) CreateContainer(opts *itypes.CreateContainerOptions) 
 	if err != nil {
 		return nil, fmt.Errorf("Error in creating container : %v", err)
 	}
-	c.logger.Debugln("Created deployment %q.\n", result.GetObjectMeta().GetName())
+	c.logger.Debugln(fmt.Sprintf("Created deployment: %s", result.GetObjectMeta().GetName()))
 
-	wat, err := deploymentsClient.Watch(v1.ListOptions{LabelSelector: "createdby=" + DefaultContext})
+	//wat, err := deploymentsClient.Watch(v1.ListOptions{LabelSelector: "createdby=" + DefaultContext})
 	lo := &v1.ListOptions{LabelSelector: KW_SHIFTID + "=" + shiftID.String()}
-	wat, err = c.Kube.CoreV1().Pods(c.opts.Namespace).Watch(*lo)
+	wat, err := c.Kube.CoreV1().Pods(c.opts.Namespace).Watch(*lo)
 	if err != nil {
-		c.logger.Errorln("Watch failed: %v", err)
+		c.logger.Errorf("Watch failed: %v", err)
 	}
 
 	go func() {
 
 		var terminated bool
+		var updateMetadata bool
+		updateMetadata = true
+
 		for {
 
 			if terminated {
@@ -279,14 +285,23 @@ func (c *kubernetesClient) CreateContainer(opts *itypes.CreateContainerOptions) 
 						for _, cs := range pod.Status.ContainerStatuses {
 
 							if cs.State.Terminated == nil {
+								if updateMetadata {
+
+									if opts.UpdateMetadata != nil {
+										opts.UpdateMetadata(Kubernetes, opts.BuildID, pod.Name)
+										updateMetadata = false
+									}
+								}
 								continue
 							}
+
 							finishedAt := cs.State.Terminated.FinishedAt.Time
 
 							if cs.State.Terminated.Reason != "Completed" {
 								opts.FailureFunc(opts.BuildID, cs.State.Terminated.Reason, finishedAt)
 								terminated = true
 							}
+
 						}
 					case apiv1.PodFailed:
 						if len(pod.Status.ContainerStatuses) == 0 {
@@ -346,6 +361,26 @@ func (c *kubernetesClient) DeleteContainer(id string) error {
 	})
 
 	return err
+}
+
+func (c *kubernetesClient) StreamLog(opts *itypes.StreamLogOptions) (io.ReadCloser, error) {
+
+	c.logger.Infoln("pod=", opts.Pod)
+
+	req := c.Kube.CoreV1().RESTClient().Get().
+		Namespace(c.opts.Namespace).
+		Resource("pods").
+		Name(opts.Pod).
+		SubResource("log").
+		// Param("container", "web").
+		Param("follow", opts.Follow)
+
+	readCloser, err := req.Stream()
+	if err != nil {
+		return nil, fmt.Errorf("Failed to stream log for %s: %v", opts.BuildID, err)
+	}
+
+	return readCloser, nil
 }
 
 //watch, err := deploymentsClient.Watch(v1.ListOptions{LabelSelector: "createdby=elasticshift"})

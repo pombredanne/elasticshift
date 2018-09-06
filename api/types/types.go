@@ -159,7 +159,6 @@ type Build struct {
 	ID                bson.ObjectId `json:"id" bson:"_id,omitempty"`
 	RepositoryID      string        `json:"repository_id" bson:"repository_id"`
 	VcsID             string        `json:"vcs_id" bson:"vcs_id"`
-	ContainerID       string        `json:"container_id" bson:"container_id"`
 	Log               []Log         `json:"-" bson:"log"`
 	LogType           string        `json:"-" bson:"log_type"`
 	StartedAt         time.Time     `json:"started_at" bson:"started_at"`
@@ -177,6 +176,7 @@ type Build struct {
 	Privatekey        string        `json:"-" bson:"private_key,omitempty"`
 	Graph             string        `json:"graph" bson:"graph,omitempty"`
 	Source            string        `json:"source" bson:"source"`
+	Metadata          *Metadata     `json:"-" bson:"metadata,omitempty"`
 }
 
 type BuildList struct {
@@ -398,4 +398,14 @@ func (f *ShiftfileType) SetBSON(raw bson.Raw) error {
 type ShiftfileList struct {
 	Nodes []Shiftfile `json:"nodes"`
 	Count int         `json:"count"`
+}
+
+type Metadata struct {
+
+	// general
+	Kind        int    `json:"-" bson:"kind"`
+	ContainerID string `json:"-" bson:"container_id"`
+
+	// Kubernetes
+	PodName string `json:"-" bson:"pod_name"`
 }

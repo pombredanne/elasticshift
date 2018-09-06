@@ -100,10 +100,5 @@ func (s *build) UpdateBuildStatus(id bson.ObjectId, status types.BuildStatus) er
 }
 
 func (s *build) UpdateContainerID(id bson.ObjectId, containerID string) error {
-
-	var err error
-	s.Execute(func(c *mgo.Collection) {
-		err = c.Update(bson.M{"_id": id}, bson.M{"$set": bson.M{"container_id": containerID}})
-	})
-	return err
+	return s.UpdateId(id, bson.M{"$set": bson.M{"container_id": containerID}})
 }

@@ -5,6 +5,7 @@ package integration
 
 import (
 	"fmt"
+	"io"
 
 	"gitlab.com/conspico/elasticshift/api/types"
 	"gitlab.com/conspico/elasticshift/internal/pkg/logger"
@@ -28,6 +29,7 @@ type ContainerEngineInterface interface {
 	CreateContainerWithVolume(opts *itypes.CreateContainerOptions) (*itypes.ContainerInfo, error)
 	CreatePersistentVolume(opts *itypes.CreatePersistentVolumeOptions) (*itypes.PersistentVolumeInfo, error)
 	DeleteContainer(id string) error
+	StreamLog(opts *itypes.StreamLogOptions) (io.ReadCloser, error)
 }
 
 func NewContainerEngine(loggr logger.Loggr, i types.ContainerEngine, s types.Storage) (ContainerEngineInterface, error) {
