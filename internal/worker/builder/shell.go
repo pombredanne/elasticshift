@@ -7,6 +7,7 @@ import (
 	"bytes"
 	"fmt"
 	"io"
+	"log"
 	"os/exec"
 
 	"gitlab.com/conspico/elasticshift/internal/pkg/shiftfile/keys"
@@ -18,13 +19,13 @@ func (b *builder) invokeShell(n *N) (string, error) {
 
 	for _, command := range cmds {
 
-		b.logr.Log(fmt.Sprintf("%s:%s-%s", START, n.Name, n.Description))
+		log.Println(fmt.Sprintf("%s:%s-%s", START, n.Name, n.Description))
 
 		msg, err := b.execShellCmd(n.Name, command, nil, "")
 		if err != nil {
 			return msg, err
 		}
-		b.logr.Log(fmt.Sprintf("%s:%s-%s", END, n.Name, n.Description))
+		log.Println(fmt.Sprintf("%s:%s-%s", END, n.Name, n.Description))
 	}
 	return "", nil
 }
@@ -37,8 +38,8 @@ func (b *builder) execShellCmd(prefix string, shellCmd string, env []string, dir
 	stderr, _ := cmd.StderrPipe()
 
 	var buf bytes.Buffer
-	go io.Copy(b.logr.Writer, stdout)
-	go io.Copy(io.MultiWriter(b.logr.Writer, &buf), stderr)
+	go io.Copy(b.writer, stdout)
+	go io.Copy(io.MultiWriter(b.writer, &buf), stderr)
 
 	// soutpipe, err := cmd.StdoutPipe()
 	// if err != nil {
@@ -61,14 +62,14 @@ func (b *builder) execShellCmd(prefix string, shellCmd string, env []string, dir
 	}
 
 	if err := cmd.Start(); err != nil {
-		b.log.Errorln(err)
+		log.Println(err)
 		return buf.String(), err
 	}
 
 	if err := cmd.Wait(); err != nil {
 
 		err := fmt.Errorf("Error waiting for the shell command to finish : %v", err)
-		b.log.Errorln(err)
+		log.Println(err)
 		return buf.String(), err
 	}
 

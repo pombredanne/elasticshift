@@ -6,16 +6,16 @@ package builder
 import (
 	"context"
 	"fmt"
+	"io"
+	"log"
 
 	"path/filepath"
 
-	"github.com/Sirupsen/logrus"
 	"github.com/pkg/errors"
 	"gitlab.com/conspico/elasticshift/api"
 	"gitlab.com/conspico/elasticshift/internal/pkg/shiftfile/ast"
 	"gitlab.com/conspico/elasticshift/internal/pkg/shiftfile/parser"
 	"gitlab.com/conspico/elasticshift/internal/pkg/vcs"
-	"gitlab.com/conspico/elasticshift/internal/worker/logger"
 	wtypes "gitlab.com/conspico/elasticshift/internal/worker/types"
 	"google.golang.org/grpc"
 )
@@ -39,24 +39,24 @@ type builder struct {
 	config      wtypes.Config
 	shiftclient api.ShiftClient
 	project     *api.GetProjectRes
-	logr        *logger.Logr
 
 	f *ast.File
 	g *graph
 
 	done chan int
-	log  logrus.Logger
+
+	writer io.Writer
 }
 
-func New(ctx wtypes.Context, shiftconn *grpc.ClientConn, logr *logger.Logr, log logrus.Logger, done chan int) error {
+func New(ctx wtypes.Context, shiftconn *grpc.ClientConn, writer io.Writer, done chan int) error {
 
 	b := builder{}
 	b.shiftconn = shiftconn
 	b.ctx = ctx.Context
 	b.shiftclient = ctx.Client
 	b.config = ctx.Config
-	b.logr = logr
 	b.done = done
+	b.writer = writer
 
 	return b.run()
 }
@@ -67,7 +67,7 @@ func (b *builder) run() error {
 	// save the cache after every successful build
 	err := b.restoreCache()
 	if err != nil {
-		b.log.Errorln("Restoring cache failed:", err)
+		log.Println("Restoring cache failed:", err)
 	}
 
 	// Get the project information
@@ -77,7 +77,7 @@ func (b *builder) run() error {
 	}
 	b.project = proj
 
-	b.log.Debugln("Project Info: %v", proj)
+	log.Printf("Project Info: %v", proj)
 
 	// 1. Ensure connection to log storage is good, this container should be loaded with
 
@@ -85,7 +85,7 @@ func (b *builder) run() error {
 
 	// 3. Fetch the shiftfile
 
-	b.log.Debugln("Getting the shift file..")
+	log.Println("Getting the shift file..")
 
 	f, err := vcs.GetShiftFile(proj.Source, proj.CloneUrl, proj.Branch)
 	if err != nil {
@@ -121,7 +121,7 @@ func (b *builder) run() error {
 	// 9. Traverse the execution map & run the actual build
 	err = b.build(graph)
 	if err != nil {
-		b.log.Errorf("Build failed. %v", err)
+		log.Printf("Build failed: %v\n", err)
 	}
 
 	return nil

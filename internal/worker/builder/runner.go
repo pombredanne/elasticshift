@@ -4,6 +4,7 @@ Copyright 2018 The Elasticshift Authors.
 package builder
 
 import (
+	"log"
 	"os"
 	"runtime"
 	"sync"
@@ -16,26 +17,26 @@ import (
 func (b *builder) build(g *graph) error {
 
 	wdir := b.f.WorkDir()
-	b.log.Debugf("Working directory : %s\n", wdir)
+	log.Printf("Working directory : %s\n", wdir)
 
 	if wdir != "" {
 		expanded, err := homedir.Expand(wdir)
 		if err != nil {
-			b.log.Errorf("Failed to expand the directory : %v\n", err)
+			log.Printf("Failed to expand the directory : %v\n", err)
 		}
 
 		err = utils.Mkdir(expanded)
 		if err != nil {
-			b.log.Errorf("Failed to create working directory : %v\n", err)
+			log.Printf("Failed to create working directory : %v\n", err)
 		}
 
 		err = os.Chdir(expanded)
 		if err != nil {
-			b.log.Errorf("Failed to change the working directory : %v\n", err)
+			log.Printf("Failed to change the working directory : %v\n", err)
 		}
 	}
 
-	b.logr.Log("Working directory = " + utils.GetWD())
+	log.Println("Working directory = " + utils.GetWD())
 
 	// set the parallel capability
 	var parallel int
@@ -53,7 +54,7 @@ func (b *builder) build(g *graph) error {
 	for i := 0; i < len(g.checkpoints); i++ {
 
 		if failed {
-			b.log.Infoln("Build finished, waiting from shiftserver to receive a halt command..")
+			log.Println("Build finished, waiting from shiftserver to receive a halt command..")
 			<-b.done
 		}
 
@@ -96,7 +97,7 @@ func (b *builder) build(g *graph) error {
 						errMutex.Lock()
 						defer errMutex.Unlock()
 
-						b.log.Errorf("Plugin error : %v\n", err)
+						log.Printf("Plugin error : %v\n", err)
 						n.End(statusFailed, msg)
 						b.UpdateBuildGraphToShiftServer(statusFailed, n.Name)
 
@@ -126,7 +127,7 @@ func (b *builder) build(g *graph) error {
 			msg, err := b.invokePlugin(c.Node)
 			if err != nil {
 				c.Node.End(statusFailed, msg)
-				b.log.Errorf("Plugin error : %v\n", err)
+				log.Printf("Plugin error : %v\n", err)
 				b.UpdateBuildGraphToShiftServer(statusFailed, c.Node.Name)
 
 				failed = true
@@ -145,16 +146,16 @@ func (b *builder) UpdateBuildGraphToShiftServer(status, checkpoint string) {
 
 	if statusFailed == status || (END == checkpoint && statusSuccess == status) {
 
-		b.log.Infoln("Saving cache.")
+		log.Println("Saving cache.")
 
 		b.saveCache()
 
-		b.log.Infoln("Finished saving the cache")
+		log.Println("Finished saving the cache")
 	}
 
 	gph, err := b.g.Json()
 	if err != nil {
-		b.log.Errorf("Eror when contructing status graph: %v", err)
+		log.Printf("Eror when contructing status graph: %v", err)
 	}
 
 	req := &api.UpdateBuildStatusReq{}
@@ -166,7 +167,7 @@ func (b *builder) UpdateBuildGraphToShiftServer(status, checkpoint string) {
 	if b.shiftclient != nil {
 		_, err = b.shiftclient.UpdateBuildStatus(b.ctx, req)
 		if err != nil {
-			b.log.Errorf("Failed to update buld graph: %v", err)
+			log.Printf("Failed to update buld graph: %v", err)
 		}
 	}
 }

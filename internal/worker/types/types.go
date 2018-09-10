@@ -5,6 +5,7 @@ package types
 
 import (
 	"context"
+	"io"
 
 	"gitlab.com/conspico/elasticshift/api"
 )
@@ -14,6 +15,8 @@ type Context struct {
 	Context     context.Context
 	Config      Config
 	ContainerID string
+	Writer      io.Writer
+	Logdir      string
 }
 
 type Config struct {

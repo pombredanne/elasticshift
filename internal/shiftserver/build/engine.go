@@ -5,6 +5,7 @@ package build
 
 import (
 	"fmt"
+	"os"
 
 	"github.com/pkg/errors"
 	"gitlab.com/conspico/elasticshift/api/types"
@@ -113,13 +114,10 @@ func (r *resolver) ContainerLauncher() {
 			// 	r.SLog(b.ID, "Unable to create directory for cloning the project:"+err.Error())
 			// }
 
-			// hostIp := utils.GetIP()
-			// fmt.Println("host ip : ", hostIp)
-
-			// if hostIp == "" {
-			// 	hostIp = "127.0.0.1"
-			// }
-			hostIp := "10.10.5.101"
+			shiftHost := os.Getenv("SHIFT_HOST")
+			if shiftHost == "" {
+				shiftHost = "127.0.0.1"
+			}
 
 			// env := []string{
 			// 	"SHIFT_HOST=shiftserver",
@@ -158,7 +156,7 @@ func (r *resolver) ContainerLauncher() {
 
 			envs := []itypes.Env{
 				// itypes.Env{"SHIFT_HOST", "shahlab2.duckdns.org"},
-				itypes.Env{"SHIFT_HOST", hostIp},
+				itypes.Env{"SHIFT_HOST", shiftHost},
 				itypes.Env{"SHIFT_PORT", "9101"},
 				itypes.Env{"SHIFT_BUILDID", b.ID.Hex()},
 				itypes.Env{"SHIFT_TEAMID", b.Team},

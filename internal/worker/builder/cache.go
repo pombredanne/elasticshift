@@ -7,6 +7,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"io/ioutil"
+	"log"
 	"os"
 	"path"
 	"path/filepath"
@@ -40,7 +41,7 @@ func (b *builder) saveCache() {
 	// load the cache
 	cf, err := b.readCacheFile(cacdir)
 	if err != nil {
-		b.log.Errorf("Failed to load cache file:%v\n", err)
+		log.Printf("Failed to load cache file:%v\n", err)
 	}
 
 	dirs := b.f.CacheDirectories()
@@ -61,7 +62,7 @@ func (b *builder) saveCache() {
 
 			expanded, err := homedir.Expand(dir)
 			if err != nil {
-				b.log.Errorf("Failed to expand the cache directory : %v", err)
+				log.Printf("Failed to expand the cache directory : %v", err)
 			}
 
 			var ce CacheEntry
@@ -91,7 +92,7 @@ func (b *builder) saveCache() {
 				cached := filepath.Join(cachedir, id)
 				err := archiver.TarGz.Make(cached, []string{expanded})
 				if err != nil {
-					b.log.Errorf("Failed to compress %s: %v\n", dir, err)
+					log.Printf("Failed to compress %s: %v\n", dir, err)
 				}
 
 				newDirs = append(newDirs, ce)
@@ -129,18 +130,18 @@ func (b *builder) restoreCache() error {
 	}
 
 	if !exist {
-		b.logr.Log("No cache available.")
+		log.Println("No cache available.")
 		return nil
 	}
 
 	// load the cache
 	cf, err := b.readCacheFile(cacdir)
 	if err != nil {
-		b.log.Printf("Failed to load cache file:%v\n", err)
+		log.Printf("Failed to load cache file:%v\n", err)
 	}
 
 	if cf == nil {
-		b.logr.Log("No cache available.")
+		log.Println("No cache available.")
 		return nil
 	}
 
@@ -158,20 +159,20 @@ func (b *builder) restoreCache() error {
 
 			dir, err := homedir.Expand(c.Directory)
 			if err != nil {
-				b.log.Printf("Failed to expand the cache directory: %v", err)
+				log.Printf("Failed to expand the cache directory: %v", err)
 			}
 
 			src := filepath.Join(cacdir, c.ID)
 			exist, err := utils.PathExist(src)
 			if err != nil {
-				b.log.Printf("Source file to extract not found: %v\n", err)
+				log.Printf("Source file to extract not found: %v\n", err)
 			}
 
 			if exist {
 
 				err = archiver.TarGz.Open(src, dir)
 				if err != nil {
-					b.log.Printf("Failed to untar cache file: %v", err)
+					log.Printf("Failed to untar cache file: %v", err)
 				}
 			}
 
@@ -219,7 +220,7 @@ func (b *builder) readCacheFile(cachepath string) (*CacheFile, error) {
 	var f CacheFile
 	err = json.Unmarshal(raw, &f)
 	if err != nil {
-		b.log.Errorf("Failed to parse cache file : %v\n", err)
+		log.Printf("Failed to parse cache file : %v\n", err)
 	}
 	return &f, nil
 }

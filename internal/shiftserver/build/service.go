@@ -8,6 +8,7 @@ import (
 	"io"
 	"net/http"
 	"strconv"
+	"time"
 
 	"github.com/Sirupsen/logrus"
 	"github.com/gorilla/mux"
@@ -21,6 +22,8 @@ import (
 
 var (
 	errBuildNotFound = "Build identifier not found"
+
+	retryDuration, _ = time.ParseDuration("1s")
 )
 
 type service struct {
@@ -76,7 +79,11 @@ func (s service) Viewlog(w http.ResponseWriter, r *http.Request) {
 	}
 
 	s.logger.Infoln("BuildID=", buildID)
-	b, err := s.buildStore.FetchBuildByID(buildID)
+
+	var b types.Build
+	var err error
+
+	b, err = s.buildStore.FetchBuildByID(buildID)
 	if err != nil && err.Error() == "not found" {
 		http.Error(w, "Build identifier not found.", http.StatusBadRequest)
 		return
@@ -87,27 +94,42 @@ func (s service) Viewlog(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	// fetch log directly from the container
-	if b.Status == types.BS_WAITING || b.Status == types.BS_RUNNING || b.Status == types.BS_FAILED {
+	// Get the default storage based on team defaults
+	def, err := s.defaultsStore.FindByReferenceId(b.Team)
+	if err != nil {
+		http.Error(w, "Failed to get default storage :", http.StatusBadRequest)
+		return
+	}
 
-		// Get the default storage based on team defaults
-		def, err := s.defaultsStore.FindByReferenceId(b.Team)
+	// Get the details of the storeage
+	var stor types.Storage
+	err = s.integrationStore.FindByID(def.StorageID, &stor)
+	if err != nil {
+		http.Error(w, "Failed to fetch log", http.StatusInternalServerError)
+		return
+	}
+
+	// fetch log directly from the container
+	if b.Status == types.BS_WAITING || b.Status == types.BS_RUNNING {
+
+		for {
+
+			b, err = s.buildStore.FetchBuildByID(buildID)
+			if err != nil || (b.Metadata != nil && b.Metadata.PodName != "") {
+				break
+			}
+
+			time.Sleep(retryDuration)
+		}
+
 		if err != nil {
-			http.Error(w, "Failed to get default storage :", http.StatusBadRequest)
+			http.Error(w, fmt.Sprintf("Fetching the build failed: %s", err.Error()), http.StatusInternalServerError)
 			return
 		}
 
 		// Get the details of the integration
 		var i types.ContainerEngine
 		err = s.integrationStore.FindByID(def.ContainerEngineID, &i)
-		if err != nil {
-			http.Error(w, "Failed to fetch log", http.StatusInternalServerError)
-			return
-		}
-
-		// Get the details of the storeage
-		var stor types.Storage
-		err = s.integrationStore.FindByID(def.StorageID, &stor)
 		if err != nil {
 			http.Error(w, "Failed to fetch log", http.StatusInternalServerError)
 			return
@@ -138,6 +160,7 @@ func (s service) Viewlog(w http.ResponseWriter, r *http.Request) {
 	} else {
 
 		// Fetch logs from storage
+		w.Write([]byte("Streaming non running builds aren't supported yet. "))
 	}
 }
 

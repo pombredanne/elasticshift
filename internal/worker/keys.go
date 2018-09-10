@@ -26,12 +26,12 @@ func (w *W) GenerateRSAKeys() error {
 
 	key, err := rsa.GenerateKey(r, DEFAULT_BIT_SIZE)
 	if err != nil {
-		w.log.Errorf("Failed to generate rsa keys: %v", err)
+		log.Printf("Failed to generate rsa keys: %v", err)
 	}
 
 	sshdir, err := GetSSHDir()
 	if err != nil {
-		w.log.Errorf("Failed to get ssh dir: %v", err)
+		log.Printf("Failed to get ssh dir: %v", err)
 	}
 
 	w.privKeyPath = filepath.Join(sshdir, PRIV_KEY_NAME)
@@ -49,7 +49,7 @@ func (w *W) GenerateRSAKeys() error {
 	if err != nil {
 		w.Fatal(fmt.Errorf("Failed to save the public key: %v", err))
 	} else {
-		w.log.Infoln("Keys generated successfully.")
+		log.Println("Keys generated successfully.")
 	}
 
 	return nil

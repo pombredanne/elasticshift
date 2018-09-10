@@ -14,16 +14,13 @@ import (
 	"context"
 
 	"gitlab.com/conspico/elasticshift/internal/pkg/utils"
+
+	homedir "github.com/minio/go-homedir"
 )
 
 const (
-	log_embedded = "embedded"
-	log_file     = "file"
-)
-
-const (
-// DIR_LOGS = "/Users/ghazni/elasticshift/elasticshift/logs"
-// DIR_LOGS = "/shift/logs"
+	logfile = "file"
+	logdir  = "~/log"
 )
 
 type Logr struct {
@@ -79,6 +76,38 @@ func MinioLogger(url, accesscode, key string) LoggerOption {
 		o.minio_key = key
 		o.minio = true
 	}
+}
+
+func Initialize() (string, io.Writer, error) {
+
+	var exist bool
+	var err error
+
+	dir, _ := homedir.Expand(logdir)
+
+	exist, err = utils.PathExist(dir)
+	if err != nil {
+		return "", nil, fmt.Errorf("Error Initializing logger: %v", err)
+	}
+
+	if !exist {
+
+		err = utils.Mkdir(dir)
+		if err != nil {
+			return "", nil, fmt.Errorf("Error mkdir (%s) : %v", dir, err)
+		}
+	}
+
+	f, err := os.OpenFile(filepath.Join(dir, logfile), os.O_RDWR|os.O_CREATE|os.O_APPEND, 0666)
+	if err != nil {
+		return "", nil, fmt.Errorf("error opening file: %v", err)
+	}
+
+	writers := io.MultiWriter([]io.Writer{f, os.Stdout}...)
+	log.SetOutput(writers)
+
+	// log.SetFlags(log.LstdFlags | log.Lmicroseconds | log.LUTC)
+	return dir, writers, nil
 }
 
 func New(ctx context.Context, buildID, teamID string, opt ...LoggerOption) (*Logr, error) {

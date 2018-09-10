@@ -5,15 +5,14 @@ package worker
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"log"
 	"net"
 	"os"
 	"time"
 
-	"github.com/Sirupsen/logrus"
 	"gitlab.com/conspico/elasticshift/api"
-	shiftlogger "gitlab.com/conspico/elasticshift/internal/pkg/logger"
 	"gitlab.com/conspico/elasticshift/internal/worker/builder"
 	"gitlab.com/conspico/elasticshift/internal/worker/logger"
 	"gitlab.com/conspico/elasticshift/internal/worker/types"
@@ -34,95 +33,101 @@ func Run() error {
 
 	// os.Setenv("SHIFT_HOST", "127.0.0.1")
 	// os.Setenv("SHIFT_PORT", "9101")
-	// os.Setenv("SHIFT_BUILDID", "5b43aac6dc294aa15fa921f7")
+	// os.Setenv("SHIFT_BUILDID", "5b96077c8de9810001ff18aa")
 	// os.Setenv("SHIFT_DIR", "/Users/ghazni/.elasticshift/storage")
 	// os.Setenv("WORKER_PORT", "9200")
 	// os.Setenv("SHIFT_TEAMID", "5a3a41f08011e098fb86b41f")
 
-	logLevel := os.Getenv("SHIFT_LOG_LEVEL")
-	if logLevel == "" {
-		log.Fatalln("SHIFT_LOG_LEVEL must be passed through environment variable.")
-	}
+	// logLevel := os.Getenv("SHIFT_LOG_LEVEL")
+	// if logLevel == "" {
+	// 	log.Fatalln("SHIFT_LOG_LEVEL must be passed through environment variable.")
+	// }
 
-	logFormat := os.Getenv("SHIFT_LOG_FORMAT")
-	if logFormat == "" {
-		log.Fatalln("SHIFT_LOG_FORMAT must be passed through environment variable.")
-	}
+	// logFormat := os.Getenv("SHIFT_LOG_FORMAT")
+	// if logFormat == "" {
+	// 	log.Fatalln("SHIFT_LOG_FORMAT must be passed through environment variable.")
+	// }
 
-	slog, err := shiftlogger.New(logLevel, logFormat)
+	// loggr, err := shiftlogger.New(logLevel, logFormat)
+	// if err != nil {
+	// 	return fmt.Errorf("invalid config: %v", err)
+	// }
+	// slog := loggr.GetLogger("Worker")
+	// log.Printf("SHIFT_LOG_LEVEL=%s\n", logLevel)
+	// log.Printf("SHIFT_LOG_FORMAT=%s\n", logFormat)
+
+	// shiftDir := os.Getenv("SHIFT_DIR")
+	// if shiftDir == "" {
+	// 	log.Println("SHIFT_DIR must be passed through environment variable.")
+	// } else {
+	// 	log.Println("SHIFT_DIR=%s\n", shiftDir)
+	// }
+	// cfg.ShiftDir = shiftDir
+
+	// cfg.ShiftDir = shiftDir
+	// opts := []logger.LoggerOption{
+	// 	logger.FileLogger(shiftDir),
+	// }
+
+	dir, writers, err := logger.Initialize()
 	if err != nil {
-		return fmt.Errorf("invalid config: %v", err)
+		log.Fatalf("Cannot initialize logger: %v", err)
 	}
-	slog.Infof("SHIFT_LOG_LEVEL=%s\n", logLevel)
-	slog.Infof("SHIFT_LOG_FORMAT=%s\n", logFormat)
 
 	buildID := os.Getenv("SHIFT_BUILDID")
 	if buildID == "" {
-		slog.Errorln("SHIFT_BUILDID must be passed through environment variable.")
+		log.Println("SHIFT_BUILDID must be passed through environment variable.")
 	} else {
-		slog.Infof("SHIFT_BUILDID=%s\n", buildID)
+		log.Printf("SHIFT_BUILDID=%s\n", buildID)
 	}
 	cfg.BuildID = buildID
 
 	teamID := os.Getenv("SHIFT_TEAMID")
 	if teamID == "" {
-		slog.Errorln("SHIFT_TEAMID  must be passed through environment variable.")
+		log.Println("SHIFT_TEAMID  must be passed through environment variable.")
 	} else {
-		slog.Infof("SHIFT_TEAMID=%s\n", teamID)
+		log.Printf("SHIFT_TEAMID=%s\n", teamID)
 	}
 	cfg.TeamID = teamID
 
-	shiftDir := os.Getenv("SHIFT_DIR")
-	if shiftDir == "" {
-		slog.Errorln("SHIFT_DIR must be passed through environment variable.")
-	} else {
-		slog.Infof("SHIFT_DIR=%s\n", shiftDir)
-	}
-	cfg.ShiftDir = shiftDir
-
-	cfg.ShiftDir = shiftDir
-	opts := []logger.LoggerOption{
-		logger.FileLogger(shiftDir),
-	}
-
-	logr, err := logger.New(bctx, buildID, teamID, opts...)
-	defer logr.Close()
-	if err != nil {
-		slog.Errorf("Initializing logger failed : %v", err)
-		return fmt.Errorf("Error initializing logger: %v", err)
-	}
+	// logr, err := logger.New(bctx, buildID, teamID)
+	// defer logr.Close()
+	// if err != nil {
+	// 	log.Printf("Initializing logger failed : %v", err)
+	// 	return fmt.Errorf("Error initializing logger: %v", err)
+	// }
 
 	var isError bool
 	host := os.Getenv("SHIFT_HOST")
 	if host == "" {
-		slog.Errorln("SHIFT_HOST must be passed through environment variable.")
+		log.Println("SHIFT_HOST must be passed through environment variable.")
 		isError = true
 	} else {
-		slog.Infof("SHIFT_HOST=%s\n", host)
+		log.Printf("SHIFT_HOST=%s\n", host)
 	}
 	cfg.Host = host
 
 	port := os.Getenv("SHIFT_PORT")
 	if port == "" {
-		slog.Errorln("SHIFT_PORT must be passed through environment variable")
+		log.Println("SHIFT_PORT must be passed through environment variable")
 		isError = true
 	} else {
-		slog.Infof("SHIFT_PORT=%s\n", port)
+		log.Printf("SHIFT_PORT=%s\n", port)
 	}
 	cfg.Port = port
 
 	workerPort := os.Getenv("WORKER_PORT")
 	if workerPort == "" {
-		slog.Errorln("WORKER_PORT must be passed though environment variable.")
+		log.Println("WORKER_PORT must be passed though environment variable.")
 		isError = true
 	} else {
-		slog.Infof("WORKER_PORT=%s\n", workerPort)
+		log.Printf("WORKER_PORT=%s\n", workerPort)
 	}
 	cfg.GRPC = workerPort
 
 	if isError {
-		slog.Errorln("One or more arguments required to start the worker has not passed through environment variables.")
-		return fmt.Errorf("Failed to start the worker.")
+		log.Println("One or more arguments required to start the worker has not passed through environment variables.")
+		return errors.New("Failed to start the worker")
 	}
 
 	cfg.Timeout = os.Getenv("SHIFT_TIMEOUT")
@@ -134,11 +139,13 @@ func Run() error {
 	}
 
 	ctx := types.Context{}
-	ctx.Context = context.Background()
+	ctx.Context = bctx
 	ctx.Config = cfg
+	ctx.Writer = writers
+	ctx.Logdir = dir
 
 	// Start the worker
-	err = Start(ctx, logr, slog)
+	err = Start(ctx)
 	if err != nil {
 		return fmt.Errorf("Failed to start the worker: %+v", err)
 	}
@@ -158,31 +165,25 @@ type W struct {
 	ShiftServer *grpc.ClientConn
 	Context     types.Context
 
-	Logr *logger.Logr
-
 	privKeyPath string
 	pubKeyPath  string
-
-	log logrus.Logger
 }
 
 // Start is the launch point of the worker that accepts the environment
 // variables as config, to kick start the worker
-func Start(ctx types.Context, logr *logger.Logr, slogger logrus.Logger) error {
+func Start(ctx types.Context) error {
 
 	// initialize the logger.
 
 	w := &W{}
 	w.Config = ctx.Config
 	w.Context = ctx
-	w.Logr = logr
-	w.log = slogger
 	w.errch = make(chan error)
 	w.done = make(chan int)
 
 	var timeout time.Duration
 	timeout, _ = time.ParseDuration(ctx.Config.Timeout)
-	w.log.Infoln("Idle Timeout :" + timeout.String())
+	log.Println("Idle Timeout :" + timeout.String())
 
 	var err error
 	go func() {
@@ -237,7 +238,7 @@ func Start(ctx types.Context, logr *logger.Logr, slogger logrus.Logger) error {
 		w.Halt()
 		msg := fmt.Sprintf("Worker has been timed-out after running for about %s minutes, and all the process have been halted", ctx.Config.Timeout)
 		w.UpdateShiftServer(statusFailed, "")
-		w.log.Errorln(msg)
+		log.Println(msg)
 	}
 
 	return nil
@@ -247,7 +248,7 @@ func Start(ctx types.Context, logr *logger.Logr, slogger logrus.Logger) error {
 // Worker -> shift server communication channel (thru GRPC)
 func (w *W) ConnectToShiftServer() error {
 
-	w.log.Debugln("Connecting to shift server..")
+	log.Println("Connecting to shift server..")
 
 	// TODO connect ssl
 	cp := keepalive.ClientParameters{}
@@ -268,11 +269,11 @@ func (w *W) ConnectToShiftServer() error {
 		return fmt.Errorf("Failed to connect to shift server %s:%s, %v", w.Config.Host, w.Config.Port, err)
 	}
 	w.ShiftServer = conn
-	w.log.Debugf("Connection state: %v", w.ShiftServer.GetState())
+	log.Printf("Connection state: %v", w.ShiftServer.GetState())
 
 	w.Context.Client = api.NewShiftClient(conn)
 
-	w.log.Debugf("Connection state: %v", w.ShiftServer.GetState())
+	log.Printf("Connection state: %v", w.ShiftServer.GetState())
 
 	return nil
 }
@@ -299,7 +300,7 @@ func (w *W) ConnectToShiftServer() error {
 // is running for further communication
 func (w *W) RegisterWorker() error {
 
-	w.log.Debugln("Registering the worker..")
+	log.Println("Registering the worker..")
 
 	// Loads the generate private key
 	key, err := w.ReadPrivateKey(PRIV_KEY_PATH)
@@ -312,16 +313,16 @@ func (w *W) RegisterWorker() error {
 	req.BuildId = w.Config.BuildID
 	req.Privatekey = key
 
-	w.log.Debugf("Connection state: %v", w.ShiftServer.GetState())
+	log.Printf("Connection state: %v", w.ShiftServer.GetState())
 
 	res, err := w.Context.Client.Register(w.Context.Context, req)
 	if err != nil {
-		w.log.Errorf("registration response: %s\n", res)
+		log.Printf("registration response: %s\n", res)
 		return fmt.Errorf("Worker registration failed: %v", err)
 	}
 
 	if res != nil && res.Registered {
-		w.log.Debugln("Registration Successful.")
+		log.Println("Registration Successful.")
 	} else {
 		return fmt.Errorf("Registration failed.")
 	}
@@ -342,7 +343,7 @@ func (w *W) StartGRPCServer() {
 		//start grpc
 		w.errch <- func() error {
 
-			w.log.Debugln("Starting listener to obey shift server commands on " + w.Config.GRPC)
+			log.Println("Starting listener to obey shift server commands on " + w.Config.GRPC)
 			listen, err := net.Listen("tcp", ":"+w.Config.GRPC)
 			if err != nil {
 				return fmt.Errorf("Failed to start GRPC server on %s : %v", w.Config.GRPC, err)
@@ -351,7 +352,7 @@ func (w *W) StartGRPCServer() {
 			grpcServer = grpc.NewServer(grpcOpts...)
 			w.GRPCServer = grpcServer
 
-			w.log.Debugln("Exposing GRPC services on " + w.Config.GRPC)
+			log.Println("Exposing GRPC services on " + w.Config.GRPC)
 
 			// register the grpc services
 			api.RegisterWorkServer(grpcServer, NewServer(w.Context))
@@ -375,12 +376,12 @@ func (w *W) Halt() {
 
 // start the builder where the real execution happens.
 func (w *W) StartBuilder() error {
-	return builder.New(w.Context, w.ShiftServer, w.Logr, w.log, w.done)
+	return builder.New(w.Context, w.ShiftServer, w.Context.Writer, w.done)
 }
 
 // Post the log to error channel, that denotes the startup of the worker is failed
 func (w *W) Fatal(err error) {
-	w.log.Errorln(err)
+	log.Println(err)
 	w.errch <- err
 }
 
@@ -397,7 +398,7 @@ func (w *W) UpdateShiftServer(status, checkpoint string) {
 	if w.Context.Client != nil {
 		_, err := w.Context.Client.UpdateBuildStatus(w.Context.Context, req)
 		if err != nil {
-			w.log.Errorf("Failed to update buld graph: %v", err)
+			log.Printf("Failed to update buld graph: %v", err)
 		}
 	}
 }
