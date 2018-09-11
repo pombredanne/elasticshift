@@ -99,7 +99,24 @@ var (
 			Resolve: func(p graphql.ResolveParams) (interface{}, error) {
 
 				if t, ok := p.Source.(types.Build); ok {
-					return int(t.Status), nil
+
+					var status int
+					switch t.Status {
+					case types.BS_STUCK: // stuck
+						status = 1
+					case types.BS_RUNNING: // running
+						status = 2
+					case types.BS_SUCCESS: // success
+						status = 3
+					case types.BS_FAILED: // failed
+						status = 4
+					case types.BS_CANCELLED: // cancelled
+						status = 5
+					case types.BS_WAITING: // waiting
+						status = 6
+					}
+
+					return status, nil
 				}
 				return nil, nil
 			},

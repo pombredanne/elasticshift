@@ -126,29 +126,47 @@ type RepositoryList struct {
 	Count int          `json:"count"`
 }
 
-//go:generate stringer -type=BuildStatus
+// //go:generate stringer -type=BuildStatus
 type BuildStatus int
 
 const (
-	BS_STUCK BuildStatus = iota + 1
-	BS_RUNNING
-	BS_SUCCESS
-	BS_FAILED
-	BS_CANCELLED
-	BS_WAITING
+	BS_STUCK     = "STUCK"
+	BS_RUNNING   = "RUNNING"
+	BS_SUCCESS   = "SUCCESS"
+	BS_FAILED    = "FAILED"
+	BS_CANCELLED = "CANCELLED"
+	BS_WAITING   = "WAITING"
 )
 
-func (b *BuildStatus) SetBSON(raw bson.Raw) error {
+// func (b *BuildStatus) SetBSON(raw bson.Raw) error {
 
-	var result int
-	err := raw.Unmarshal(&result)
-	if err != nil {
-		return err
-	}
+// 	var result string
+// 	err := raw.Unmarshal(&result)
+// 	if err != nil {
+// 		return err
+// 	}
 
-	*b = BuildStatus(result)
-	return nil
-}
+// 	switch result {
+// 	case BS_STUCK.String():
+// 		*b = BuildStatus(BS_STUCK)
+// 	case BS_RUNNING.String():
+// 		*b = BuildStatus(BS_RUNNING)
+// 	case BS_SUCCESS.String():
+// 		*b = BuildStatus(BS_SUCCESS)
+// 	case BS_FAILED.String():
+// 		*b = BuildStatus(BS_FAILED)
+// 	case BS_CANCELLED.String():
+// 		*b = BuildStatus(BS_CANCELLED)
+// 	case BS_WAITING.String():
+// 		*b = BuildStatus(BS_WAITING)
+// 	}
+
+// 	return nil
+// }
+
+// func (b *BuildStatus) GetBSON() (interface{}, error) {
+// 	return b.String(), nil
+// }
 
 type Log struct {
 	Time time.Time `json:"time" bson:"time"`
@@ -164,7 +182,7 @@ type Build struct {
 	StartedAt         time.Time     `json:"started_at" bson:"started_at"`
 	EndedAt           time.Time     `json:"ended_at" bson:"ended_at"`
 	TriggeredBy       string        `json:"triggered_by" bson:"triggered_by"`
-	Status            BuildStatus   `json:"status" bson:"status"`
+	Status            string        `json:"status" bson:"status"`
 	Reason            string        `json:"reason" bson:"reason,omitempty"`
 	Branch            string        `json:"branch" bson:"branch"`
 	CloneURL          string        `json:"clone_url" bson:"clone_url"`

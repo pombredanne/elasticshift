@@ -18,11 +18,11 @@ type build struct {
 type Build interface {
 	Interface
 
-	FetchBuild(team, repositoryID, branch, id string, status types.BuildStatus) ([]types.Build, error)
+	FetchBuild(team, repositoryID, branch, id, status string) ([]types.Build, error)
 	FetchBuildByID(id string) (types.Build, error)
 	FetchBuildByRepositoryID(id string) ([]types.Build, error)
 	UpdateBuildLog(id bson.ObjectId, log string) error
-	UpdateBuildStatus(id bson.ObjectId, s types.BuildStatus) error
+	UpdateBuildStatus(id bson.ObjectId, s string) error
 	UpdateContainerID(id bson.ObjectId, containerID string) error
 }
 
@@ -34,7 +34,7 @@ func newBuildStore(d Database) Build {
 	return s
 }
 
-func (s *build) FetchBuild(team, repositoryID, branch, id string, status types.BuildStatus) ([]types.Build, error) {
+func (s *build) FetchBuild(team, repositoryID, branch, id, status string) ([]types.Build, error) {
 
 	q := bson.M{"team": team}
 	if repositoryID != "" {
@@ -45,7 +45,7 @@ func (s *build) FetchBuild(team, repositoryID, branch, id string, status types.B
 		q["branch"] = branch
 	}
 
-	if status > 0 {
+	if status != "" {
 		q["status"] = status
 	}
 
@@ -90,7 +90,7 @@ func (s *build) UpdateBuildLog(id bson.ObjectId, log string) error {
 	return err
 }
 
-func (s *build) UpdateBuildStatus(id bson.ObjectId, status types.BuildStatus) error {
+func (s *build) UpdateBuildStatus(id bson.ObjectId, status string) error {
 
 	var err error
 	s.Execute(func(c *mgo.Collection) {

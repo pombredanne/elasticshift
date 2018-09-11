@@ -105,13 +105,13 @@ func (r *resolver) TriggerBuild(params graphql.ResolveParams) (interface{}, erro
 	}
 
 	if def.ContainerEngineID == "" {
-		return nil, fmt.Errorf("No default container engine found, please configure it.")
+		return nil, errors.New("No default container engine found, please configure it.")
 	}
 
 	status := types.BS_RUNNING
 	rb, err := r.store.FetchBuild(repo.Team, repositoryID, branch, "", types.BS_RUNNING)
 	if err != nil {
-		return nil, fmt.Errorf("Failed to validate if there are any build running", err)
+		return nil, fmt.Errorf("Failed to validate if there are any build running: %v", err)
 	}
 
 	if len(rb) > 0 {
@@ -163,7 +163,7 @@ func (r *resolver) UpdateBuildStatusAsFailed(id, reason string, endedAt time.Tim
 	r.UpdateBuildStatus(id, reason, types.BS_FAILED, endedAt)
 }
 
-func (r *resolver) UpdateBuildStatus(id, reason string, status types.BuildStatus, endedAt time.Time) {
+func (r *resolver) UpdateBuildStatus(id, reason, status string, endedAt time.Time) {
 
 	// should be the container startup log, if startup failed
 	// should be the err log if build failed.
@@ -201,10 +201,26 @@ func (r *resolver) FetchBuild(params graphql.ResolveParams) (interface{}, error)
 	repository_id, _ := params.Args["repository_id"].(string)
 	branch, _ := params.Args["branch"].(string)
 	id, _ := params.Args["id"].(string)
-	status, _ := params.Args["status"].(int)
+	statusParam, _ := params.Args["status"].(int)
+
+	var status string
+	switch statusParam {
+	case 1: // stuck
+		status = types.BS_STUCK
+	case 2: // running
+		status = types.BS_RUNNING
+	case 3: // success
+		status = types.BS_SUCCESS
+	case 4: // failed
+		status = types.BS_FAILED
+	case 5: // cancelled
+		status = types.BS_CANCELLED
+	case 6: // waiting
+		status = types.BS_WAITING
+	}
 
 	result := types.BuildList{}
-	res, err := r.store.FetchBuild(team, repository_id, branch, id, types.BuildStatus(status))
+	res, err := r.store.FetchBuild(team, repository_id, branch, id, status)
 	if err != nil {
 		return result, fmt.Errorf("Failed to fetch the build : %v", err)
 	}
@@ -228,7 +244,7 @@ func (r *resolver) CancelBuild(params graphql.ResolveParams) (interface{}, error
 	}
 
 	if types.BS_CANCELLED == b.Status || types.BS_FAILED == b.Status || types.BS_SUCCESS == b.Status {
-		return fmt.Sprintf("Cancelling the build is not possible, because it seems that it was already %s", b.Status.String()), nil
+		return fmt.Sprintf("Cancelling the build is not possible, because it seems that it was already %s", b.Status), nil
 	}
 
 	// TODO trigger the cancel build, only if the current status is RUNNING | WAITING | STUCK
