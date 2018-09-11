@@ -1,7 +1,7 @@
 /*
 Copyright 2018 The Elasticshift Authors.
 */
-package builder
+package graph
 
 import (
 	"fmt"
@@ -95,7 +95,7 @@ func TestGraph(t *testing.T) {
 		t.Fail()
 	}
 
-	graph, err := ConstructGraph(f)
+	graph, err := Construct(f)
 	assertString(t, `(1) START
 (2) elasticshift/vcs
 (3) elasticshift/shell
@@ -107,7 +107,7 @@ func TestGraph(t *testing.T) {
 		t.Fail()
 	}
 
-	graph, err = ConstructGraph(f)
+	graph, err = Construct(f)
 	assertString(t, `(1) START
 (2) elasticshift/vcs
 (3) elasticshift/shell
@@ -122,7 +122,7 @@ func TestGraph(t *testing.T) {
 (8) END
 `, graph.String())
 
-	fmt.Println(graph.Json())
+	fmt.Println(graph.JSON())
 }
 
 func assertString(t *testing.T, expected string, actual string) {

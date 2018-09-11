@@ -110,7 +110,7 @@ func (s service) Viewlog(w http.ResponseWriter, r *http.Request) {
 	}
 
 	// fetch log directly from the container
-	if b.Status == types.BS_WAITING || b.Status == types.BS_RUNNING {
+	if b.Status == types.BuildStatusWaiting || b.Status == types.BuildStatusRunning {
 
 		for {
 

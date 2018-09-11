@@ -9,6 +9,8 @@ import (
 
 	"github.com/pkg/errors"
 	"gitlab.com/conspico/elasticshift/api/types"
+	"gitlab.com/conspico/elasticshift/internal/pkg/graph"
+	"gitlab.com/conspico/elasticshift/internal/pkg/shiftfile/keys"
 	"gitlab.com/conspico/elasticshift/internal/shiftserver/integration"
 	itypes "gitlab.com/conspico/elasticshift/internal/shiftserver/integration/types"
 	"gitlab.com/conspico/elasticshift/internal/shiftserver/pubsub"
@@ -67,10 +69,11 @@ func (r *resolver) ContainerLauncher() {
 			// }
 			buildID := b.ID.Hex()
 
-			imgName, err := r.findImageName(b)
+			sf, err := r.GetShiftfile(b)
+
 			if err != nil {
 				//r.SLog(b.ID, fmt.Sprintf("Unable to find the build image from Shiftfile", b.CloneURL))
-				b.Status = types.BS_FAILED
+				b.Status = types.BuildStatusFailed
 				b.Reason = fmt.Sprintf("Failed to find container image name: %s", err.Error())
 
 				err := r.store.UpdateId(b.ID, &b)
@@ -81,7 +84,25 @@ func (r *resolver) ContainerLauncher() {
 				r.ps.Publish(pubsub.SubscribeBuildUpdate, buildID)
 				return
 			}
+
+			imgName := sf.Image()[keys.NAME].(string)
+
 			fmt.Println("Image name: " + imgName)
+
+			g, err := graph.Construct(sf)
+			if err != nil {
+				b.Status = types.BuildStatusFailed
+				b.Reason = fmt.Sprintf("Failed when constructing execution graph: %v", err)
+
+				err := r.store.UpdateId(b.ID, &b)
+				if err != nil {
+					r.logger.Errorf("Error when updating the build status: %v", err)
+				}
+
+				r.ps.Publish(pubsub.SubscribeBuildUpdate, buildID)
+				return
+			}
+			b.Graph, _ = g.JSON()
 
 			// Identify the default orchestration based integration
 			// such as docker swarm or kubernetes etc
@@ -90,7 +111,7 @@ func (r *resolver) ContainerLauncher() {
 				//udpate the build log and set the status to failed
 				r.logger.Errorf("Failed to connect container engine: %v", err)
 
-				b.Status = types.BS_FAILED
+				b.Status = types.BuildStatusFailed
 				b.Reason = fmt.Sprintf("Failed to launch container: %v", err)
 
 				err := r.store.UpdateId(b.ID, &b)
@@ -180,7 +201,7 @@ func (r *resolver) ContainerLauncher() {
 			res, err := engine.CreateContainer(opts)
 			if err != nil {
 				r.logger.Errorf("Create container failed: %v", err)
-				b.Status = types.BS_FAILED
+				b.Status = types.BuildStatusFailed
 				b.Reason = err.Error()
 				err := r.store.UpdateId(b.ID, &b)
 				if err != nil {
@@ -196,7 +217,6 @@ func (r *resolver) ContainerLauncher() {
 				b.Metadata = &types.Metadata{}
 			}
 			b.Metadata.ContainerID = res.UID
-
 			err = r.store.UpdateId(b.ID, b)
 			if err != nil {
 				r.logger.Errorln("Failed to update the container id: ", res.UID)

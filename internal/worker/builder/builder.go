@@ -13,6 +13,7 @@ import (
 
 	"github.com/pkg/errors"
 	"gitlab.com/conspico/elasticshift/api"
+	"gitlab.com/conspico/elasticshift/internal/pkg/graph"
 	"gitlab.com/conspico/elasticshift/internal/pkg/shiftfile/ast"
 	"gitlab.com/conspico/elasticshift/internal/pkg/shiftfile/parser"
 	"gitlab.com/conspico/elasticshift/internal/pkg/vcs"
@@ -41,7 +42,7 @@ type builder struct {
 	project     *api.GetProjectRes
 
 	f *ast.File
-	g *graph
+	g *graph.Graph
 
 	done chan int
 
@@ -107,7 +108,7 @@ func (b *builder) run() error {
 	// 6. Ensure the arguments are inputted as static or dynamic values (through env)
 
 	// 7. Construct the runtime execution map from shiftfile ast
-	graph, err := ConstructGraph(sf)
+	graph, err := graph.Construct(sf)
 	if err != nil {
 		return err
 	}

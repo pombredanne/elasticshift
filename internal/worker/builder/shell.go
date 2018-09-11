@@ -10,22 +10,23 @@ import (
 	"log"
 	"os/exec"
 
+	"gitlab.com/conspico/elasticshift/internal/pkg/graph"
 	"gitlab.com/conspico/elasticshift/internal/pkg/shiftfile/keys"
 )
 
-func (b *builder) invokeShell(n *N) (string, error) {
+func (b *builder) invokeShell(n *graph.N) (string, error) {
 
 	cmds := n.Item()[keys.COMMAND].([]string)
 
 	for _, command := range cmds {
 
-		log.Println(fmt.Sprintf("%s:%s-%s", START, n.Name, n.Description))
+		log.Println(fmt.Sprintf("%s:%s-%s", graph.START, n.Name, n.Description))
 
 		msg, err := b.execShellCmd(n.Name, command, nil, "")
 		if err != nil {
 			return msg, err
 		}
-		log.Println(fmt.Sprintf("%s:%s-%s", END, n.Name, n.Description))
+		log.Println(fmt.Sprintf("%s:%s-%s", graph.END, n.Name, n.Description))
 	}
 	return "", nil
 }

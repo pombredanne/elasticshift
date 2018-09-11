@@ -130,12 +130,13 @@ type RepositoryList struct {
 type BuildStatus int
 
 const (
-	BS_STUCK     = "STUCK"
-	BS_RUNNING   = "RUNNING"
-	BS_SUCCESS   = "SUCCESS"
-	BS_FAILED    = "FAILED"
-	BS_CANCELLED = "CANCELLED"
-	BS_WAITING   = "WAITING"
+	BuildStatusWaiting   = "WAITING"
+	BuildStatusPreparing = "PREPARING"
+	BuildStatusRunning   = "RUNNING"
+	BuildStatusSuccess   = "SUCCESS"
+	BuildStatusFailed    = "FAILED"
+	BuildStatusCancel    = "CANCELLED"
+	BuildStatusStuck     = "STUCK"
 )
 
 // func (b *BuildStatus) SetBSON(raw bson.Raw) error {

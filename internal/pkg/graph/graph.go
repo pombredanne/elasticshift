@@ -1,7 +1,7 @@
 /*
 Copyright 2018 The Elasticshift Authors.
 */
-package builder
+package graph
 
 import (
 	"encoding/base64"
@@ -34,15 +34,17 @@ type FanN struct {
 }
 
 var (
-	statusSuccess    = "S"
-	statusFailed     = "F"
-	statusWaiting    = "W"
-	statusRunning    = "R"
-	statusUnknown    = "U"
-	statusNotStarted = "N"
-	statusCancelled  = "C"
+	StatusSuccess    = "S"
+	StatusFailed     = "F"
+	StatusWaiting    = "W"
+	StatusRunning    = "R"
+	StatusUnknown    = "U"
+	StatusNotStarted = "N"
+	StatusCancelled  = "C"
 )
 
+// N ...
+// Represents a node in execution map
 type N struct {
 	value map[string]interface{} `json:"-"`
 
@@ -61,7 +63,7 @@ func newN(value map[string]interface{}) *N {
 	n.Name = value[keys.NAME].(string)
 	n.Description = value[keys.DESC].(string)
 	if n.Name != START || n.Name != END || n.Name != FANOUT || n.Name != FANIN {
-		n.Status = statusNotStarted
+		n.Status = StatusNotStarted
 	}
 	return n
 }
@@ -92,12 +94,12 @@ func (i *N) TimeTaken() string {
 
 func (i *N) Start() {
 
-	i.Status = statusRunning
+	i.Status = StatusRunning
 	i.StartedAt = time.Now()
 }
 
 func (i *N) Wait() {
-	i.Status = statusWaiting
+	i.Status = StatusWaiting
 }
 
 func (i *N) End(status, message string) {
@@ -108,6 +110,8 @@ func (i *N) End(status, message string) {
 	i.EndedAt = time.Now()
 }
 
+// MarshalJSON ..
+// Serialize the N (node) to json format
 func (i *N) MarshalJSON() ([]byte, error) {
 
 	var msg string
@@ -132,12 +136,16 @@ func (i *N) MarshalJSON() ([]byte, error) {
 	})
 }
 
+// Checkpoint ..
+// Each and every hop of the build during execution.
 type Checkpoint struct {
 	Node  *N   `json:"node"`
 	Edges []*N `json:"edges,omitempty"`
 }
 
-type graph struct {
+// Graph ..
+// Shiftfile is representated in graph format
+type Graph struct {
 	f *ast.File
 
 	nodes       []*N
@@ -155,9 +163,11 @@ type graph struct {
 	lock sync.RWMutex
 }
 
-func ConstructGraph(shiftfile *ast.File) (*graph, error) {
+// Construct ...
+// Creates a graph with shift file ast.
+func Construct(shiftfile *ast.File) (*Graph, error) {
 
-	g := &graph{
+	g := &Graph{
 		f: shiftfile,
 	}
 
@@ -169,7 +179,7 @@ func ConstructGraph(shiftfile *ast.File) (*graph, error) {
 	return g, nil
 }
 
-func (g *graph) constructNode(name, description string) *N {
+func (g *Graph) constructNode(name, description string) *N {
 
 	v := make(map[string]interface{})
 	v[keys.NAME] = name
@@ -178,7 +188,7 @@ func (g *graph) constructNode(name, description string) *N {
 	return newN(v)
 }
 
-func (g *graph) constructGraph() error {
+func (g *Graph) constructGraph() error {
 
 	// add start node
 	g.addNode(g.constructNode(START, START_DESC))
@@ -195,7 +205,7 @@ func (g *graph) constructGraph() error {
 	return nil
 }
 
-func (g *graph) addNode(n *N) {
+func (g *Graph) addNode(n *N) {
 
 	g.lock.Lock()
 
@@ -248,7 +258,7 @@ func (g *graph) addNode(n *N) {
 	g.lock.Unlock()
 }
 
-func (g *graph) addEdge(n1, n2 *N) {
+func (g *Graph) addEdge(n1, n2 *N) {
 
 	if g.edges == nil {
 		g.edges = make(map[*N][]*N)
@@ -256,7 +266,7 @@ func (g *graph) addEdge(n1, n2 *N) {
 	g.edges[n1] = append(g.edges[n1], n2)
 }
 
-func (g *graph) addCheckpoint(n *N, e *N) {
+func (g *Graph) addCheckpoint(n *N, e *N) {
 
 	if n == e {
 		return
@@ -294,11 +304,15 @@ func (g *graph) addCheckpoint(n *N, e *N) {
 	}
 }
 
-func (g *graph) Checkpoints() []*Checkpoint {
+// Checkpoints ...
+// Gets the checpoints
+func (g *Graph) Checkpoints() []*Checkpoint {
 	return g.checkpoints
 }
 
-func (g *graph) Json() (string, error) {
+// JSON ...
+// Return graph in json format
+func (g *Graph) JSON() (string, error) {
 
 	g.lock.RLock()
 
@@ -312,7 +326,7 @@ func (g *graph) Json() (string, error) {
 	return string(nods), nil
 }
 
-func (g *graph) String() string {
+func (g *Graph) String() string {
 
 	g.lock.RLock()
 

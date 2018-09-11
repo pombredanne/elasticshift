@@ -20,28 +20,33 @@ var (
 	buildStatusEnum = graphql.NewEnum(graphql.EnumConfig{
 		Name: "BuildStatus",
 		Values: graphql.EnumValueConfigMap{
-			"STUCK": &graphql.EnumValueConfig{
+
+			"WAITING": &graphql.EnumValueConfig{
 				Value: 1,
 			},
 
-			"RUNNING": &graphql.EnumValueConfig{
+			"PREPARING": &graphql.EnumValueConfig{
 				Value: 2,
 			},
 
-			"SUCCESS": &graphql.EnumValueConfig{
+			"RUNNING": &graphql.EnumValueConfig{
 				Value: 3,
 			},
 
-			"FAILED": &graphql.EnumValueConfig{
+			"SUCCESS": &graphql.EnumValueConfig{
 				Value: 4,
 			},
 
-			"CANCELLED": &graphql.EnumValueConfig{
+			"FAILED": &graphql.EnumValueConfig{
 				Value: 5,
 			},
 
-			"WAITING": &graphql.EnumValueConfig{
+			"CANCELLED": &graphql.EnumValueConfig{
 				Value: 6,
+			},
+
+			"STUCK": &graphql.EnumValueConfig{
+				Value: 7,
 			},
 		},
 	})
@@ -102,18 +107,20 @@ var (
 
 					var status int
 					switch t.Status {
-					case types.BS_STUCK: // stuck
+					case types.BuildStatusWaiting: // waiting
 						status = 1
-					case types.BS_RUNNING: // running
+					case types.BuildStatusPreparing: // preparing
 						status = 2
-					case types.BS_SUCCESS: // success
+					case types.BuildStatusRunning: // running
 						status = 3
-					case types.BS_FAILED: // failed
+					case types.BuildStatusSuccess: // success
 						status = 4
-					case types.BS_CANCELLED: // cancelled
+					case types.BuildStatusFailed: // failed
 						status = 5
-					case types.BS_WAITING: // waiting
+					case types.BuildStatusCancel: // cancelled
 						status = 6
+					case types.BuildStatusStuck: // stuck
+						status = 7
 					}
 
 					return status, nil

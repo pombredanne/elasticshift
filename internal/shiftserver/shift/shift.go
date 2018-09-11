@@ -51,7 +51,7 @@ func (s *shift) Register(ctx context.Context, req *api.RegisterReq) (*api.Regist
 
 	// TODO store the secret key id in build and the actual key in secret store
 	buildId := bson.ObjectIdHex(req.GetBuildId())
-	err := s.buildStore.UpdateId(buildId, bson.M{"$push": bson.M{"private_key": req.GetPrivatekey()}})
+	err := s.buildStore.UpdateId(buildId, bson.M{"$set": bson.M{"status": types.BuildStatusRunning}, "$push": bson.M{"private_key": req.GetPrivatekey()}})
 	if err != nil {
 		return nil, fmt.Errorf("Registration failed: Due to internal server error %v", err)
 	}
@@ -89,13 +89,13 @@ func (s *shift) UpdateBuildStatus(ctx context.Context, req *api.UpdateBuildStatu
 	if status != "" {
 
 		if status == "F" {
-			b.Status = types.BS_FAILED
+			b.Status = types.BuildStatusFailed
 			stopContainer = true
 		} else if status == "S" && cp == "END" {
-			b.Status = types.BS_SUCCESS
+			b.Status = types.BuildStatusSuccess
 			stopContainer = true
 		} else if status == "C" {
-			b.Status = types.BS_CANCELLED
+			b.Status = types.BuildStatusCancel
 		}
 		b.EndedAt = time.Now()
 	}
@@ -107,6 +107,8 @@ func (s *shift) UpdateBuildStatus(ctx context.Context, req *api.UpdateBuildStatu
 
 	// publish pubsub to fetch latest update to subscribers
 	s.ps.Publish(pubsub.SubscribeBuildUpdate, req.GetBuildId())
+
+	// kick off the next waiting build
 
 	if stopContainer {
 

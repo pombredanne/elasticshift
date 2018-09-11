@@ -15,7 +15,7 @@ import (
 	"github.com/graphql-go/graphql"
 	"gitlab.com/conspico/elasticshift/api/types"
 	"gitlab.com/conspico/elasticshift/internal/pkg/logger"
-	"gitlab.com/conspico/elasticshift/internal/pkg/shiftfile/keys"
+	"gitlab.com/conspico/elasticshift/internal/pkg/shiftfile/ast"
 	"gitlab.com/conspico/elasticshift/internal/pkg/shiftfile/parser"
 	"gitlab.com/conspico/elasticshift/internal/pkg/vcs"
 	"gitlab.com/conspico/elasticshift/internal/shiftserver/pubsub"
@@ -28,7 +28,23 @@ var (
 	errRepositoryIDCantBeEmpty = errors.New("Repository ID is must in order to trigger the build")
 	errInvalidRepositoryID     = errors.New("Please provide the valid repository ID")
 
-	logfile = "logfile"
+	logfile      = "logfile"
+	defaultGraph = `[
+  {
+    "node": {
+      "name": "START",
+      "description": "Start node of the execution/graph",
+      "status": "N"
+    }
+  },
+  {
+    "node": {
+      "name": "END",
+      "description": "End node of the execution/graph",
+      "status": "N"
+    }
+  }
+]`
 )
 
 // Resolver ...
@@ -108,14 +124,16 @@ func (r *resolver) TriggerBuild(params graphql.ResolveParams) (interface{}, erro
 		return nil, errors.New("No default container engine found, please configure it.")
 	}
 
-	status := types.BS_RUNNING
-	rb, err := r.store.FetchBuild(repo.Team, repositoryID, branch, "", types.BS_RUNNING)
+	status := types.BuildStatusPreparing
+	rb, err := r.store.FetchBuild(repo.Team, repositoryID, branch, "", []string{types.BuildStatusPreparing, types.BuildStatusRunning})
 	if err != nil {
 		return nil, fmt.Errorf("Failed to validate if there are any build running: %v", err)
 	}
 
+	fmt.Printf("runing build : %#v\n", rb)
+
 	if len(rb) > 0 {
-		status = types.BS_WAITING
+		status = types.BuildStatusWaiting
 	}
 
 	b := types.Build{}
@@ -132,6 +150,7 @@ func (r *resolver) TriggerBuild(params graphql.ResolveParams) (interface{}, erro
 	b.CloneURL = repo.CloneURL
 	b.Language = repo.Language
 	b.Source = repo.Source
+	b.Graph = defaultGraph
 
 	buildID := b.ID.Hex()
 
@@ -147,7 +166,7 @@ func (r *resolver) TriggerBuild(params graphql.ResolveParams) (interface{}, erro
 		return nil, fmt.Errorf("Failed to save build details: %v", err)
 	}
 
-	if b.Status == types.BS_RUNNING {
+	if b.Status == types.BuildStatusPreparing {
 
 		// publish to topic to push build updates to subscribers
 		r.ps.Publish(pubsub.SubscribeBuildUpdate, buildID)
@@ -160,7 +179,7 @@ func (r *resolver) TriggerBuild(params graphql.ResolveParams) (interface{}, erro
 }
 
 func (r *resolver) UpdateBuildStatusAsFailed(id, reason string, endedAt time.Time) {
-	r.UpdateBuildStatus(id, reason, types.BS_FAILED, endedAt)
+	r.UpdateBuildStatus(id, reason, types.BuildStatusFailed, endedAt)
 }
 
 func (r *resolver) UpdateBuildStatus(id, reason, status string, endedAt time.Time) {
@@ -203,24 +222,32 @@ func (r *resolver) FetchBuild(params graphql.ResolveParams) (interface{}, error)
 	id, _ := params.Args["id"].(string)
 	statusParam, _ := params.Args["status"].(int)
 
-	var status string
-	switch statusParam {
-	case 1: // stuck
-		status = types.BS_STUCK
-	case 2: // running
-		status = types.BS_RUNNING
-	case 3: // success
-		status = types.BS_SUCCESS
-	case 4: // failed
-		status = types.BS_FAILED
-	case 5: // cancelled
-		status = types.BS_CANCELLED
-	case 6: // waiting
-		status = types.BS_WAITING
+	statusArr := []string{}
+	if statusParam > 0 {
+
+		var status string
+		switch statusParam {
+		case 1: // waiting
+			status = types.BuildStatusWaiting
+		case 2: // preparing
+			status = types.BuildStatusPreparing
+		case 3: // running
+			status = types.BuildStatusRunning
+		case 4: // success
+			status = types.BuildStatusSuccess
+		case 5: // failed
+			status = types.BuildStatusFailed
+		case 6: // cancelled
+			status = types.BuildStatusCancel
+		case 7: // stuck
+			status = types.BuildStatusStuck
+		}
+
+		statusArr = append(statusArr, status)
 	}
 
 	result := types.BuildList{}
-	res, err := r.store.FetchBuild(team, repository_id, branch, id, status)
+	res, err := r.store.FetchBuild(team, repository_id, branch, id, statusArr)
 	if err != nil {
 		return result, fmt.Errorf("Failed to fetch the build : %v", err)
 	}
@@ -243,13 +270,13 @@ func (r *resolver) CancelBuild(params graphql.ResolveParams) (interface{}, error
 		return nil, fmt.Errorf("Build id not found")
 	}
 
-	if types.BS_CANCELLED == b.Status || types.BS_FAILED == b.Status || types.BS_SUCCESS == b.Status {
+	if types.BuildStatusCancel == b.Status || types.BuildStatusFailed == b.Status || types.BuildStatusSuccess == b.Status {
 		return fmt.Sprintf("Cancelling the build is not possible, because it seems that it was already %s", b.Status), nil
 	}
 
 	// TODO trigger the cancel build, only if the current status is RUNNING | WAITING | STUCK
 
-	err = r.store.UpdateBuildStatus(b.ID, types.BS_CANCELLED)
+	err = r.store.UpdateBuildStatus(b.ID, types.BuildStatusCancel)
 	if err != nil {
 		return nil, fmt.Errorf("Failed to cancel the build: %v", err)
 	}
@@ -270,7 +297,7 @@ func (r *resolver) FetchBuildByID(params graphql.ResolveParams) (interface{}, er
 	return res, nil
 }
 
-func (r *resolver) findImageName(b types.Build) (string, error) {
+func (r *resolver) GetShiftfile(b types.Build) (*ast.File, error) {
 
 	f, err := r.repoImageName(b)
 	if err != nil && f == nil {
@@ -278,18 +305,18 @@ func (r *resolver) findImageName(b types.Build) (string, error) {
 		// falling back to see if there is a team's default configured
 		defs, err := r.defaultStore.FindByReferenceId(b.Team)
 		if err != nil {
-			return "", fmt.Errorf("Failed to fetch defaults by reference id: %v", err)
+			return nil, fmt.Errorf("Failed to fetch defaults by reference id: %v", err)
 		}
 
 		fileId := defs.Languages[b.Language]
 		if fileId == "" {
-			return "", fmt.Errorf("No default shiftfile configured for language [%s].", b.Language)
+			return nil, fmt.Errorf("No default shiftfile configured for language [%s].", b.Language)
 		}
 
 		var file types.Shiftfile
 		err = r.shiftfileStore.FindByID(fileId, &file)
 		if err != nil {
-			return "", fmt.Errorf("Failed to fetch the default shiftfile for language: %v", err)
+			return nil, fmt.Errorf("Failed to fetch the default shiftfile for language: %v", err)
 		}
 		f = file.File
 	}
@@ -300,7 +327,7 @@ func (r *resolver) findImageName(b types.Build) (string, error) {
 		r.SLog(b.ID, fmt.Sprintf("Failed to parse shift file: %v", err))
 	}
 
-	return sf.Image()[keys.NAME].(string), nil
+	return sf, nil
 }
 
 func (r *resolver) repoImageName(b types.Build) ([]byte, error) {

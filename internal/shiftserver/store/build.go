@@ -18,7 +18,7 @@ type build struct {
 type Build interface {
 	Interface
 
-	FetchBuild(team, repositoryID, branch, id, status string) ([]types.Build, error)
+	FetchBuild(team, repositoryID, branch, id string, status []string) ([]types.Build, error)
 	FetchBuildByID(id string) (types.Build, error)
 	FetchBuildByRepositoryID(id string) ([]types.Build, error)
 	UpdateBuildLog(id bson.ObjectId, log string) error
@@ -34,7 +34,7 @@ func newBuildStore(d Database) Build {
 	return s
 }
 
-func (s *build) FetchBuild(team, repositoryID, branch, id, status string) ([]types.Build, error) {
+func (s *build) FetchBuild(team, repositoryID, branch, id string, status []string) ([]types.Build, error) {
 
 	q := bson.M{"team": team}
 	if repositoryID != "" {
@@ -45,8 +45,12 @@ func (s *build) FetchBuild(team, repositoryID, branch, id, status string) ([]typ
 		q["branch"] = branch
 	}
 
-	if status != "" {
-		q["status"] = status
+	if statusLen := len(status); statusLen > 0 {
+		if statusLen == 1 {
+			q["status"] = status[0]
+		} else {
+			q["status"] = bson.M{"$in": status}
+		}
 	}
 
 	if id != "" {

@@ -11,10 +11,11 @@ import (
 
 	homedir "github.com/minio/go-homedir"
 	"gitlab.com/conspico/elasticshift/api"
+	"gitlab.com/conspico/elasticshift/internal/pkg/graph"
 	"gitlab.com/conspico/elasticshift/internal/pkg/utils"
 )
 
-func (b *builder) build(g *graph) error {
+func (b *builder) build(g *graph.Graph) error {
 
 	wdir := b.f.WorkDir()
 	log.Printf("Working directory : %s\n", wdir)
@@ -51,14 +52,15 @@ func (b *builder) build(g *graph) error {
 
 	// walk through the checkpoints and execute them
 	// s := ""
-	for i := 0; i < len(g.checkpoints); i++ {
+	checkpoints := g.Checkpoints()
+	for i := 0; i < len(checkpoints); i++ {
 
 		if failed {
 			log.Println("Build finished, waiting from shiftserver to receive a halt command..")
 			<-b.done
 		}
 
-		c := g.checkpoints[i]
+		c := checkpoints[i]
 		// s += fmt.Sprintf("(%d) %s\n", i+1, c.node.Name())
 
 		// run block if it is a sequential task
@@ -79,16 +81,16 @@ func (b *builder) build(g *graph) error {
 
 				wg.Add(1)
 
-				go func(n *N) {
+				go func(n *graph.N) {
 
 					n.Wait()
-					b.UpdateBuildGraphToShiftServer(statusWaiting, n.Name)
+					b.UpdateBuildGraphToShiftServer(graph.StatusWaiting, n.Name)
 
 					defer wg.Done()
 					parallelCh <- 1
 
 					n.Start()
-					b.UpdateBuildGraphToShiftServer(statusRunning, n.Name)
+					b.UpdateBuildGraphToShiftServer(graph.StatusRunning, n.Name)
 
 					msg, err := b.invokePlugin(n)
 
@@ -98,15 +100,15 @@ func (b *builder) build(g *graph) error {
 						defer errMutex.Unlock()
 
 						log.Printf("Plugin error : %v\n", err)
-						n.End(statusFailed, msg)
-						b.UpdateBuildGraphToShiftServer(statusFailed, n.Name)
+						n.End(graph.StatusFailed, msg)
+						b.UpdateBuildGraphToShiftServer(graph.StatusFailed, n.Name)
 
 						failed = true
 					} else {
 
-						if n.Status != statusFailed {
-							n.End(statusSuccess, "")
-							b.UpdateBuildGraphToShiftServer(statusSuccess, n.Name)
+						if n.Status != graph.StatusFailed {
+							n.End(graph.StatusSuccess, "")
+							b.UpdateBuildGraphToShiftServer(graph.StatusSuccess, n.Name)
 						}
 					}
 
@@ -121,20 +123,20 @@ func (b *builder) build(g *graph) error {
 		} else {
 
 			c.Node.Start()
-			b.UpdateBuildGraphToShiftServer(statusRunning, c.Node.Name)
+			b.UpdateBuildGraphToShiftServer(graph.StatusRunning, c.Node.Name)
 
 			// sequential checkpoint execution
 			msg, err := b.invokePlugin(c.Node)
 			if err != nil {
-				c.Node.End(statusFailed, msg)
+				c.Node.End(graph.StatusFailed, msg)
 				log.Printf("Plugin error : %v\n", err)
-				b.UpdateBuildGraphToShiftServer(statusFailed, c.Node.Name)
+				b.UpdateBuildGraphToShiftServer(graph.StatusFailed, c.Node.Name)
 
 				failed = true
 			} else {
 
-				c.Node.End(statusSuccess, "")
-				b.UpdateBuildGraphToShiftServer(statusSuccess, c.Node.Name)
+				c.Node.End(graph.StatusSuccess, "")
+				b.UpdateBuildGraphToShiftServer(graph.StatusSuccess, c.Node.Name)
 			}
 		}
 	}
@@ -144,7 +146,7 @@ func (b *builder) build(g *graph) error {
 
 func (b *builder) UpdateBuildGraphToShiftServer(status, checkpoint string) {
 
-	if statusFailed == status || (END == checkpoint && statusSuccess == status) {
+	if graph.StatusFailed == status || (graph.END == checkpoint && graph.StatusSuccess == status) {
 
 		log.Println("Saving cache.")
 
@@ -153,7 +155,7 @@ func (b *builder) UpdateBuildGraphToShiftServer(status, checkpoint string) {
 		log.Println("Finished saving the cache")
 	}
 
-	gph, err := b.g.Json()
+	gph, err := b.g.JSON()
 	if err != nil {
 		log.Printf("Eror when contructing status graph: %v", err)
 	}

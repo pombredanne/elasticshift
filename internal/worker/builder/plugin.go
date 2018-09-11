@@ -3,13 +3,15 @@ Copyright 2018 The Elasticshift Authors.
 */
 package builder
 
+import "gitlab.com/conspico/elasticshift/internal/pkg/graph"
+
 var (
 	SHELL = "shell"
 )
 
-func (b *builder) invokePlugin(n *N) (string, error) {
+func (b *builder) invokePlugin(n *graph.N) (string, error) {
 
-	if START == n.Name || END == n.Name {
+	if graph.START == n.Name || graph.END == n.Name {
 		return "", nil
 	}
 
