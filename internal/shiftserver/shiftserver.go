@@ -19,6 +19,7 @@ import (
 	"gitlab.com/conspico/elasticshift/internal/shiftserver/integration"
 	"gitlab.com/conspico/elasticshift/internal/shiftserver/plugin"
 	"gitlab.com/conspico/elasticshift/internal/shiftserver/pubsub"
+	"gitlab.com/conspico/elasticshift/internal/shiftserver/resolver"
 	"gitlab.com/conspico/elasticshift/internal/shiftserver/schema"
 	"gitlab.com/conspico/elasticshift/internal/shiftserver/secret"
 	"gitlab.com/conspico/elasticshift/internal/shiftserver/shift"
@@ -56,6 +57,8 @@ type Server struct {
 	NSQ pubsub.NSQConfig
 
 	Shift store.Shift
+
+	Resolver *resolver.Shift
 
 	Vault secret.Vault
 
@@ -95,6 +98,7 @@ func New(ctx context.Context, c ServerConfig) (*Server, error) {
 
 	s.DB = store.NewDatabase(c.Store.Name, c.Session)
 	s.Shift = s.DB.InitShiftStore()
+	s.Resolver = &resolver.Shift{}
 
 	// d, err := newDexClient(ctx, c.Identity)
 	// if err != nil {
@@ -186,7 +190,7 @@ func (s *Server) registerGraphQLServices() error {
 	eng := pubsub.NewEngine(s.Loggr, sh, nsqc, cons)
 	s.Pubsub = eng
 
-	schm, err := schema.Construct(s.Ctx, s.Loggr, s.Providers, s.Shift, s.Vault, s.Pubsub)
+	schm, err := schema.Construct(s.Ctx, s.Loggr, s.Providers, s.Shift, s.Vault, s.Pubsub, s.Resolver)
 	if err != nil {
 		return err
 	}
@@ -220,8 +224,8 @@ func (s *Server) registerWebSocketServices() {
 }
 
 // Registers the GRPC services ...
-func RegisterGRPCServices(grpcServer *grpc.Server, s *Server) {
-	api.RegisterShiftServer(grpcServer, shift.NewServer(s.Loggr, s.Ctx, s.Shift, s.Vault, s.Pubsub))
+func (s *Server) registerGRPCServices(grpcServer *grpc.Server) {
+	api.RegisterShiftServer(grpcServer, shift.NewServer(s.Loggr, s.Ctx, s.Shift, s.Vault, s.Pubsub, s.Resolver))
 }
 
 // Registers the exposed http services

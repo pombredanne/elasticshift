@@ -12,6 +12,7 @@ import (
 	"gitlab.com/conspico/elasticshift/internal/pkg/utils"
 	"gitlab.com/conspico/elasticshift/internal/shiftserver/build"
 	"gitlab.com/conspico/elasticshift/internal/shiftserver/pubsub"
+	"gitlab.com/conspico/elasticshift/internal/shiftserver/resolver"
 	"gitlab.com/conspico/elasticshift/internal/shiftserver/store"
 )
 
@@ -154,9 +155,11 @@ func newBuildSchema(
 	loggr logger.Loggr,
 	s store.Shift,
 	ps pubsub.Engine,
+	rs *resolver.Shift,
 ) (queries graphql.Fields, mutations graphql.Fields, subscriptions graphql.Fields) {
 
 	r, _ := build.NewResolver(ctx, loggr, s, ps)
+	rs.Build = r
 
 	buildArgs := graphql.FieldConfigArgument{
 		"team": &graphql.ArgumentConfig{

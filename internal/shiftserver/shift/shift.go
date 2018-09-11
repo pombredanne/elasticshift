@@ -14,6 +14,7 @@ import (
 	"gitlab.com/conspico/elasticshift/internal/pkg/logger"
 	"gitlab.com/conspico/elasticshift/internal/shiftserver/integration"
 	"gitlab.com/conspico/elasticshift/internal/shiftserver/pubsub"
+	"gitlab.com/conspico/elasticshift/internal/shiftserver/resolver"
 	"gitlab.com/conspico/elasticshift/internal/shiftserver/secret"
 	"gitlab.com/conspico/elasticshift/internal/shiftserver/store"
 	"golang.org/x/net/context"
@@ -31,11 +32,13 @@ type shift struct {
 	integrationStore store.Integration
 	vault            secret.Vault
 	ps               pubsub.Engine
+
+	rs *resolver.Shift
 }
 
-func NewServer(loggr logger.Loggr, ctx context.Context, s store.Shift, vault secret.Vault, ps pubsub.Engine) api.ShiftServer {
+func NewServer(loggr logger.Loggr, ctx context.Context, s store.Shift, vault secret.Vault, ps pubsub.Engine, rs *resolver.Shift) api.ShiftServer {
 	l := loggr.GetLogger("shiftserver/grpc")
-	return &shift{loggr, l, ctx, s.Build, s.Container, s.Repository, s.Defaults, s.Integration, vault, ps}
+	return &shift{loggr, l, ctx, s.Build, s.Container, s.Repository, s.Defaults, s.Integration, vault, ps, rs}
 }
 
 func (s *shift) Register(ctx context.Context, req *api.RegisterReq) (*api.RegisterRes, error) {
@@ -58,6 +61,9 @@ func (s *shift) Register(ctx context.Context, req *api.RegisterReq) (*api.Regist
 
 	res := &api.RegisterRes{}
 	res.Registered = true
+
+	// publish pubsub to fetch latest update to subscribers
+	s.ps.Publish(pubsub.SubscribeBuildUpdate, req.GetBuildId())
 
 	return res, nil
 }
@@ -108,9 +114,10 @@ func (s *shift) UpdateBuildStatus(ctx context.Context, req *api.UpdateBuildStatu
 	// publish pubsub to fetch latest update to subscribers
 	s.ps.Publish(pubsub.SubscribeBuildUpdate, req.GetBuildId())
 
-	// kick off the next waiting build
-
 	if stopContainer {
+
+		// kick off the next waiting build
+		go s.rs.Build.TriggerNextIfAny(b.Team, b.RepositoryID, b.Branch)
 
 		fmt.Println("-------------------------------------------------------------")
 		fmt.Println("Stopping the container..... ")

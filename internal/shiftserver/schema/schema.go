@@ -11,6 +11,7 @@ import (
 	"gitlab.com/conspico/elasticshift/internal/pkg/logger"
 	"gitlab.com/conspico/elasticshift/internal/shiftserver/identity/oauth2/providers"
 	"gitlab.com/conspico/elasticshift/internal/shiftserver/pubsub"
+	"gitlab.com/conspico/elasticshift/internal/shiftserver/resolver"
 	"gitlab.com/conspico/elasticshift/internal/shiftserver/secret"
 	"gitlab.com/conspico/elasticshift/internal/shiftserver/store"
 )
@@ -24,6 +25,7 @@ func Construct(
 	s store.Shift,
 	vault secret.Vault,
 	pb pubsub.Engine,
+	r *resolver.Shift,
 ) (*graphql.Schema, error) {
 
 	// initialize schema
@@ -52,7 +54,7 @@ func Construct(
 	appendFields(mutations, sysconfM)
 
 	// build fields
-	buildQ, buildM, buildS := newBuildSchema(ctx, loggr, s, pb)
+	buildQ, buildM, buildS := newBuildSchema(ctx, loggr, s, pb, r)
 	appendFields(queries, buildQ)
 	appendFields(mutations, buildM)
 	appendFields(subscriptions, buildS)

@@ -20,6 +20,7 @@ import (
 	"gitlab.com/conspico/elasticshift/internal/pkg/vcs"
 	"gitlab.com/conspico/elasticshift/internal/shiftserver/pubsub"
 	"gitlab.com/conspico/elasticshift/internal/shiftserver/store"
+	mgo "gopkg.in/mgo.v2"
 	"gopkg.in/mgo.v2/bson"
 )
 
@@ -56,6 +57,7 @@ type Resolver interface {
 
 	SLog(id interface{}, log string) error
 	Log(id interface{}, log types.Log) error
+	TriggerNextIfAny(teamID, repositoryID, branch string)
 }
 
 type resolver struct {
@@ -130,8 +132,6 @@ func (r *resolver) TriggerBuild(params graphql.ResolveParams) (interface{}, erro
 		return nil, fmt.Errorf("Failed to validate if there are any build running: %v", err)
 	}
 
-	fmt.Printf("runing build : %#v\n", rb)
-
 	if len(rb) > 0 {
 		status = types.BuildStatusWaiting
 	}
@@ -167,15 +167,51 @@ func (r *resolver) TriggerBuild(params graphql.ResolveParams) (interface{}, erro
 	}
 
 	if b.Status == types.BuildStatusPreparing {
-
-		// publish to topic to push build updates to subscribers
-		r.ps.Publish(pubsub.SubscribeBuildUpdate, buildID)
-
-		// Pass the build data to builder
-		r.BuildQueue <- b
+		r.pushToQueue(b)
 	}
 
 	return b, err
+}
+
+func (r *resolver) TriggerNextIfAny(teamID, repositoryID, branch string) {
+
+	query := bson.M{
+		"team":          teamID,
+		"repository_id": repositoryID,
+		"branch":        branch,
+		"status":        types.BuildStatusWaiting,
+	}
+
+	var b types.Build
+	var err error
+	r.store.Execute(func(c *mgo.Collection) {
+		err = c.Find(query).Sort("-started_at").Limit(1).One(&b)
+	})
+
+	if err != nil && err.Error() != "not found" {
+		r.logger.Errorf("Trigger next build failed. [TeamID: %s, RepositoryID = %s, Branch = %s]\n", teamID, repositoryID, branch)
+	} else if err != nil && err.Error() == "not found" {
+		return
+	} else {
+
+		if b.ID != "" {
+
+			// update the status to preparing
+			r.store.UpdateBuildStatus(b.ID, types.BuildStatusPreparing)
+
+			// post to build queue
+			r.pushToQueue(b)
+		}
+	}
+}
+
+func (r *resolver) pushToQueue(b types.Build) {
+
+	// publish to topic to push build updates to subscribers
+	r.ps.Publish(pubsub.SubscribeBuildUpdate, b.ID.Hex())
+
+	// Pass the build data to builder
+	r.BuildQueue <- b
 }
 
 func (r *resolver) UpdateBuildStatusAsFailed(id, reason string, endedAt time.Time) {
