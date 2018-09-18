@@ -111,8 +111,8 @@ func Run() error {
 
 			Store: Store{
 
-				Server: "127.0.0.1",
-				// Server:    "10.10.7.152",
+				//Server: "127.0.0.1",
+				Server:    "10.10.7.152",
 				Name:      "elasticshift",
 				Username:  "elasticshift",
 				Password:  "3l@$t1c$h1ft",
@@ -258,7 +258,7 @@ func Run() error {
 			grpcServer = grpc.NewServer(grpcOpts...)
 
 			logger.Info("Exposing GRPC services on ", c.Web.GRPC)
-			RegisterGRPCServices(grpcServer, s)
+			s.registerGRPCServices(grpcServer)
 
 			err = grpcServer.Serve(listen)
 
