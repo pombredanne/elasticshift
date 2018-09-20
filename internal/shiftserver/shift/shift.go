@@ -117,13 +117,13 @@ func (s *shift) UpdateBuildStatus(ctx context.Context, req *api.UpdateBuildStatu
 	if stopContainer {
 
 		// kick off the next waiting build
-		go s.rs.Build.TriggerNextIfAny(b.Team, b.RepositoryID, b.Branch)
+		s.rs.Build.TriggerNextIfAny(b.Team, b.RepositoryID, b.Branch)
 
-		fmt.Println("-------------------------------------------------------------")
-		fmt.Println("Stopping the container..... ")
-		fmt.Println("Status = ", status)
-		fmt.Println("Checkpoint = ", cp)
-		fmt.Println("-------------------------------------------------------------")
+		// fmt.Println("-------------------------------------------------------------")
+		// fmt.Println("Stopping the container..... ")
+		// fmt.Println("Status = ", status)
+		// fmt.Println("Checkpoint = ", cp)
+		// fmt.Println("-------------------------------------------------------------")
 		// request container engine to stop the live container
 		ce, err := s.getContainerEngine(b.Team)
 		if err != nil {

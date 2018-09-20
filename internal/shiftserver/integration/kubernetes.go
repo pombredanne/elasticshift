@@ -15,7 +15,6 @@ import (
 	uuid "github.com/satori/go.uuid"
 	"gitlab.com/conspico/elasticshift/api/types"
 	itypes "gitlab.com/conspico/elasticshift/internal/shiftserver/integration/types"
-	appsv1 "k8s.io/api/apps/v1"
 	appsv1beta1 "k8s.io/api/apps/v1beta1"
 	apiv1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/api/resource"
@@ -191,53 +190,87 @@ func (c *kubernetesClient) CreateContainer(opts *itypes.CreateContainerOptions) 
 	// volumes = append(volumes, apiv1.Volume{Name: vol.Name, VolumeSource: apiv1.VolumeSource{PersistentVolumeClaim: &apiv1.PersistentVolumeClaimVolumeSource{ClaimName: vol.Claim}}})
 	// }
 
-	deploymentsClient := c.Kube.AppsV1().Deployments(c.opts.Namespace)
+	podClient := c.Kube.Core().Pods(c.opts.Namespace)
 
 	shiftID := uuid.NewV4()
-	deployment := &appsv1.Deployment{
+	pod := &apiv1.Pod{
 		ObjectMeta: metav1.ObjectMeta{
 			Name: opts.BuildID,
+			Labels: map[string]string{
+				KW_CREATEDBY: DefaultContext,
+				KW_SHIFTID:   shiftID.String(),
+				KW_BUILDID:   opts.BuildID,
+			},
 		},
-		Spec: appsv1.DeploymentSpec{
-			Replicas: int32Ptr(1),
-			Selector: &metav1.LabelSelector{
-				MatchLabels: map[string]string{
-					KW_BUILDID: opts.BuildID,
+
+		Spec: apiv1.PodSpec{
+			RestartPolicy: apiv1.RestartPolicyNever,
+			Containers: []apiv1.Container{
+				{
+					Name:         opts.BuildID,
+					Image:        opts.Image,
+					Command:      []string{startupCmd},
+					Env:          envs,
+					VolumeMounts: volumeMounts,
 				},
 			},
-			Template: apiv1.PodTemplateSpec{
-				ObjectMeta: metav1.ObjectMeta{
-					Labels: map[string]string{
-						KW_CREATEDBY: DefaultContext,
-						KW_SHIFTID:   shiftID.String(),
-						KW_BUILDID:   opts.BuildID,
-					},
-				},
-				Spec: apiv1.PodSpec{
-					Containers: []apiv1.Container{
-						{
-							Name:         opts.BuildID,
-							Image:        opts.Image,
-							Command:      []string{startupCmd},
-							Env:          envs,
-							VolumeMounts: volumeMounts,
-						},
-					},
-					Volumes: volumes,
-				},
-			},
+			Volumes: volumes,
 		},
 	}
 
-	result, err := deploymentsClient.Create(deployment)
+	result, err := podClient.Create(pod)
 	if err != nil {
 		return nil, fmt.Errorf("Error in creating container : %v", err)
 	}
-	c.logger.Debugln(fmt.Sprintf("Created deployment: %s", result.GetObjectMeta().GetName()))
+	c.logger.Debugln(fmt.Sprintf("Created pod: %s", result.GetObjectMeta().GetName()))
+
+	//	deploymentsClient := c.Kube.AppsV1().Deployments(c.opts.Namespace)
+
+	// shiftID := uuid.NewV4()
+	// deployment := &appsv1.Deployment{
+	// 	ObjectMeta: metav1.ObjectMeta{
+	// 		Name: opts.BuildID,
+	// 	},
+	// 	Spec: appsv1.DeploymentSpec{
+	// 		Replicas: int32Ptr(1),
+	// 		Selector: &metav1.LabelSelector{
+	// 			MatchLabels: map[string]string{
+	// 				KW_BUILDID: opts.BuildID,
+	// 			},
+	// 		},
+	// 		Template: apiv1.PodTemplateSpec{
+	// 			ObjectMeta: metav1.ObjectMeta{
+	// 				Labels: map[string]string{
+	// 					KW_CREATEDBY: DefaultContext,
+	// 					KW_SHIFTID:   shiftID.String(),
+	// 					KW_BUILDID:   opts.BuildID,
+	// 				},
+	// 			},
+	// 			Spec: apiv1.PodSpec{
+	// 				Containers: []apiv1.Container{
+	// 					{
+	// 						Name:         opts.BuildID,
+	// 						Image:        opts.Image,
+	// 						Command:      []string{startupCmd},
+	// 						Env:          envs,
+	// 						VolumeMounts: volumeMounts,
+	// 					},
+	// 				},
+	// 				Volumes: volumes,
+	// 			},
+	// 		},
+	// 	},
+	// }
+
+	// result, err := deploymentsClient.Create(deployment)
+	// if err != nil {
+	// 	return nil, fmt.Errorf("Error in creating container : %v", err)
+	// }
+	// c.logger.Debugln(fmt.Sprintf("Created deployment: %s", result.GetObjectMeta().GetName()))
 
 	//wat, err := deploymentsClient.Watch(v1.ListOptions{LabelSelector: "createdby=" + DefaultContext})
-	lo := &v1.ListOptions{LabelSelector: KW_SHIFTID + "=" + shiftID.String()}
-	wat, err := c.Kube.CoreV1().Pods(c.opts.Namespace).Watch(*lo)
+	lo := v1.ListOptions{LabelSelector: KW_SHIFTID + "=" + shiftID.String()}
+	wat, err := c.Kube.CoreV1().Pods(c.opts.Namespace).Watch(lo)
 	if err != nil {
 		c.logger.Errorf("Watch failed: %v", err)
 	}
@@ -355,8 +388,12 @@ func (c *kubernetesClient) CreateContainer(opts *itypes.CreateContainerOptions) 
 func (c *kubernetesClient) DeleteContainer(id string) error {
 
 	deletePolicy := metav1.DeletePropagationForeground
-	deploymentsClient := c.Kube.AppsV1().Deployments(c.opts.Namespace)
-	err := deploymentsClient.Delete(id, &metav1.DeleteOptions{
+	// deploymentsClient := c.Kube.AppsV1().Deployments(c.opts.Namespace)
+	// err := deploymentsClient.Delete(id)
+
+	podClient := c.Kube.CoreV1().Pods(c.opts.Namespace)
+
+	err := podClient.Delete(id, &metav1.DeleteOptions{
 		PropagationPolicy: &deletePolicy,
 	})
 

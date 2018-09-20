@@ -56,8 +56,9 @@ func (b *builder) build(g *graph.Graph) error {
 	for i := 0; i < len(checkpoints); i++ {
 
 		if failed {
-			log.Println("Build finished, waiting from shiftserver to receive a halt command..")
-			<-b.done
+			log.Println("Build finished.")
+			b.done <- 1
+			return nil
 		}
 
 		c := checkpoints[i]
@@ -99,7 +100,7 @@ func (b *builder) build(g *graph.Graph) error {
 						errMutex.Lock()
 						defer errMutex.Unlock()
 
-						log.Printf("Plugin error : %v\n", err)
+						log.Printf("Failed when executing %s : %v\n", n.Name, err)
 						n.End(graph.StatusFailed, msg)
 						b.UpdateBuildGraphToShiftServer(graph.StatusFailed, n.Name)
 
@@ -129,7 +130,6 @@ func (b *builder) build(g *graph.Graph) error {
 			msg, err := b.invokePlugin(c.Node)
 			if err != nil {
 				c.Node.End(graph.StatusFailed, msg)
-				log.Printf("Plugin error : %v\n", err)
 				b.UpdateBuildGraphToShiftServer(graph.StatusFailed, c.Node.Name)
 
 				failed = true

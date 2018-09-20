@@ -25,8 +25,9 @@ type Config struct {
 	Host string // shift server host
 	Port string // shift server port
 
-	ShiftDir string
-	Timeout  string
-	BuildID  string
-	TeamID   string
+	ShiftDir           string
+	Timeout            string
+	BuildID            string
+	TeamID             string
+	RepoBasedShiftFile bool
 }

@@ -6,6 +6,7 @@ package build
 import (
 	"fmt"
 	"os"
+	"strconv"
 
 	"github.com/pkg/errors"
 	"gitlab.com/conspico/elasticshift/api/types"
@@ -69,7 +70,7 @@ func (r *resolver) ContainerLauncher() {
 			// }
 			buildID := b.ID.Hex()
 
-			sf, err := r.GetShiftfile(b)
+			sf, repoFile, err := r.GetShiftfile(b)
 
 			if err != nil {
 				//r.SLog(b.ID, fmt.Sprintf("Unable to find the build image from Shiftfile", b.CloneURL))
@@ -185,6 +186,7 @@ func (r *resolver) ContainerLauncher() {
 				itypes.Env{"WORKER_PORT", "9200"},
 				itypes.Env{"SHIFT_LOG_LEVEL", "info"},
 				itypes.Env{"SHIFT_LOG_FORMAT", "json"},
+				itypes.Env{"SHIFT_REPOFILE", strconv.FormatBool(repoFile)},
 			}
 
 			opts := &itypes.CreateContainerOptions{}

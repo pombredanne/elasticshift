@@ -24,6 +24,7 @@ message UpdateBuildStatusRes {
 
 message GetProjectReq {
 	string build_id = 1;
+	bool include_shiftfile = 2;
 }
 
 message GetProjectRes {
@@ -38,6 +39,7 @@ message GetProjectRes {
 	string commit_id = 9;
 	string storage_path = 10;
 	string source = 11;
+	string shiftfile = 12;
 }
 
 service Shift {

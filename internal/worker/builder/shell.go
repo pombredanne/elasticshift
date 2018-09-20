@@ -24,6 +24,7 @@ func (b *builder) invokeShell(n *graph.N) (string, error) {
 
 		msg, err := b.execShellCmd(n.Name, command, nil, "")
 		if err != nil {
+			log.Println(fmt.Sprintf("%s:%s-%s: %v", graph.ERROR, n.Name, n.Description, err))
 			return msg, err
 		}
 		log.Println(fmt.Sprintf("%s:%s-%s", graph.END, n.Name, n.Description))
@@ -42,18 +43,6 @@ func (b *builder) execShellCmd(prefix string, shellCmd string, env []string, dir
 	go io.Copy(b.writer, stdout)
 	go io.Copy(io.MultiWriter(b.writer, &buf), stderr)
 
-	// soutpipe, err := cmd.StdoutPipe()
-	// if err != nil {
-	// 	return err
-	// }
-	// newStreamer(prefix, soutpipe)
-
-	// serrpipe, err := cmd.StderrPipe()
-	// if err != nil {
-	// 	return err
-	// }
-	// newStreamer(prefix, serrpipe)
-
 	if env != nil {
 		cmd.Env = env
 	}
@@ -68,9 +57,6 @@ func (b *builder) execShellCmd(prefix string, shellCmd string, env []string, dir
 	}
 
 	if err := cmd.Wait(); err != nil {
-
-		err := fmt.Errorf("Error waiting for the shell command to finish : %v", err)
-		log.Println(err)
 		return buf.String(), err
 	}
 

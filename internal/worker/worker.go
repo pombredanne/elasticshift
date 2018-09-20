@@ -10,6 +10,7 @@ import (
 	"log"
 	"net"
 	"os"
+	"strconv"
 	"time"
 
 	"gitlab.com/conspico/elasticshift/api"
@@ -33,10 +34,11 @@ func Run() error {
 
 	// os.Setenv("SHIFT_HOST", "127.0.0.1")
 	// os.Setenv("SHIFT_PORT", "9101")
-	// os.Setenv("SHIFT_BUILDID", "5b96077c8de9810001ff18aa")
+	// os.Setenv("SHIFT_BUILDID", "5ba20b3016986f00017f5b00")
 	// os.Setenv("SHIFT_DIR", "/Users/ghazni/.elasticshift/storage")
 	// os.Setenv("WORKER_PORT", "9200")
 	// os.Setenv("SHIFT_TEAMID", "5a3a41f08011e098fb86b41f")
+	// os.Setenv("SHIFT_REPOFILE", "true")
 
 	// logLevel := os.Getenv("SHIFT_LOG_LEVEL")
 	// if logLevel == "" {
@@ -137,6 +139,9 @@ func Run() error {
 	} else {
 		log.Println("SHIFT_TIMEOUT=" + cfg.Timeout)
 	}
+
+	repoBasedShiftFile := os.Getenv("SHIFT_REPOFILE")
+	cfg.RepoBasedShiftFile, _ = strconv.ParseBool(repoBasedShiftFile)
 
 	ctx := types.Context{}
 	ctx.Context = bctx
@@ -239,6 +244,7 @@ func Start(ctx types.Context) error {
 		msg := fmt.Sprintf("Worker has been timed-out after running for about %s minutes, and all the process have been halted", ctx.Config.Timeout)
 		w.UpdateShiftServer(statusFailed, "")
 		log.Println(msg)
+	case <-w.done:
 	}
 
 	return nil

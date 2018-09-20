@@ -333,26 +333,30 @@ func (r *resolver) FetchBuildByID(params graphql.ResolveParams) (interface{}, er
 	return res, nil
 }
 
-func (r *resolver) GetShiftfile(b types.Build) (*ast.File, error) {
+func (r *resolver) GetShiftfile(b types.Build) (*ast.File, bool, error) {
 
+	var repoFile bool
+	repoFile = true
 	f, err := r.repoImageName(b)
 	if err != nil && f == nil {
+
+		repoFile = false
 
 		// falling back to see if there is a team's default configured
 		defs, err := r.defaultStore.FindByReferenceId(b.Team)
 		if err != nil {
-			return nil, fmt.Errorf("Failed to fetch defaults by reference id: %v", err)
+			return nil, repoFile, fmt.Errorf("Failed to fetch defaults by reference id: %v", err)
 		}
 
 		fileId := defs.Languages[b.Language]
 		if fileId == "" {
-			return nil, fmt.Errorf("No default shiftfile configured for language [%s].", b.Language)
+			return nil, repoFile, fmt.Errorf("No default shiftfile configured for language [%s].", b.Language)
 		}
 
 		var file types.Shiftfile
 		err = r.shiftfileStore.FindByID(fileId, &file)
 		if err != nil {
-			return nil, fmt.Errorf("Failed to fetch the default shiftfile for language: %v", err)
+			return nil, repoFile, fmt.Errorf("Failed to fetch the default shiftfile for language: %v", err)
 		}
 		f = file.File
 	}
@@ -363,7 +367,7 @@ func (r *resolver) GetShiftfile(b types.Build) (*ast.File, error) {
 		r.SLog(b.ID, fmt.Sprintf("Failed to parse shift file: %v", err))
 	}
 
-	return sf, nil
+	return sf, repoFile, nil
 }
 
 func (r *resolver) repoImageName(b types.Build) ([]byte, error) {

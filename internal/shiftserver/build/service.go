@@ -110,7 +110,7 @@ func (s service) Viewlog(w http.ResponseWriter, r *http.Request) {
 	}
 
 	// fetch log directly from the container
-	if b.Status == types.BuildStatusWaiting || b.Status == types.BuildStatusRunning {
+	if b.Status == types.BuildStatusWaiting || b.Status == types.BuildStatusPreparing || b.Status == types.BuildStatusRunning {
 
 		for {
 
@@ -176,6 +176,8 @@ func stream(w http.ResponseWriter, r io.ReadCloser) error {
 
 	// stream the logs
 	_, err := io.Copy(utils.StreamWriter(w), r)
+	notify <- true
+
 	if err != nil {
 		return err
 	}

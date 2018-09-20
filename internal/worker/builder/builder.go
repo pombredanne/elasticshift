@@ -72,7 +72,7 @@ func (b *builder) run() error {
 	}
 
 	// Get the project information
-	proj, err := b.shiftclient.GetProject(b.ctx, &api.GetProjectReq{BuildId: b.config.BuildID})
+	proj, err := b.shiftclient.GetProject(b.ctx, &api.GetProjectReq{BuildId: b.config.BuildID, IncludeShiftfile: !b.config.RepoBasedShiftFile})
 	if err != nil {
 		return fmt.Errorf("Failed to get the project/repository detail from shift server: %v", err)
 	}

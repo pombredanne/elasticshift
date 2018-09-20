@@ -56,15 +56,11 @@ func (c *consumers) Add(topic string, s *Subscription) error {
 		c.subscriptions[topic] = make(map[string][]*Subscription)
 	}
 
-	c.logger.Infof("Subscriptions slice before : %v", c.subscriptions[topic][s.OperationID])
-
 	if c.subscriptions[topic][s.OperationID] == nil {
 		c.subscriptions[topic][s.OperationID] = []*Subscription{s}
 	} else {
 		c.subscriptions[topic][s.OperationID] = append(c.subscriptions[topic][s.OperationID], s)
 	}
-
-	c.logger.Infof("Subscriptions slice: %v", c.subscriptions)
 
 	go func() {
 		if _, ok := c.topics[topic]; !ok {
@@ -86,7 +82,6 @@ func (c *consumers) Remove(topic string, s *Subscription) {
 
 	c.logger.WithFields(logrus.Fields{"topic": topic, "OperationID": s.OperationID}).Infoln("Remove consumer")
 
-	c.logger.Infof("Remove before: %v", c.subscriptions[topic][s.OperationID])
 	c.mutex.Lock()
 	defer c.mutex.Unlock()
 
@@ -100,5 +95,4 @@ func (c *consumers) Remove(topic string, s *Subscription) {
 	}
 
 	c.subscriptions[topic][s.OperationID] = subs
-	c.logger.Infof("Removed : %v", c.subscriptions[topic][s.OperationID])
 }
