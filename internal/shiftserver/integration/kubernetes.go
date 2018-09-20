@@ -308,12 +308,16 @@ func (c *kubernetesClient) CreateContainer(opts *itypes.CreateContainerOptions) 
 				// Stop when the status changed to modified, in real need to check the status Running and then
 				// this should be stopped
 				switch res.Type {
+				case watch.Deleted:
+					terminated = true
 				case watch.Modified:
 					if pod.DeletionTimestamp != nil {
 						continue
 					}
 
 					switch pod.Status.Phase {
+					case apiv1.PodSucceeded, apiv1.PodUnknown:
+						terminated = true
 					case apiv1.PodRunning:
 						for _, cs := range pod.Status.ContainerStatuses {
 

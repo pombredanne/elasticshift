@@ -166,20 +166,25 @@ func (s service) Viewlog(w http.ResponseWriter, r *http.Request) {
 
 func stream(w http.ResponseWriter, r io.ReadCloser) error {
 
+	done := make(chan bool, 1)
 	notify := w.(http.CloseNotifier).CloseNotify()
 	go func() {
-		<-notify
-		r.Close()
+		for {
+			select {
+			case <-notify:
+			case <-done:
+			}
+			r.Close()
+			break
+		}
 	}()
-
-	defer r.Close()
 
 	// stream the logs
 	_, err := io.Copy(utils.StreamWriter(w), r)
-	notify <- true
-
 	if err != nil {
+		done <- true
 		return err
 	}
+	done <- true
 	return nil
 }
