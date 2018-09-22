@@ -26,6 +26,8 @@ var (
 
 	FANIN      = "FANIN"
 	FANIN_DESC = "Merging the graph to continue further execution"
+
+	ERROR = "ERROR"
 )
 
 type FanN struct {

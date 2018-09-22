@@ -58,13 +58,13 @@ func Run() error {
 	// log.Printf("SHIFT_LOG_LEVEL=%s\n", logLevel)
 	// log.Printf("SHIFT_LOG_FORMAT=%s\n", logFormat)
 
-	// shiftDir := os.Getenv("SHIFT_DIR")
-	// if shiftDir == "" {
-	// 	log.Println("SHIFT_DIR must be passed through environment variable.")
-	// } else {
-	// 	log.Println("SHIFT_DIR=%s\n", shiftDir)
-	// }
-	// cfg.ShiftDir = shiftDir
+	shiftDir := os.Getenv("SHIFT_DIR")
+	if shiftDir == "" {
+		log.Println("SHIFT_DIR must be passed through environment variable.")
+	} else {
+		log.Printf("SHIFT_DIR=%s\n", shiftDir)
+	}
+	cfg.ShiftDir = shiftDir
 
 	// cfg.ShiftDir = shiftDir
 	// opts := []logger.LoggerOption{

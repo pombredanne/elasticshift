@@ -27,6 +27,7 @@ var (
 type CacheEntry struct {
 	ID        string `json:"id"`
 	Directory string `json:"directory"`
+	ExtractTo string `json:"extract_to"`
 	Checksum  string `json:"checksum"`
 }
 
@@ -85,7 +86,11 @@ func (b *builder) saveCache() {
 				id := utils.NewUUID()
 				ce := CacheEntry{}
 				ce.Directory = dir
+				extractDir, _ := filepath.Split(dir)
+				ce.ExtractTo = extractDir
 				ce.ID = id
+
+				fmt.Println(fmt.Sprintf("New cache entry: %#v", ce))
 
 				utils.Mkdir(cachedir)
 
@@ -103,6 +108,7 @@ func (b *builder) saveCache() {
 			}
 
 			<-parallelCh
+
 		}(dir, cacdir, cf)
 	}
 
@@ -124,10 +130,13 @@ func (b *builder) saveCache() {
 func (b *builder) restoreCache() error {
 
 	cacdir := b.cacheDir()
+	log.Println("Cache dir = ", cacdir)
+
 	exist, err := utils.PathExist(cacdir)
 	if err != nil {
 		return fmt.Errorf("Failed to check if the path exist: %v", err)
 	}
+	log.Println("Cache path exist: ", exist)
 
 	if !exist {
 		log.Println("No cache available.")
@@ -145,6 +154,8 @@ func (b *builder) restoreCache() error {
 		return nil
 	}
 
+	fmt.Println("Cache entries: ", cf.Entries)
+
 	cpu := ncpu()
 	var wg sync.WaitGroup
 	parallelCh := make(chan int, cpu)
@@ -157,19 +168,24 @@ func (b *builder) restoreCache() error {
 			defer wg.Done()
 			parallelCh <- 1
 
-			dir, err := homedir.Expand(c.Directory)
+			dir, err := homedir.Expand(c.ExtractTo)
 			if err != nil {
 				log.Printf("Failed to expand the cache directory: %v", err)
 			}
+			fmt.Println("Expanded cache directory : ", dir)
 
 			src := filepath.Join(cacdir, c.ID)
+			fmt.Println("Cache file:", src)
+
 			exist, err := utils.PathExist(src)
 			if err != nil {
 				log.Printf("Source file to extract not found: %v\n", err)
 			}
+			fmt.Println("Cache entry file exist: ", exist)
 
 			if exist {
 
+				fmt.Println(fmt.Sprintf("Extracting tar from %s to %s", src, dir))
 				err = archiver.TarGz.Open(src, dir)
 				if err != nil {
 					log.Printf("Failed to untar cache file: %v", err)
@@ -180,7 +196,11 @@ func (b *builder) restoreCache() error {
 		}(c)
 	}
 
+	log.Println("Waiting to extract the cache")
+
 	wg.Wait()
+
+	log.Println("Finished extracting the cache.")
 
 	return nil
 }
@@ -203,11 +223,14 @@ func (b *builder) readCacheFile(cachepath string) (*CacheFile, error) {
 
 	name := path.Join(cachepath, FILE_CACHE)
 
+	fmt.Println("Cache file: ", name)
 	exist, err := utils.PathExist(name)
 	if err != nil {
+		fmt.Println("Checking cachefile exist failed: ", err)
 		return nil, err
 	}
 
+	fmt.Println("Cache file exist: ", exist)
 	if !exist {
 		return nil, nil
 	}
@@ -216,6 +239,8 @@ func (b *builder) readCacheFile(cachepath string) (*CacheFile, error) {
 	if err != nil {
 		return nil, fmt.Errorf("Failed to read .cache suppose to be '%s'\n", FILE_CACHE)
 	}
+
+	fmt.Println("Cache file raw content: ", string(raw))
 
 	var f CacheFile
 	err = json.Unmarshal(raw, &f)

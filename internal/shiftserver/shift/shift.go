@@ -225,6 +225,7 @@ func (s *shift) GetProject(ctx context.Context, req *api.GetProjectReq) (*api.Ge
 	res.Name = r.Name
 	res.StoragePath = b.StoragePath
 	res.Source = b.Source
+	res.RepositoryId = b.RepositoryID
 
 	return res, nil
 }

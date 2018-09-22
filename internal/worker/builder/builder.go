@@ -64,13 +64,6 @@ func New(ctx wtypes.Context, shiftconn *grpc.ClientConn, writer io.Writer, done 
 
 func (b *builder) run() error {
 
-	// restore build cache if any
-	// save the cache after every successful build
-	err := b.restoreCache()
-	if err != nil {
-		log.Println("Restoring cache failed:", err)
-	}
-
 	// Get the project information
 	proj, err := b.shiftclient.GetProject(b.ctx, &api.GetProjectReq{BuildId: b.config.BuildID, IncludeShiftfile: !b.config.RepoBasedShiftFile})
 	if err != nil {
@@ -79,6 +72,13 @@ func (b *builder) run() error {
 	b.project = proj
 
 	log.Printf("Project Info: %v", proj)
+
+	// restore build cache if any
+	// save the cache after every successful build
+	err = b.restoreCache()
+	if err != nil {
+		log.Println("Restoring cache failed:", err)
+	}
 
 	// 1. Ensure connection to log storage is good, this container should be loaded with
 
