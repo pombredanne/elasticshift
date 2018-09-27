@@ -88,14 +88,15 @@ func (b *builder) run() error {
 
 	log.Println("Getting the shift file..")
 
-	f, err := vcs.GetShiftFile(proj.Source, proj.CloneUrl, proj.Branch)
-	if err != nil {
-		return errors.Errorf("Failed to get shift file (source: %s, CloneUrl: %s, branch : %s): %v", proj.Source, proj.CloneUrl, proj.Branch, err)
-	}
-
 	// 4. otherwise use the global language spec defined by elasticshift
-	if f == nil {
-		//TODO fetch the default shift file
+	var f []byte
+	if b.config.RepoBasedShiftFile {
+		f, err = vcs.GetShiftFile(proj.Source, proj.CloneUrl, proj.Branch)
+		if err != nil {
+			return errors.Errorf("Failed to get shift file (source: %s, CloneUrl: %s, branch : %s): %v", proj.Source, proj.CloneUrl, proj.Branch, err)
+		}
+	} else {
+		f = []byte(proj.GetShiftfile())
 	}
 
 	// 5. Parse the shiftfile
@@ -106,6 +107,7 @@ func (b *builder) run() error {
 	b.f = sf
 
 	// 6. Ensure the arguments are inputted as static or dynamic values (through env)
+	// TODO
 
 	// 7. Construct the runtime execution map from shiftfile ast
 	graph, err := graph.Construct(sf)
@@ -117,7 +119,7 @@ func (b *builder) run() error {
 	// 8. Fetch the secrets
 
 	// send the initial graph to server
-	b.UpdateBuildGraphToShiftServer("", "")
+	b.UpdateBuildGraphToShiftServer("", "", "")
 
 	// 9. Traverse the execution map & run the actual build
 	err = b.build(graph)

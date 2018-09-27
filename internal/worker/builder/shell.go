@@ -20,14 +20,13 @@ func (b *builder) invokeShell(n *graph.N) (string, error) {
 
 	for _, command := range cmds {
 
-		log.Println(fmt.Sprintf("%s:%s-%s", graph.START, n.Name, n.Description))
-
+		log.Println(fmt.Sprintf("START:EXEC:~%s~", command))
 		msg, err := b.execShellCmd(n.Name, command, nil, "")
 		if err != nil {
-			log.Println(fmt.Sprintf("%s:%s-%s: %v", graph.ERROR, n.Name, n.Description, err))
+			log.Println(fmt.Sprintf("ERROR:EXEC:~%s~", command))
 			return msg, err
 		}
-		log.Println(fmt.Sprintf("%s:%s-%s", graph.END, n.Name, n.Description))
+		log.Println(fmt.Sprintf("END:EXEC:~%s~", command))
 	}
 	return "", nil
 }
@@ -52,7 +51,6 @@ func (b *builder) execShellCmd(prefix string, shellCmd string, env []string, dir
 	}
 
 	if err := cmd.Start(); err != nil {
-		log.Println(err)
 		return buf.String(), err
 	}
 

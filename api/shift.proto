@@ -17,6 +17,7 @@ message UpdateBuildStatusReq {
 	string graph = 2;
 	string status = 3;
 	string checkpoint = 4;
+	string reason = 5;
 }
 
 message UpdateBuildStatusRes {

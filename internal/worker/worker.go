@@ -29,6 +29,8 @@ const (
 // Run ..
 func Run() error {
 
+	log.Println("START:`Setting up the worker...`")
+
 	bctx := context.Background()
 	cfg := types.Config{}
 
@@ -222,6 +224,8 @@ func Start(ctx types.Context) error {
 
 		// Listener on worker to receive command from shift server.
 		w.StartGRPCServer()
+
+		log.Println("END:`Setting up the worker...`")
 
 		// Kick start the builder
 		err = w.StartBuilder()

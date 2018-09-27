@@ -70,6 +70,10 @@ func (b *builder) build(g *graph.Graph) error {
 		edgeSize := len(c.Edges)
 		if edgeSize > 0 {
 
+			var fanoutFailed bool
+
+			c.Node.Wait()
+
 			var errMutex sync.Mutex
 			var wg sync.WaitGroup
 			parallelCh := make(chan int, parallel)
@@ -77,21 +81,26 @@ func (b *builder) build(g *graph.Graph) error {
 			for j := 0; j < edgeSize; j++ {
 
 				if failed {
+					fanoutFailed = true
 					break
 				}
 
 				wg.Add(1)
 
+				if j == 0 {
+					c.Node.Start()
+				}
+
 				go func(n *graph.N) {
 
 					n.Wait()
-					b.UpdateBuildGraphToShiftServer(graph.StatusWaiting, n.Name)
+					b.UpdateBuildGraphToShiftServer(graph.StatusWaiting, n.Name, "")
 
 					defer wg.Done()
 					parallelCh <- 1
 
 					n.Start()
-					b.UpdateBuildGraphToShiftServer(graph.StatusRunning, n.Name)
+					b.UpdateBuildGraphToShiftServer(graph.StatusRunning, n.Name, "")
 
 					msg, err := b.invokePlugin(n)
 
@@ -102,14 +111,14 @@ func (b *builder) build(g *graph.Graph) error {
 
 						log.Printf("Failed when executing %s : %v\n", n.Name, err)
 						n.End(graph.StatusFailed, msg)
-						b.UpdateBuildGraphToShiftServer(graph.StatusFailed, n.Name)
+						b.UpdateBuildGraphToShiftServer(graph.StatusFailed, n.Name, msg)
 
 						failed = true
 					} else {
 
 						if n.Status != graph.StatusFailed {
 							n.End(graph.StatusSuccess, "")
-							b.UpdateBuildGraphToShiftServer(graph.StatusSuccess, n.Name)
+							b.UpdateBuildGraphToShiftServer(graph.StatusSuccess, n.Name, "")
 						}
 					}
 
@@ -121,22 +130,28 @@ func (b *builder) build(g *graph.Graph) error {
 			// wait until all the parallel tasks are finished
 			wg.Wait()
 
+			if fanoutFailed {
+				c.Node.End(graph.StatusFailed, "")
+			} else {
+				c.Node.End(graph.StatusSuccess, "")
+			}
+
 		} else {
 
 			c.Node.Start()
-			b.UpdateBuildGraphToShiftServer(graph.StatusRunning, c.Node.Name)
+			b.UpdateBuildGraphToShiftServer(graph.StatusRunning, c.Node.Name, "")
 
 			// sequential checkpoint execution
 			msg, err := b.invokePlugin(c.Node)
 			if err != nil {
 				c.Node.End(graph.StatusFailed, msg)
-				b.UpdateBuildGraphToShiftServer(graph.StatusFailed, c.Node.Name)
+				b.UpdateBuildGraphToShiftServer(graph.StatusFailed, c.Node.Name, msg)
 
 				failed = true
 			} else {
 
 				c.Node.End(graph.StatusSuccess, "")
-				b.UpdateBuildGraphToShiftServer(graph.StatusSuccess, c.Node.Name)
+				b.UpdateBuildGraphToShiftServer(graph.StatusSuccess, c.Node.Name, "")
 			}
 		}
 	}
@@ -144,7 +159,7 @@ func (b *builder) build(g *graph.Graph) error {
 	return nil
 }
 
-func (b *builder) UpdateBuildGraphToShiftServer(status, checkpoint string) {
+func (b *builder) UpdateBuildGraphToShiftServer(status, checkpoint, reason string) {
 
 	if graph.StatusFailed == status || (graph.END == checkpoint && graph.StatusSuccess == status) {
 
@@ -165,6 +180,9 @@ func (b *builder) UpdateBuildGraphToShiftServer(status, checkpoint string) {
 	req.Graph = gph
 	req.Status = status
 	req.Checkpoint = checkpoint
+	if reason != "" {
+		req.Reason = reason
+	}
 
 	if b.shiftclient != nil {
 		_, err = b.shiftclient.UpdateBuildStatus(b.ctx, req)

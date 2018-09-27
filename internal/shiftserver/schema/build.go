@@ -139,6 +139,11 @@ var (
 			Type:        graphql.String,
 			Description: "Flow graph",
 		},
+
+		"reason": &graphql.Field{
+			Type:        graphql.String,
+			Description: "Reason for build failures.",
+		},
 	}
 
 	BuildType = graphql.NewObject(

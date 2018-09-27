@@ -54,7 +54,7 @@ func (s *shift) Register(ctx context.Context, req *api.RegisterReq) (*api.Regist
 
 	// TODO store the secret key id in build and the actual key in secret store
 	buildId := bson.ObjectIdHex(req.GetBuildId())
-	err := s.buildStore.UpdateId(buildId, bson.M{"$set": bson.M{"status": types.BuildStatusRunning}, "$push": bson.M{"private_key": req.GetPrivatekey()}})
+	err := s.buildStore.UpdateId(buildId, bson.M{"$push": bson.M{"private_key": req.GetPrivatekey()}})
 	if err != nil {
 		return nil, fmt.Errorf("Registration failed: Due to internal server error %v", err)
 	}
@@ -90,6 +90,14 @@ func (s *shift) UpdateBuildStatus(ctx context.Context, req *api.UpdateBuildStatu
 	b.Graph = req.GetGraph()
 	status := req.GetStatus()
 	cp := req.GetCheckpoint()
+
+	if b.Status == types.BuildStatusPreparing {
+		b.Status = types.BuildStatusRunning
+	}
+
+	if req.GetReason() != "" {
+		b.Reason = req.GetReason()
+	}
 
 	var stopContainer bool
 	if status != "" {
