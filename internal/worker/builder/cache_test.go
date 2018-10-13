@@ -4,12 +4,10 @@ Copyright 2018 The Elasticshift Authors.
 package builder
 
 import (
-	"os"
 	"testing"
 
 	"gitlab.com/conspico/elasticshift/api"
 	"gitlab.com/conspico/elasticshift/internal/pkg/shiftfile/parser"
-	"gitlab.com/conspico/elasticshift/internal/worker/logger"
 	wtypes "gitlab.com/conspico/elasticshift/internal/worker/types"
 )
 
@@ -34,7 +32,7 @@ func TestCache(t *testing.T) {
 	proj := &api.GetProjectRes{}
 	proj.RepositoryId = "repo_id"
 	proj.Branch = "master"
-	b := &builder{f: f, logr: &logger.Logr{Writer: os.Stdout}}
+	b := &builder{f: f}
 	cfg := wtypes.Config{}
 	cfg.TeamID = "team_id"
 	cfg.BuildID = "build_id"
@@ -43,5 +41,5 @@ func TestCache(t *testing.T) {
 	b.project = proj
 
 	b.saveCache()
-	// b.restoreCache()
+	//b.restoreCache()
 }

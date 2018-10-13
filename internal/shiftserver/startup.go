@@ -111,8 +111,8 @@ func Run() error {
 
 			Store: Store{
 
-				//Server: "127.0.0.1",
-				Server:    "10.10.7.152",
+				Server: "127.0.0.1",
+				// Server:    "10.10.7.152",
 				Name:      "elasticshift",
 				Username:  "elasticshift",
 				Password:  "3l@$t1c$h1ft",

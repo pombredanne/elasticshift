@@ -18,7 +18,6 @@ import (
 func (b *builder) build(g *graph.Graph) error {
 
 	wdir := b.f.WorkDir()
-	log.Printf("Working directory : %s\n", wdir)
 
 	if wdir != "" {
 		expanded, err := homedir.Expand(wdir)
@@ -37,8 +36,6 @@ func (b *builder) build(g *graph.Graph) error {
 		}
 	}
 
-	log.Println("Working directory = " + utils.GetWD())
-
 	// set the parallel capability
 	var parallel int
 	nCpu := runtime.NumCPU()
@@ -56,7 +53,6 @@ func (b *builder) build(g *graph.Graph) error {
 	for i := 0; i < len(checkpoints); i++ {
 
 		if failed {
-			log.Println("Build finished.")
 			b.done <- 1
 			return nil
 		}
@@ -73,6 +69,7 @@ func (b *builder) build(g *graph.Graph) error {
 			var fanoutFailed bool
 
 			c.Node.Wait()
+			log.Println("S:FO:~" + c.Node.ID + "~")
 
 			var errMutex sync.Mutex
 			var wg sync.WaitGroup
@@ -94,6 +91,8 @@ func (b *builder) build(g *graph.Graph) error {
 				go func(n *graph.N) {
 
 					n.Wait()
+					n.Parallel = true
+
 					b.UpdateBuildGraphToShiftServer(graph.StatusWaiting, n.Name, "")
 
 					defer wg.Done()
@@ -111,6 +110,7 @@ func (b *builder) build(g *graph.Graph) error {
 
 						log.Printf("Failed when executing %s : %v\n", n.Name, err)
 						n.End(graph.StatusFailed, msg)
+						b.logBlockInfo(n, "F")
 						b.UpdateBuildGraphToShiftServer(graph.StatusFailed, n.Name, msg)
 
 						failed = true
@@ -118,6 +118,7 @@ func (b *builder) build(g *graph.Graph) error {
 
 						if n.Status != graph.StatusFailed {
 							n.End(graph.StatusSuccess, "")
+							b.logBlockInfo(n, "E")
 							b.UpdateBuildGraphToShiftServer(graph.StatusSuccess, n.Name, "")
 						}
 					}
@@ -132,9 +133,12 @@ func (b *builder) build(g *graph.Graph) error {
 
 			if fanoutFailed {
 				c.Node.End(graph.StatusFailed, "")
+				b.logBlockInfo(c.Node, "F")
 			} else {
 				c.Node.End(graph.StatusSuccess, "")
+				b.logBlockInfo(c.Node, "E")
 			}
+			log.Println("E:FO:~" + c.Node.ID + ":" + c.Node.Duration + "~")
 
 		} else {
 
@@ -145,12 +149,18 @@ func (b *builder) build(g *graph.Graph) error {
 			msg, err := b.invokePlugin(c.Node)
 			if err != nil {
 				c.Node.End(graph.StatusFailed, msg)
+
+				b.logBlockInfo(c.Node, "F")
 				b.UpdateBuildGraphToShiftServer(graph.StatusFailed, c.Node.Name, msg)
 
 				failed = true
 			} else {
 
 				c.Node.End(graph.StatusSuccess, "")
+
+				if graph.START != c.Node.Name || graph.END != c.Node.Name {
+					b.logBlockInfo(c.Node, "E")
+				}
 				b.UpdateBuildGraphToShiftServer(graph.StatusSuccess, c.Node.Name, "")
 			}
 		}
@@ -163,11 +173,12 @@ func (b *builder) UpdateBuildGraphToShiftServer(status, checkpoint, reason strin
 
 	if graph.StatusFailed == status || (graph.END == checkpoint && graph.StatusSuccess == status) {
 
-		log.Println("Saving cache.")
+		log.Println("S:~0.3:Saving cache:~")
 
 		b.saveCache()
 
-		log.Println("Finished saving the cache")
+		// TODO add duration
+		log.Println("E:~0.3:Saving cache::~")
 	}
 
 	gph, err := b.g.JSON()

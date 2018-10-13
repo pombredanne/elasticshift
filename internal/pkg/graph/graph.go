@@ -7,11 +7,13 @@ import (
 	"encoding/base64"
 	"encoding/json"
 	"fmt"
+	"strconv"
 	"sync"
 	"time"
 
 	"gitlab.com/conspico/elasticshift/internal/pkg/shiftfile/ast"
 	"gitlab.com/conspico/elasticshift/internal/pkg/shiftfile/keys"
+	"gitlab.com/conspico/elasticshift/internal/pkg/utils"
 )
 
 var (
@@ -33,6 +35,9 @@ var (
 type FanN struct {
 	in  *N
 	out *N
+
+	prefix string
+	level  int
 }
 
 var (
@@ -48,7 +53,7 @@ var (
 // N ...
 // Represents a node in execution map
 type N struct {
-	value map[string]interface{} `json:"-"`
+	value map[string]interface{}
 
 	Name        string    `json:"name"`
 	Description string    `json:"description,omitempty"`
@@ -56,6 +61,11 @@ type N struct {
 	Message     string    `json:"message,omitempty"`
 	StartedAt   time.Time `json:"started_at,omitempty"`
 	EndedAt     time.Time `json:"ended_at,omitempty"`
+	Duration    string    `json:"duration,omitempty"`
+
+	ID string `json:"id,omitempty"`
+
+	Parallel bool
 }
 
 func newN(value map[string]interface{}) *N {
@@ -67,6 +77,7 @@ func newN(value map[string]interface{}) *N {
 	if n.Name != START || n.Name != END || n.Name != FANOUT || n.Name != FANIN {
 		n.Status = StatusNotStarted
 	}
+
 	return n
 }
 
@@ -110,6 +121,30 @@ func (i *N) End(status, message string) {
 		i.Message = message
 	}
 	i.EndedAt = time.Now()
+
+	d := i.EndedAt.Sub(i.StartedAt)
+
+	var dur string
+
+	h := int(d.Hours())
+	m := int(d.Minutes()) - (h * 60)
+	s := int(d.Seconds()) - (int(d.Minutes()) * 60)
+
+	if h > 0 {
+		dur += fmt.Sprintf("%.02dh ", h)
+	}
+
+	if m > 0 {
+		dur += fmt.Sprintf("%.02dm ", m)
+	}
+
+	if s > 0 {
+		dur += fmt.Sprintf("%.02ds ", s)
+	} else {
+		dur += d.String()
+	}
+
+	i.Duration = dur
 }
 
 // MarshalJSON ..
@@ -128,6 +163,8 @@ func (i *N) MarshalJSON() ([]byte, error) {
 		Message     string    `json:"message,omitempty"`
 		StartedAt   time.Time `json:"started_at,omitempty"`
 		EndedAt     time.Time `json:"ended_at,omitempty"`
+		Duration    string    `json:"duration,omitempty"`
+		ID          string    `json:"id"`
 	}{
 		Name:        i.Name,
 		Description: i.Description,
@@ -135,6 +172,8 @@ func (i *N) MarshalJSON() ([]byte, error) {
 		StartedAt:   i.StartedAt,
 		EndedAt:     i.EndedAt,
 		Message:     msg,
+		Duration:    i.Duration,
+		ID:          i.ID,
 	})
 }
 
@@ -163,6 +202,15 @@ type Graph struct {
 	hintOrigins map[string]*FanN
 
 	lock sync.RWMutex
+
+	prevLevel int
+	level     int
+	prefix    string
+
+	stack          utils.Stack
+	fanoutStack    FanNStack
+	fanoutMode     bool
+	lastFanoutName string
 }
 
 // Construct ...
@@ -170,7 +218,10 @@ type Graph struct {
 func Construct(shiftfile *ast.File) (*Graph, error) {
 
 	g := &Graph{
-		f: shiftfile,
+		f:           shiftfile,
+		stack:       utils.NewStack(),
+		fanoutStack: NewFanNStack(),
+		level:       1,
 	}
 
 	err := g.constructGraph()
@@ -188,6 +239,46 @@ func (g *Graph) constructNode(name, description string) *N {
 	v[keys.DESC] = description
 
 	return newN(v)
+}
+
+func (g *Graph) nodeid() string {
+
+	prefix := g.stack.Last()
+
+	var id string
+	if prefix != "" {
+		id = prefix + "."
+	}
+
+	id += strconv.Itoa(g.level)
+
+	return id
+}
+
+func (g *Graph) IncrementPrefix() (string, int) {
+
+	prefix := g.stack.Last()
+	if prefix != "" {
+		prefix = prefix + "."
+	}
+	prefix = prefix + strconv.Itoa(g.level-1)
+	level := g.level
+
+	g.prevLevel = g.level + 1
+	g.level = 1
+
+	g.stack.Push(prefix)
+
+	return prefix, level
+}
+
+func (g *Graph) IncrementLevel() {
+	g.level = g.level + 1
+}
+
+func (g *Graph) DecrementPrefix() {
+	g.level = g.prevLevel
+	g.prefix = g.stack.Pop()
 }
 
 func (g *Graph) constructGraph() error {
@@ -217,6 +308,10 @@ func (g *Graph) addNode(n *N) {
 			g.hintOrigins = make(map[string]*FanN)
 		}
 
+		if g.lastFanoutName != "" && g.lastFanoutName != name {
+			g.DecrementPrefix()
+		}
+
 		var fann *FanN
 		fann = g.hintOrigins[name]
 		if fann == nil {
@@ -225,10 +320,19 @@ func (g *Graph) addNode(n *N) {
 			fann.out = g.constructNode(FANOUT+"-"+name, FANOUT_DESC)
 			fann.in = g.constructNode(FANIN+"-"+name, FANIN_DESC)
 
+			fann.out.ID = g.nodeid()
+
+			g.IncrementLevel()
+			fann.in.ID = g.nodeid()
+
 			// add fan-out node
 			g.nodes = append(g.nodes, fann.out)
 			g.addEdge(g.prevNode, fann.out)
 			g.addCheckpoint(fann.out, n)
+
+			fann.prefix, fann.level = g.IncrementPrefix()
+
+			n.ID = g.nodeid()
 
 			// add fan-in node
 			g.nodes = append(g.nodes, n)
@@ -239,7 +343,15 @@ func (g *Graph) addNode(n *N) {
 			g.nodes = append(g.nodes, fann.in)
 			g.prevNode = fann.in
 
+			g.fanoutStack.Push(fann)
+			g.fanoutMode = true
+
+			g.lastFanoutName = name
+
 		} else {
+
+			g.IncrementLevel()
+			n.ID = g.nodeid()
 
 			// add edge to a fan-out, fan-in node
 			g.nodes = append(g.nodes, n)
@@ -250,6 +362,19 @@ func (g *Graph) addNode(n *N) {
 		}
 
 	} else {
+
+		if g.fanoutMode {
+
+			g.fanoutStack.Pop()
+			g.DecrementPrefix()
+
+			if g.fanoutStack.Size() == 0 {
+				g.fanoutMode = false
+			}
+		}
+
+		n.ID = g.nodeid()
+		g.IncrementLevel()
 
 		g.nodes = append(g.nodes, n)
 		g.prevNode = n
@@ -332,15 +457,26 @@ func (g *Graph) String() string {
 
 	g.lock.RLock()
 
+	// s := ""
+	// for i := 0; i < len(g.checkpoints); i++ {
+
+	// 	c := g.checkpoints[i]
+	// 	s += fmt.Sprintf("(%d) %s\n", i+1, c.Node.Name)
+	// 	for j := 0; j < len(c.Edges); j++ {
+	// 		s += fmt.Sprintf("(%d) - %s\n", i+1, c.Edges[j].Name)
+	// 	}
+	// }
+
 	s := ""
 	for i := 0; i < len(g.checkpoints); i++ {
 
 		c := g.checkpoints[i]
-		s += fmt.Sprintf("(%d) %s\n", i+1, c.Node.Name)
+		s += fmt.Sprintf("(%s) %s\n", c.Node.ID, c.Node.Name)
 		for j := 0; j < len(c.Edges); j++ {
-			s += fmt.Sprintf("(%d) - %s\n", i+1, c.Edges[j].Name)
+			s += fmt.Sprintf("(%s) - %s\n", c.Edges[j].ID, c.Edges[j].Name)
 		}
 	}
+
 	g.lock.RUnlock()
 
 	return s

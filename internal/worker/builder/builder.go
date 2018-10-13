@@ -73,6 +73,9 @@ func (b *builder) run() error {
 
 	log.Printf("Project Info: %v", proj)
 
+	log.Println("E:~0.1:Environment Setup::~")
+
+	log.Println("S:~0.2:Restoring Cache:~")
 	// restore build cache if any
 	// save the cache after every successful build
 	err = b.restoreCache()
@@ -80,13 +83,14 @@ func (b *builder) run() error {
 		log.Println("Restoring cache failed:", err)
 	}
 
+	// TODO add duration
+	log.Println("E:~0.2:Restoring Cache::~")
+
 	// 1. Ensure connection to log storage is good, this container should be loaded with
 
 	// 2. Load the build cache, if available ensure it
 
 	// 3. Fetch the shiftfile
-
-	log.Println("Getting the shift file..")
 
 	// 4. otherwise use the global language spec defined by elasticshift
 	var f []byte

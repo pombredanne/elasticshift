@@ -7,6 +7,7 @@ import (
 	"fmt"
 	"strings"
 	"testing"
+	"time"
 
 	"gitlab.com/conspico/elasticshift/internal/pkg/shiftfile/parser"
 )
@@ -88,7 +89,88 @@ IMAGE "elasticshift/java:1.9" {
 }
 `
 
-func TestGraph(t *testing.T) {
+func TestDuration(t *testing.T) {
+
+	//t1 := time.Date(2016, time.August, 15, 0, 20, 15, 125, time.UTC)
+	t1 := time.Date(2017, time.February, 16, 0, 0, 0, 0, time.UTC)
+	t2 := time.Date(2017, time.February, 16, 0, 0, 0, 123267565, time.UTC)
+
+	d := t2.Sub(t1)
+
+	fmt.Println(d.String())
+
+	// text := ""
+	var text string
+
+	// fmt.Printf("Duration: %dh %dm %ds %dns \n", int(t3.Hours()), int(t3.Minutes()), int(t3.Seconds()), int(t3.Nanoseconds()))
+
+	h := int(d.Hours())
+	m := int(d.Minutes()) - (h * 60)
+	s := int(d.Seconds()) - (int(d.Minutes()) * 60)
+
+	if h > 0 {
+		text += fmt.Sprintf("%.02dh ", h)
+	}
+
+	if m > 0 {
+		text += fmt.Sprintf("%.02dm ", m)
+	}
+
+	if s > 0 {
+		text += fmt.Sprintf("%.02ds ", s)
+	} else {
+
+		durStr := d.String()
+
+		var finalDur string
+		var stripLen int
+		stripLen = 3
+		if strings.HasSuffix(durStr, "ms") || strings.HasSuffix(durStr, "ns") {
+			stripLen = 2
+		}
+
+		idx := len(durStr) - stripLen
+		dur := durStr[:idx]
+		notation := durStr[idx:]
+
+		dotIdx := strings.Index(dur, ".")
+		if dotIdx > 0 {
+
+			befrDec := dur[:dotIdx+1]
+			aftrDec := dur[dotIdx+1:]
+			if len(aftrDec) > 3 {
+				finalDur = befrDec + aftrDec[:3] + notation
+			} else {
+				finalDur = befrDec + aftrDec + notation
+			}
+		} else {
+			finalDur = d.String()
+		}
+
+		text += finalDur
+	}
+}
+
+func TestNodeLevel(t *testing.T) {
+
+	f, err := parser.AST([]byte(file))
+	if err != nil {
+		t.Fail()
+	}
+
+	graph, err := Construct(f)
+	fmt.Println(graph.String())
+
+	f, err = parser.AST([]byte(file2))
+	if err != nil {
+		t.Fail()
+	}
+
+	graph, err = Construct(f)
+	fmt.Println(graph.String())
+}
+
+func testGraph(t *testing.T) {
 
 	f, err := parser.AST([]byte(file))
 	if err != nil {

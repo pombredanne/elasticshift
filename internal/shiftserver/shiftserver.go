@@ -113,6 +113,18 @@ func New(ctx context.Context, c ServerConfig) (*Server, error) {
 	r.HandleFunc("/debug/pprof", pprof.Index)
 	r.HandleFunc("/debug/symbol", pprof.Symbol)
 	r.HandleFunc("/debug/profile", pprof.Profile)
+
+	// mux.HandleFunc("/debug/pprof/", pprof.Index)
+	// mux.HandleFunc("/debug/pprof/heap", pprof.Index)
+	// mux.HandleFunc("/debug/pprof/mutex", pprof.Index)
+	// mux.HandleFunc("/debug/pprof/goroutine", pprof.Index)
+	// mux.HandleFunc("/debug/pprof/threadcreate", pprof.Index)
+	// mux.HandleFunc("/debug/pprof/block", pprof.Index)
+	// mux.HandleFunc("/debug/pprof/cmdline", pprof.Cmdline)
+	// mux.HandleFunc("/debug/pprof/profile", pprof.Profile)
+	// mux.HandleFunc("/debug/pprof/symbol", pprof.Symbol)
+	// mux.HandleFunc("/debug/pprof/trace", pprof.Trace)
+
 	r.Handle("/debug/heap", pprof.Handler("heap"))
 	r.Handle("/debug/goroutine", pprof.Handler("goroutine"))
 	r.Handle("/debug/threadcreate", pprof.Handler("threadcreate"))

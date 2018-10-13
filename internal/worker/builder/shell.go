@@ -5,6 +5,7 @@ package builder
 
 import (
 	"bytes"
+	"encoding/base64"
 	"fmt"
 	"io"
 	"log"
@@ -18,15 +19,23 @@ func (b *builder) invokeShell(n *graph.N) (string, error) {
 
 	cmds := n.Item()[keys.COMMAND].([]string)
 
+	var prefix, encmd string
 	for _, command := range cmds {
 
-		log.Println(fmt.Sprintf("START:EXEC:~%s~", command))
-		msg, err := b.execShellCmd(n.Name, command, nil, "")
+		encmd = base64.StdEncoding.EncodeToString([]byte(command))
+		log.Println(fmt.Sprintf("S:EXEC:~%s:%s~", n.ID, encmd))
+
+		prefix = ""
+		if n.Parallel {
+			prefix = n.ID + "[!@#$]"
+		}
+
+		msg, err := b.execShellCmd(prefix, command, nil, "")
 		if err != nil {
-			log.Println(fmt.Sprintf("ERROR:EXEC:~%s~", command))
+			log.Println(fmt.Sprintf("F:EXEC:~%s:%s~", n.ID, encmd))
 			return msg, err
 		}
-		log.Println(fmt.Sprintf("END:EXEC:~%s~", command))
+		log.Println(fmt.Sprintf("E:EXEC:~%s:%s~", n.ID, encmd))
 	}
 	return "", nil
 }
@@ -39,8 +48,16 @@ func (b *builder) execShellCmd(prefix string, shellCmd string, env []string, dir
 	stderr, _ := cmd.StderrPipe()
 
 	var buf bytes.Buffer
-	go io.Copy(b.writer, stdout)
-	go io.Copy(io.MultiWriter(b.writer, &buf), stderr)
+	var w io.Writer
+
+	if prefix != "" {
+		w = newPrefixWriter(prefix, b.writer)
+	} else {
+		w = b.writer
+	}
+
+	go io.Copy(w, stdout)
+	go io.Copy(io.MultiWriter(w, &buf), stderr)
 
 	if env != nil {
 		cmd.Env = env
