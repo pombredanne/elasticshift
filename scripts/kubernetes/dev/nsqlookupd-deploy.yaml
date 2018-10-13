@@ -1,0 +1,47 @@
+apiVersion: v1
+kind: Service
+metadata:
+  name: nsqlookupd
+  labels:
+    app: nsq
+spec:
+  ports:
+  - port: 4160
+    targetPort: 4160
+    name: tcp
+    nodePort: 30160
+    protocol: TCP
+  - port: 4161
+    targetPort: 4161
+    name: http
+    nodePort: 30161
+    protocol: TCP
+  type: NodePort
+  selector:
+    app: nsq
+    component: nsqlookupd
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: nsqlookupd
+spec:
+  selector:
+    matchLabels:
+      app: nsq
+      component: nsqlookupd
+  replicas: 2
+  template:
+    metadata:
+      labels:
+        app: nsq
+        component: nsqlookupd
+    spec:
+      containers:
+      - args:
+        - /nsqlookupd
+        image: nsqio/nsq
+        name: nsqlookupd
+        ports:
+        - containerPort: 4160
+        - containerPort: 4161

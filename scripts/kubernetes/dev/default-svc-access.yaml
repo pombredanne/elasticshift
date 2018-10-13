@@ -1,0 +1,40 @@
+kind: ClusterRole
+apiVersion: rbac.authorization.k8s.io/v1
+metadata:
+  namespace: default
+  name: service-secret-reader
+rules:
+- apiGroups: [""] # "" indicates the core API group
+  resources: ["services", "secrets", "configmaps", "endpoints", "ingress"]
+  verbs: ["get", "watch", "list"]
+- apiGroups: ["extensions"] # "" indicates the core API group
+  resources: ["ingresses"]
+  verbs: ["get", "watch", "list"]
+---
+kind: RoleBinding
+apiVersion: rbac.authorization.k8s.io/v1
+metadata:
+  name: read-secrets-service
+  namespace: default # This only grants permissions within the "development" namespace.
+subjects:
+- kind: User
+  name: system:serviceaccount:default:default # Name is case sensitive
+  apiGroup: rbac.authorization.k8s.io
+roleRef:
+  kind: ClusterRole
+  name: service-secret-reader
+  apiGroup: rbac.authorization.k8s.io
+---
+apiVersion: rbac.authorization.k8s.io/v1beta1
+kind: ClusterRoleBinding
+metadata:
+  name: default-cluster-role-binding
+  namespace: default
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: ClusterRole
+  name: service-secret-reader
+subjects:
+- kind: User
+  name: system:serviceaccount:default:default
+  apiGroup: rbac.authorization.k8s.io

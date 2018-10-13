@@ -1,0 +1,191 @@
+apiVersion: v1
+kind: Service
+metadata:
+  name: nsqlookupd
+  labels:
+    app: nsq
+spec:
+  ports:
+  - port: 4160
+    targetPort: 4160
+    name: tcp
+    nodePort: 30160
+    protocol: TCP
+  - port: 4161
+    targetPort: 4161
+    name: http
+    nodePort: 30161
+    protocol: TCP
+  #clusterIP: None
+  type: NodePort
+  selector:
+    app: nsq
+    component: nsqlookupd
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: nsqd
+  labels:
+    app: nsq
+spec:
+  ports:
+  - port: 4150
+    targetPort: 4150
+    name: tcp
+    nodePort: 30150
+    protocol: TCP
+  - port: 4151
+    targetPort: 4151
+    name: http
+    nodePort: 30151
+    protocol: TCP
+  type: NodePort
+  selector:
+    app: nsq
+    component: nsqd
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: nsqadmin
+  labels:
+    app: nsq
+spec:
+  ports:
+  - port: 4170
+    targetPort: 4170
+    name: tcp
+    nodePort: 30170
+    protocol: TCP
+  - port: 4171
+    targetPort: 4171
+    name: http
+    nodePort: 30171
+    protocol: TCP
+  type: NodePort
+  selector:
+    app: nsq
+    component: nsqadmin
+---
+apiVersion: apps/v1beta1
+kind: StatefulSet
+metadata:
+  name: nsqd
+spec:
+  serviceName: "nsqd"
+  replicas: 1
+  # strategy:
+  #   type: Recreate
+  template:
+    metadata:
+      labels:
+        app: nsq
+        component: nsqd
+    spec:
+      containers:
+      - args:
+        - /nsqd
+        - -lookupd-tcp-address
+        - nsqlookupd-0.nsqlookupd.default.svc.cluster.local:4160
+        image: nsqio/nsq
+        name: nsqd
+        ports:
+        - containerPort: 4150
+        - containerPort: 4151
+        resources: {}
+        volumeMounts:
+        - mountPath: /data
+          name: nsqvol
+      restartPolicy: Always
+      volumes:
+        - name: nsqvol
+          nfs:
+            server: 10.10.7.151
+            path: /nfs/storage/sys/nsq
+            readOnly: false
+---
+apiVersion: apps/v1beta1
+kind: StatefulSet
+metadata:
+  name: nsqlookupd
+spec:
+  serviceName: "nsqlookupd"
+  replicas: 1
+  # strategy:
+  #   type: Recreate
+  template:
+    metadata:
+      labels:
+        app: nsq
+        component: nsqlookupd
+    spec:
+      containers:
+      - args:
+        - /nsqlookupd
+        image: nsqio/nsq
+        name: nsqlookupd
+        ports:
+        - containerPort: 4160
+        - containerPort: 4161
+# ---
+# apiVersion: apps/v1beta1
+# kind: StatefulSet
+# metadata:
+#   name: nsqadmin
+# spec:
+#   serviceName: "nsqadmin"
+#   replicas: 1
+#   # strategy:
+#   #   type: Recreate
+#   template:
+#     metadata:
+#       labels:
+#         app: nsq
+#         component: nsqadmin
+#     spec:
+#       containers:
+#       - args:
+#         - /nsqadmin
+#         - -lookupd-http-address
+#         - nsqlookupd-0.nsqlookupd.default.svc.cluster.local:4161
+#         image: nsqio/nsq
+#         name: nsqadmin
+#         ports:
+#         - containerPort: 4170
+#         - containerPort: 4171
+---
+apiVersion: apps/v1beta1
+kind: StatefulSet
+metadata:
+  name: elasticshift.api
+spec:
+  serviceName: "elasticshift.api"
+  replicas: 1
+  # strategy:
+  #   type: Recreate
+  template:
+    metadata:
+      labels:
+        app: elasticshift
+        component: api
+    spec:
+      imagePullSecrets:
+        - name: gitlabreg
+      containers:
+      - env:
+        - name: NSQ_CONSUMER_ADDRESS
+          value: nsqlookupd-0.nsqlookupd.default.svc.cluster.local:4161
+        - name: NSQ_PRODUCER_ADDRESS
+          value: nsqd-0.nsqd.default.svc.cluster.local:4150
+        - name: SHIFT_HOST
+          value: api.elasticshift.com
+        - name: STORE_SERVER
+          value: 10.10.7.152
+        - name: no_proxy
+          value: localhost,127.0.0.1
+        image: registry.gitlab.com/conspico/esh:0.0.7_3.8
+        name: elasticshift.api
+        ports:
+        - containerPort: 9100
+        - containerPort: 9101

@@ -1,0 +1,36 @@
+apiVersion: extensions/v1beta1
+kind: Ingress
+metadata:
+  name: elasticshift.com
+  namespace: elasticshift
+  annotations:
+    kubernetes.io/ingress.class: "nginx"
+    nginx.ingress.kubernetes.io/rewrite-target: /
+spec:
+  tls:
+  - secretName: tls-certificate
+  backend:
+    serviceName: default-http-backend
+    servicePort: 80
+  rules:
+  - host: elasticshift.com
+    http:
+      paths:
+      - path: /
+        backend:
+          serviceName: elasticshift-frontend
+          servicePort: 8080
+  - host: api.elasticshift.com
+    http:
+      paths:
+      - path: /
+        backend:
+          serviceName: elasticshift-api
+          servicePort: 9100
+  - host: storage.elasticshift.com
+    http:
+      paths:
+      - path: /
+        backend:
+          serviceName: minio
+          servicePort: 30258

@@ -1,0 +1,48 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: elasticshift
+spec:
+  selector:
+    matchLabels:
+      run: elasticshift
+  replicas: 1
+  template:
+    metadata:
+      labels:
+        run: elasticshift
+    spec:
+      containers:
+      - args:
+        - /nsqd
+        - --data-path=/data
+        - --lookupd-tcp-address=nsqlookupd:4160
+        image: nsqio/nsq
+        name: nsqd
+        ports:
+          - containerPort: 4150
+          - containerPort: 4151
+        volumeMounts:
+          - name: nfsvol
+            mountPath: /data
+      - args:
+        - /nsqlookupd
+        image: nsqio/nsq
+        name: nsqlookupd
+        ports:
+        - containerPort: 4160
+        - containerPort: 4161
+      - args:
+        - /nsqadmin
+        - --lookupd-http-address=nsqlookupd:4161
+        image: nsqio/nsq
+        name: nsqadmin
+        ports:
+        - containerPort: 4171
+      restartPolicy: Always
+      volumes:
+        - name: nfsvol
+          nfs:
+            server: 10.10.7.151
+            path: /nfs/storage/sys/nsq
+            readOnly: false

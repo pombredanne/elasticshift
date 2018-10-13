@@ -1,0 +1,61 @@
+apiVersion: v1
+kind: Service
+metadata:
+  name: nsqd
+  labels:
+    app: nsq
+spec:
+  ports:
+  - port: 4150
+    targetPort: 4150
+    name: tcp
+    nodePort: 30150
+    protocol: TCP
+  - port: 4151
+    targetPort: 4151
+    name: http
+    nodePort: 30151
+    protocol: TCP
+  type: NodePort
+  selector:
+    app: nsq
+    component: nsqd
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: nsqd
+spec:
+  selector:
+    matchLabels:
+      app: nsq
+      component: nsqd
+  replicas: 2
+  template:
+    metadata:
+      labels:
+        app: nsq
+        component: nsqd
+    spec:
+      containers:
+      - args:
+        - /nsqd
+        - -lookupd-tcp-address
+        - 10.10.7.165:30160
+        - -lookupd-tcp-address
+        - 10.10.7.166:30160
+        image: nsqio/nsq
+        name: nsqd
+        ports:
+        - containerPort: 4150
+        - containerPort: 4151
+        resources: {}
+        volumeMounts:
+        - mountPath: /data
+          name: nsqvol
+      volumes:
+        - name: nsqvol
+          nfs:
+            server: 10.10.7.151
+            path: /nfs/storage/sys/nsq
+            readOnly: false
