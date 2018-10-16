@@ -5,6 +5,7 @@ package logger
 
 import (
 	"fmt"
+	"io"
 	"os"
 	"strings"
 
@@ -33,15 +34,20 @@ type loggr struct {
 // Loggr ..
 type Loggr interface {
 	GetLogger(prefix string) *logrus.Entry
+	GetLoggerWithField(name, value string, out io.Writer) *logrus.Entry
 }
 
 // GetLogger ..
 func (l *loggr) GetLogger(component string) *logrus.Entry {
+	return l.GetLoggerWithField("component", component, os.Stdout)
+}
+
+func (l *loggr) GetLoggerWithField(name, value string, out io.Writer) *logrus.Entry {
 	logger := logrus.New()
-	logger.Out = os.Stderr
+	logger.Out = out
 	logger.Formatter = &l.formatter
 	logger.Level = l.logLevel
-	return logger.WithField("component", component)
+	return logger.WithField(name, value)
 }
 
 // New ..

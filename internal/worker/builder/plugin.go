@@ -4,9 +4,6 @@ Copyright 2018 The Elasticshift Authors.
 package builder
 
 import (
-	"fmt"
-	"log"
-
 	"gitlab.com/conspico/elasticshift/internal/pkg/graph"
 )
 
@@ -23,12 +20,14 @@ func (b *builder) invokePlugin(n *graph.N) (string, error) {
 	var err error
 	var msg string
 
-	b.logBlockInfo(n, "S")
-
 	// check if the plugin is of type "shell"
 	// then include the shell commands all other properties are ignored
 	if SHELL == n.Name {
 		msg, err = b.invokeShell(n)
+	} else if graph.RESTORE_CACHE == n.Name {
+		err = b.restoreCache(n.Logger)
+	} else if graph.SAVE_CACHE == n.Name {
+		err = b.saveCache(n.Logger)
 	}
 
 	if err != nil {
@@ -38,13 +37,4 @@ func (b *builder) invokePlugin(n *graph.N) (string, error) {
 	// 1. Check if plugin already available
 
 	return "", nil
-}
-
-func (b *builder) logBlockInfo(n *graph.N, when string) {
-
-	if when == "E" || when == "F" {
-		log.Println(fmt.Sprintf("%s:~%s:%s:%s:%s~", when, n.ID, n.Name, n.Description, n.Duration))
-	} else {
-		log.Println(fmt.Sprintf("%s:~%s:%s:%s~", when, n.ID, n.Name, n.Description))
-	}
 }

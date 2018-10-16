@@ -10,7 +10,6 @@ import (
 	"encoding/pem"
 	"fmt"
 	"io/ioutil"
-	"log"
 	"os"
 	"path/filepath"
 
@@ -21,17 +20,19 @@ import (
 // Used to ssh to running containers.
 func (w *W) GenerateRSAKeys() error {
 
-	log.Println("Generating RSA keys..")
+	log1 := w.Context.EnvLogger
+
+	log1.Println("Generating RSA keys..")
 	r := rand.Reader
 
 	key, err := rsa.GenerateKey(r, DEFAULT_BIT_SIZE)
 	if err != nil {
-		log.Printf("Failed to generate rsa keys: %v", err)
+		log1.Printf("Failed to generate rsa keys: %v", err)
 	}
 
 	sshdir, err := GetSSHDir()
 	if err != nil {
-		log.Printf("Failed to get ssh dir: %v", err)
+		log1.Printf("Failed to get ssh dir: %v", err)
 	}
 
 	w.privKeyPath = filepath.Join(sshdir, PRIV_KEY_NAME)
@@ -49,7 +50,7 @@ func (w *W) GenerateRSAKeys() error {
 	if err != nil {
 		w.Fatal(fmt.Errorf("Failed to save the public key: %v", err))
 	} else {
-		log.Println("Keys generated successfully.")
+		log1.Println("Keys generated successfully.")
 	}
 
 	return nil

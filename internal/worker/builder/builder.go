@@ -7,7 +7,6 @@ import (
 	"context"
 	"fmt"
 	"io"
-	"log"
 
 	"path/filepath"
 
@@ -37,6 +36,7 @@ var (
 type builder struct {
 	shiftconn   *grpc.ClientConn
 	ctx         context.Context
+	wctx        wtypes.Context
 	config      wtypes.Config
 	shiftclient api.ShiftClient
 	project     *api.GetProjectRes
@@ -54,6 +54,7 @@ func New(ctx wtypes.Context, shiftconn *grpc.ClientConn, writer io.Writer, done 
 	b := builder{}
 	b.shiftconn = shiftconn
 	b.ctx = ctx.Context
+	b.wctx = ctx
 	b.shiftclient = ctx.Client
 	b.config = ctx.Config
 	b.done = done
@@ -71,20 +72,17 @@ func (b *builder) run() error {
 	}
 	b.project = proj
 
-	log.Printf("Project Info: %v", proj)
+	b.wctx.EnvLogger.Printf("Project Info: %v", proj)
 
-	log.Println("E:~0.1:Environment Setup::~")
-
-	log.Println("S:~0.2:Restoring Cache:~")
 	// restore build cache if any
 	// save the cache after every successful build
-	err = b.restoreCache()
-	if err != nil {
-		log.Println("Restoring cache failed:", err)
-	}
+	// err = b.restoreCache()
+	// if err != nil {
+	// 	log.Println("Restoring cache failed:", err)
+	// }
 
 	// TODO add duration
-	log.Println("E:~0.2:Restoring Cache::~")
+	// log.Println("E:~0.2:Restoring Cache::~")
 
 	// 1. Ensure connection to log storage is good, this container should be loaded with
 
@@ -123,12 +121,12 @@ func (b *builder) run() error {
 	// 8. Fetch the secrets
 
 	// send the initial graph to server
-	b.UpdateBuildGraphToShiftServer("", "", "")
+	b.UpdateBuildGraphToShiftServer("", "", "", b.wctx.EnvLogger)
 
 	// 9. Traverse the execution map & run the actual build
 	err = b.build(graph)
 	if err != nil {
-		log.Printf("Build failed: %v\n", err)
+		b.wctx.EnvLogger.Printf("Build failed: %v\n", err)
 	}
 
 	return nil

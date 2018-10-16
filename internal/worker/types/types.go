@@ -7,7 +7,9 @@ import (
 	"context"
 	"io"
 
+	"github.com/Sirupsen/logrus"
 	"gitlab.com/conspico/elasticshift/api"
+	"gitlab.com/conspico/elasticshift/internal/worker/logwriter"
 )
 
 type Context struct {
@@ -17,6 +19,9 @@ type Context struct {
 	ContainerID string
 	Writer      io.Writer
 	Logdir      string
+
+	LogWriter logwriter.LogWriter
+	EnvLogger *logrus.Entry
 }
 
 type Config struct {

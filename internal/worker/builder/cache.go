@@ -7,13 +7,13 @@ import (
 	"encoding/json"
 	"fmt"
 	"io/ioutil"
-	"log"
 	"os"
 	"path"
 	"path/filepath"
 	"runtime"
 	"sync"
 
+	"github.com/Sirupsen/logrus"
 	"github.com/mholt/archiver"
 	homedir "github.com/minio/go-homedir"
 	"gitlab.com/conspico/elasticshift/internal/pkg/utils"
@@ -35,14 +35,14 @@ type CacheFile struct {
 	Entries []CacheEntry `json:"cache_entry"`
 }
 
-func (b *builder) saveCache() {
+func (b *builder) saveCache(nodelogger *logrus.Entry) error {
 
 	cacdir := b.cacheDir()
 
 	// load the cache
-	cf, err := b.readCacheFile(cacdir)
+	cf, err := b.readCacheFile(cacdir, nodelogger)
 	if err != nil {
-		log.Printf("Failed to load cache file:%v\n", err)
+		return fmt.Errorf("Failed to load cache file:%v \n", err)
 	}
 
 	dirs := b.f.CacheDirectories()
@@ -63,7 +63,7 @@ func (b *builder) saveCache() {
 
 			expanded, err := homedir.Expand(dir)
 			if err != nil {
-				log.Printf("Failed to expand the cache directory : %v", err)
+				nodelogger.Printf("Failed to expand the cache directory : %v", err)
 			}
 
 			var ce CacheEntry
@@ -90,21 +90,19 @@ func (b *builder) saveCache() {
 				ce.ExtractTo = extractDir
 				ce.ID = id
 
-				fmt.Println(fmt.Sprintf("New cache entry: %#v", ce))
-
 				utils.Mkdir(cachedir)
 
 				cached := filepath.Join(cachedir, id)
 				err := archiver.TarGz.Make(cached, []string{expanded})
 				if err != nil {
-					log.Printf("Failed to compress %s: %v\n", dir, err)
+					nodelogger.Printf("Failed to compress %s: %v\n", dir, err)
 				}
 
 				newDirs = append(newDirs, ce)
 			} else {
 
 				// check the checksum after
-				fmt.Println(ce)
+				nodelogger.Println(ce)
 			}
 
 			<-parallelCh
@@ -124,37 +122,37 @@ func (b *builder) saveCache() {
 		cf.Entries = append(cf.Entries, e)
 	}
 
-	b.writeCacheFile(cacdir, cf)
+	return b.writeCacheFile(cacdir, cf)
 }
 
-func (b *builder) restoreCache() error {
+func (b *builder) restoreCache(nodelogger *logrus.Entry) error {
 
 	cacdir := b.cacheDir()
-	log.Println("Cache dir = ", cacdir)
+	nodelogger.Println("Cache dir = ", cacdir)
 
 	exist, err := utils.PathExist(cacdir)
 	if err != nil {
 		return fmt.Errorf("Failed to check if the path exist: %v", err)
 	}
-	log.Println("Cache path exist: ", exist)
+	nodelogger.Println("Cache path exist: ", exist)
 
 	if !exist {
-		log.Println("No cache available.")
+		nodelogger.Println("No cache available.")
 		return nil
 	}
 
 	// load the cache
-	cf, err := b.readCacheFile(cacdir)
+	cf, err := b.readCacheFile(cacdir, nodelogger)
 	if err != nil {
-		log.Printf("Failed to load cache file:%v\n", err)
+		nodelogger.Printf("Failed to load cache file:%v\n", err)
 	}
 
 	if cf == nil {
-		log.Println("No cache available.")
+		nodelogger.Println("No cache available.")
 		return nil
 	}
 
-	fmt.Println("Cache entries: ", cf.Entries)
+	nodelogger.Println("Cache entries: ", cf.Entries)
 
 	cpu := ncpu()
 	var wg sync.WaitGroup
@@ -170,25 +168,25 @@ func (b *builder) restoreCache() error {
 
 			dir, err := homedir.Expand(c.ExtractTo)
 			if err != nil {
-				log.Printf("Failed to expand the cache directory: %v", err)
+				nodelogger.Printf("Failed to expand the cache directory: %v \n", err)
 			}
-			fmt.Println("Expanded cache directory : ", dir)
+			nodelogger.Println("Expanded cache directory : ", dir)
 
 			src := filepath.Join(cacdir, c.ID)
-			fmt.Println("Cache file:", src)
+			nodelogger.Println("Cache file:", src)
 
 			exist, err := utils.PathExist(src)
 			if err != nil {
-				log.Printf("Source file to extract not found: %v\n", err)
+				nodelogger.Printf("Source file to extract not found: %v\n", err)
 			}
-			fmt.Println("Cache entry file exist: ", exist)
+			nodelogger.Println("Cache entry file exist: ", exist)
 
 			if exist {
 
-				fmt.Println(fmt.Sprintf("Extracting tar from %s to %s", src, dir))
+				nodelogger.Printf("Extracting tar from %s to %s\n", src, dir)
 				err = archiver.TarGz.Open(src, dir)
 				if err != nil {
-					log.Printf("Failed to untar cache file: %v", err)
+					nodelogger.Printf("Failed to untar cache file: %v", err)
 				}
 			}
 
@@ -196,11 +194,11 @@ func (b *builder) restoreCache() error {
 		}(c)
 	}
 
-	log.Println("Waiting to extract the cache")
+	nodelogger.Println("Waiting to extract the cache")
 
 	wg.Wait()
 
-	log.Println("Finished extracting the cache.")
+	nodelogger.Println("Finished extracting the cache.")
 
 	return nil
 }
@@ -219,18 +217,18 @@ func (b *builder) cacheDir() string {
 	return filepath.Join(b.config.ShiftDir, DIR_CACHE, b.config.TeamID, b.project.GetRepositoryId(), b.project.GetBranch())
 }
 
-func (b *builder) readCacheFile(cachepath string) (*CacheFile, error) {
+func (b *builder) readCacheFile(cachepath string, nodelogger *logrus.Entry) (*CacheFile, error) {
 
 	name := path.Join(cachepath, FILE_CACHE)
 
-	fmt.Println("Cache file: ", name)
+	nodelogger.Println("Cache file: ", name)
 	exist, err := utils.PathExist(name)
 	if err != nil {
-		fmt.Println("Checking cachefile exist failed: ", err)
+		nodelogger.Println("Checking cachefile exist failed: ", err)
 		return nil, err
 	}
 
-	fmt.Println("Cache file exist: ", exist)
+	nodelogger.Println("Cache file exist: ", exist)
 	if !exist {
 		return nil, nil
 	}
@@ -240,12 +238,12 @@ func (b *builder) readCacheFile(cachepath string) (*CacheFile, error) {
 		return nil, fmt.Errorf("Failed to read .cache suppose to be '%s'\n", FILE_CACHE)
 	}
 
-	fmt.Println("Cache file raw content: ", string(raw))
+	nodelogger.Println("Cache file raw content: ", string(raw))
 
 	var f CacheFile
 	err = json.Unmarshal(raw, &f)
 	if err != nil {
-		log.Printf("Failed to parse cache file : %v\n", err)
+		nodelogger.Printf("Failed to parse cache file : %v\n", err)
 	}
 	return &f, nil
 }

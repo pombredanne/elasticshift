@@ -11,6 +11,7 @@ import (
 	"sync"
 	"time"
 
+	"github.com/Sirupsen/logrus"
 	"gitlab.com/conspico/elasticshift/internal/pkg/shiftfile/ast"
 	"gitlab.com/conspico/elasticshift/internal/pkg/shiftfile/keys"
 	"gitlab.com/conspico/elasticshift/internal/pkg/utils"
@@ -28,6 +29,15 @@ var (
 
 	FANIN      = "FANIN"
 	FANIN_DESC = "Merging the graph to continue further execution"
+
+	ENV      = "ENV"
+	ENV_DESC = "Environment Setup"
+
+	RESTORE_CACHE      = "RCACHE"
+	RESTORE_CACHE_DESC = "Restore Cache"
+
+	SAVE_CACHE      = "SCACHE"
+	SAVE_CACHE_DESC = "Save Cache"
 
 	ERROR = "ERROR"
 )
@@ -66,6 +76,7 @@ type N struct {
 	ID string `json:"id,omitempty"`
 
 	Parallel bool
+	Logger   *logrus.Entry
 }
 
 func newN(value map[string]interface{}) *N {
@@ -221,7 +232,7 @@ func Construct(shiftfile *ast.File) (*Graph, error) {
 		f:           shiftfile,
 		stack:       utils.NewStack(),
 		fanoutStack: NewFanNStack(),
-		level:       1,
+		level:       0,
 	}
 
 	err := g.constructGraph()
@@ -273,7 +284,7 @@ func (g *Graph) IncrementPrefix() (string, int) {
 }
 
 func (g *Graph) IncrementLevel() {
-	g.level = g.level + 1
+	g.level++
 }
 
 func (g *Graph) DecrementPrefix() {
@@ -285,12 +296,16 @@ func (g *Graph) constructGraph() error {
 
 	// add start node
 	g.addNode(g.constructNode(START, START_DESC))
+	g.addNode(g.constructNode(ENV, ENV_DESC))
+	g.addNode(g.constructNode(RESTORE_CACHE, RESTORE_CACHE_DESC))
 
 	for g.f.HasMoreBlocks() {
 
 		b := g.f.NextBlock()
 		g.addNode(newN(b))
 	}
+
+	g.addNode(g.constructNode(SAVE_CACHE, SAVE_CACHE_DESC))
 
 	// add end node
 	g.addNode(g.constructNode(END, END_DESC))
@@ -364,13 +379,8 @@ func (g *Graph) addNode(n *N) {
 	} else {
 
 		if g.fanoutMode {
-
-			g.fanoutStack.Pop()
 			g.DecrementPrefix()
-
-			if g.fanoutStack.Size() == 0 {
-				g.fanoutMode = false
-			}
+			g.fanoutMode = false
 		}
 
 		n.ID = g.nodeid()

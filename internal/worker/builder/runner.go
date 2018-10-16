@@ -4,11 +4,12 @@ Copyright 2018 The Elasticshift Authors.
 package builder
 
 import (
-	"log"
+	"fmt"
 	"os"
 	"runtime"
 	"sync"
 
+	"github.com/Sirupsen/logrus"
 	homedir "github.com/minio/go-homedir"
 	"gitlab.com/conspico/elasticshift/api"
 	"gitlab.com/conspico/elasticshift/internal/pkg/graph"
@@ -17,22 +18,24 @@ import (
 
 func (b *builder) build(g *graph.Graph) error {
 
+	log1 := b.wctx.EnvLogger
+
 	wdir := b.f.WorkDir()
 
 	if wdir != "" {
 		expanded, err := homedir.Expand(wdir)
 		if err != nil {
-			log.Printf("Failed to expand the directory : %v\n", err)
+			log1.Printf("Failed to expand the directory : %v\n", err)
 		}
 
 		err = utils.Mkdir(expanded)
 		if err != nil {
-			log.Printf("Failed to create working directory : %v\n", err)
+			log1.Printf("Failed to create working directory : %v\n", err)
 		}
 
 		err = os.Chdir(expanded)
 		if err != nil {
-			log.Printf("Failed to change the working directory : %v\n", err)
+			log1.Printf("Failed to change the working directory : %v\n", err)
 		}
 	}
 
@@ -69,7 +72,6 @@ func (b *builder) build(g *graph.Graph) error {
 			var fanoutFailed bool
 
 			c.Node.Wait()
-			log.Println("S:FO:~" + c.Node.ID + "~")
 
 			var errMutex sync.Mutex
 			var wg sync.WaitGroup
@@ -93,13 +95,19 @@ func (b *builder) build(g *graph.Graph) error {
 					n.Wait()
 					n.Parallel = true
 
-					b.UpdateBuildGraphToShiftServer(graph.StatusWaiting, n.Name, "")
+					nodelogger, err := b.wctx.LogWriter.GetLogger(c.Node.ID)
+					if err != nil {
+						fmt.Printf("Error when getting logger for nodeid : %s", c.Node.ID)
+					}
+					n.Logger = nodelogger
+
+					b.UpdateBuildGraphToShiftServer(graph.StatusWaiting, n.Name, "", nodelogger)
 
 					defer wg.Done()
 					parallelCh <- 1
 
 					n.Start()
-					b.UpdateBuildGraphToShiftServer(graph.StatusRunning, n.Name, "")
+					b.UpdateBuildGraphToShiftServer(graph.StatusRunning, n.Name, "", nodelogger)
 
 					msg, err := b.invokePlugin(n)
 
@@ -108,18 +116,16 @@ func (b *builder) build(g *graph.Graph) error {
 						errMutex.Lock()
 						defer errMutex.Unlock()
 
-						log.Printf("Failed when executing %s : %v\n", n.Name, err)
+						nodelogger.Printf("Failed when executing %s : %v\n", n.Name, err)
 						n.End(graph.StatusFailed, msg)
-						b.logBlockInfo(n, "F")
-						b.UpdateBuildGraphToShiftServer(graph.StatusFailed, n.Name, msg)
+						b.UpdateBuildGraphToShiftServer(graph.StatusFailed, n.Name, msg, nodelogger)
 
 						failed = true
 					} else {
 
 						if n.Status != graph.StatusFailed {
 							n.End(graph.StatusSuccess, "")
-							b.logBlockInfo(n, "E")
-							b.UpdateBuildGraphToShiftServer(graph.StatusSuccess, n.Name, "")
+							b.UpdateBuildGraphToShiftServer(graph.StatusSuccess, n.Name, "", nodelogger)
 						}
 					}
 
@@ -133,35 +139,32 @@ func (b *builder) build(g *graph.Graph) error {
 
 			if fanoutFailed {
 				c.Node.End(graph.StatusFailed, "")
-				b.logBlockInfo(c.Node, "F")
 			} else {
 				c.Node.End(graph.StatusSuccess, "")
-				b.logBlockInfo(c.Node, "E")
 			}
-			log.Println("E:FO:~" + c.Node.ID + ":" + c.Node.Duration + "~")
 
 		} else {
 
+			nodelogger, err := b.wctx.LogWriter.GetLogger(c.Node.ID)
+			if err != nil {
+				fmt.Printf("Error when getting logger for nodeid : %s", c.Node.ID)
+			}
+			c.Node.Logger = nodelogger
+
 			c.Node.Start()
-			b.UpdateBuildGraphToShiftServer(graph.StatusRunning, c.Node.Name, "")
+			b.UpdateBuildGraphToShiftServer(graph.StatusRunning, c.Node.Name, "", nodelogger)
 
 			// sequential checkpoint execution
 			msg, err := b.invokePlugin(c.Node)
 			if err != nil {
 				c.Node.End(graph.StatusFailed, msg)
-
-				b.logBlockInfo(c.Node, "F")
-				b.UpdateBuildGraphToShiftServer(graph.StatusFailed, c.Node.Name, msg)
+				b.UpdateBuildGraphToShiftServer(graph.StatusFailed, c.Node.Name, msg, nodelogger)
 
 				failed = true
 			} else {
 
 				c.Node.End(graph.StatusSuccess, "")
-
-				if graph.START != c.Node.Name || graph.END != c.Node.Name {
-					b.logBlockInfo(c.Node, "E")
-				}
-				b.UpdateBuildGraphToShiftServer(graph.StatusSuccess, c.Node.Name, "")
+				b.UpdateBuildGraphToShiftServer(graph.StatusSuccess, c.Node.Name, "", nodelogger)
 			}
 		}
 	}
@@ -169,21 +172,21 @@ func (b *builder) build(g *graph.Graph) error {
 	return nil
 }
 
-func (b *builder) UpdateBuildGraphToShiftServer(status, checkpoint, reason string) {
+func (b *builder) UpdateBuildGraphToShiftServer(status, checkpoint, reason string, logn *logrus.Entry) {
 
-	if graph.StatusFailed == status || (graph.END == checkpoint && graph.StatusSuccess == status) {
+	// if graph.StatusFailed == status || (graph.END == checkpoint && graph.StatusSuccess == status) {
 
-		log.Println("S:~0.3:Saving cache:~")
+	// 	log.Println("S:~0.3:Saving cache:~")
 
-		b.saveCache()
+	// 	b.saveCache()
 
-		// TODO add duration
-		log.Println("E:~0.3:Saving cache::~")
-	}
+	// 	// TODO add duration
+	// 	log.Println("E:~0.3:Saving cache::~")
+	// }
 
 	gph, err := b.g.JSON()
 	if err != nil {
-		log.Printf("Eror when contructing status graph: %v", err)
+		logn.Printf("Eror when contructing status graph: %v", err)
 	}
 
 	req := &api.UpdateBuildStatusReq{}
@@ -198,7 +201,7 @@ func (b *builder) UpdateBuildGraphToShiftServer(status, checkpoint, reason strin
 	if b.shiftclient != nil {
 		_, err = b.shiftclient.UpdateBuildStatus(b.ctx, req)
 		if err != nil {
-			log.Printf("Failed to update buld graph: %v", err)
+			logn.Printf("Failed to update buld graph: %v", err)
 		}
 	}
 }
