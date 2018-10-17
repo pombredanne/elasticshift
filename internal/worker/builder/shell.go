@@ -5,7 +5,6 @@ package builder
 
 import (
 	"bytes"
-	"fmt"
 	"io"
 	"os/exec"
 
@@ -20,11 +19,11 @@ func (b *builder) invokeShell(n *graph.N) (string, error) {
 
 	for _, command := range cmds {
 
-		n.Logger.Println(fmt.Sprintf("COMMAND: %s", command))
+		n.Logger.Printf("COMMAND: %s\n", command)
 
 		msg, err := b.execShellCmd(n.Logger, command, nil, "")
 		if err != nil {
-			n.Logger.Errorf("Failed executing command (%s): %v", command, err)
+			n.Logger.Errorf("Failed executing command (%s): %v\n", command, err)
 			return msg, err
 		}
 	}

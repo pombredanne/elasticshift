@@ -15,7 +15,6 @@ import (
 
 	"gitlab.com/conspico/elasticshift/api"
 	"gitlab.com/conspico/elasticshift/internal/worker/builder"
-	"gitlab.com/conspico/elasticshift/internal/worker/logger"
 	"gitlab.com/conspico/elasticshift/internal/worker/logwriter"
 	"gitlab.com/conspico/elasticshift/internal/worker/types"
 
@@ -53,12 +52,12 @@ func Run() error {
 
 	lw, err := logwriter.New(logLevel, logFormat)
 	if err != nil {
-		return fmt.Errorf("invalid config: %v", err)
+		return fmt.Errorf("invalid config: %v\n", err)
 	}
 
 	log1, err := lw.GetLogger("1")
 	if err != nil {
-		return fmt.Errorf("Failed to initialize logger: %v", err)
+		return fmt.Errorf("Failed to initialize logger: %v\n", err)
 	}
 
 	// slog := loggr.GetLogger("Worker")
@@ -67,7 +66,7 @@ func Run() error {
 
 	shiftDir := os.Getenv("SHIFT_DIR")
 	if shiftDir == "" {
-		log1.Println("SHIFT_DIR must be passed through environment variable.")
+		log1.Print("SHIFT_DIR must be passed through environment variable. \n")
 	} else {
 		log1.Printf("SHIFT_DIR=%s\n", shiftDir)
 	}
@@ -78,14 +77,14 @@ func Run() error {
 	// 	logger.FileLogger(shiftDir),
 	// }
 
-	dir, writers, err := logger.Initialize()
-	if err != nil {
-		log1.Fatalf("Cannot initialize logger: %v", err)
-	}
+	// dir, writers, err := logger.Initialize()
+	// if err != nil {
+	// 	log1.Fatalf("Cannot initialize logger: %v", err)
+	// }
 
 	buildID := os.Getenv("SHIFT_BUILDID")
 	if buildID == "" {
-		log1.Println("SHIFT_BUILDID must be passed through environment variable.")
+		log1.Print("SHIFT_BUILDID must be passed through environment variable.\n")
 	} else {
 		log1.Printf("SHIFT_BUILDID=%s\n", buildID)
 	}
@@ -93,7 +92,7 @@ func Run() error {
 
 	teamID := os.Getenv("SHIFT_TEAMID")
 	if teamID == "" {
-		log1.Println("SHIFT_TEAMID  must be passed through environment variable.")
+		log1.Print("SHIFT_TEAMID  must be passed through environment variable.\n")
 	} else {
 		log1.Printf("SHIFT_TEAMID=%s\n", teamID)
 	}
@@ -109,7 +108,7 @@ func Run() error {
 	var isError bool
 	host := os.Getenv("SHIFT_HOST")
 	if host == "" {
-		log1.Println("SHIFT_HOST must be passed through environment variable.")
+		log1.Print("SHIFT_HOST must be passed through environment variable.\n")
 		isError = true
 	} else {
 		log1.Printf("SHIFT_HOST=%s\n", host)
@@ -118,7 +117,7 @@ func Run() error {
 
 	port := os.Getenv("SHIFT_PORT")
 	if port == "" {
-		log1.Println("SHIFT_PORT must be passed through environment variable")
+		log1.Print("SHIFT_PORT must be passed through environment variable. \n")
 		isError = true
 	} else {
 		log1.Printf("SHIFT_PORT=%s\n", port)
@@ -127,7 +126,7 @@ func Run() error {
 
 	workerPort := os.Getenv("WORKER_PORT")
 	if workerPort == "" {
-		log1.Println("WORKER_PORT must be passed though environment variable.")
+		log1.Print("WORKER_PORT must be passed though environment variable. \n")
 		isError = true
 	} else {
 		log1.Printf("WORKER_PORT=%s\n", workerPort)
@@ -135,16 +134,16 @@ func Run() error {
 	cfg.GRPC = workerPort
 
 	if isError {
-		log1.Println("One or more arguments required to start the worker has not passed through environment variables.")
+		log1.Print("One or more arguments required to start the worker has not passed through environment variables. \n")
 		return errors.New("Failed to start the worker")
 	}
 
 	cfg.Timeout = os.Getenv("SHIFT_TIMEOUT")
 	if cfg.Timeout == "" {
-		log1.Println("SHIFT_TIMEOUT defaulted to 120m")
+		log1.Print("SHIFT_TIMEOUT defaulted to 120m \n")
 		cfg.Timeout = defaultTimeout
 	} else {
-		log1.Println("SHIFT_TIMEOUT=" + cfg.Timeout)
+		log1.Printf("SHIFT_TIMEOUT= %s \n", cfg.Timeout)
 	}
 
 	repoBasedShiftFile := os.Getenv("SHIFT_REPOFILE")
@@ -153,15 +152,15 @@ func Run() error {
 	ctx := types.Context{}
 	ctx.Context = bctx
 	ctx.Config = cfg
-	ctx.Writer = writers
-	ctx.Logdir = dir
+	//ctx.Writer = writers
+	//ctx.Logdir = dir
 	ctx.LogWriter = lw
 	ctx.EnvLogger = log1
 
 	// Start the worker
 	err = Start(ctx)
 	if err != nil {
-		return fmt.Errorf("Failed to start the worker: %+v", err)
+		return fmt.Errorf("Failed to start the worker: %+v \n ", err)
 	}
 
 	return nil
@@ -199,7 +198,7 @@ func Start(ctx types.Context) error {
 
 	var timeout time.Duration
 	timeout, _ = time.ParseDuration(ctx.Config.Timeout)
-	log1.Println("Idle Timeout :" + timeout.String())
+	log1.Printf("Idle Timeout : %s \n", timeout.String())
 
 	var err error
 	go func() {
@@ -254,7 +253,7 @@ func Start(ctx types.Context) error {
 		w.Halt()
 		msg := fmt.Sprintf("Worker has been timed-out after running for about %s minutes, and all the process have been halted", ctx.Config.Timeout)
 		w.UpdateShiftServer(statusFailed, "")
-		log.Println(msg)
+		log.Print(msg + "\n")
 	case <-w.done:
 	}
 
@@ -267,7 +266,7 @@ func (w *W) ConnectToShiftServer() error {
 
 	log1 := w.Context.EnvLogger
 
-	log1.Println("Connecting to shift server..")
+	log1.Print("Connecting to shift server.. \n")
 
 	// TODO connect ssl
 	cp := keepalive.ClientParameters{}
@@ -288,11 +287,11 @@ func (w *W) ConnectToShiftServer() error {
 		return fmt.Errorf("Failed to connect to shift server %s:%s, %v", w.Config.Host, w.Config.Port, err)
 	}
 	w.ShiftServer = conn
-	log1.Printf("Connection state: %v", w.ShiftServer.GetState())
+	log1.Printf("Connection state: %v\n", w.ShiftServer.GetState())
 
 	w.Context.Client = api.NewShiftClient(conn)
 
-	log1.Printf("Connection state: %v", w.ShiftServer.GetState())
+	log1.Printf("Connection state: %v\n", w.ShiftServer.GetState())
 
 	return nil
 }
@@ -302,7 +301,7 @@ func (w *W) ConnectToShiftServer() error {
 // By default embedded logger is set to work
 // func (w *W) StartLogShipper() error {
 
-// 	log.Println("Starting the logshipper..")
+// 	log.Print("Starting the logshipper.. \n")
 
 // 	// Start logshipper
 // 	f, err := logshipper.New(w.Context, w.Config.BuildID)
@@ -310,7 +309,7 @@ func (w *W) ConnectToShiftServer() error {
 // 		return fmt.Errorf("Failed to start log shipper for '%s' type : %v ", w.Config.ShiftDir, err)
 // 	}
 // 	w.logfile = f
-// 	log.Println("Started.")
+// 	log.Print("Started. \n")
 // 	return nil
 // }
 
@@ -321,7 +320,7 @@ func (w *W) RegisterWorker() error {
 
 	log1 := w.Context.EnvLogger
 
-	log1.Println("Registering the worker..")
+	log1.Print("Registering the worker..\n")
 
 	// Loads the generate private key
 	key, err := w.ReadPrivateKey(PRIV_KEY_PATH)
@@ -334,22 +333,23 @@ func (w *W) RegisterWorker() error {
 	req.BuildId = w.Config.BuildID
 	req.Privatekey = key
 
-	log1.Printf("Connection state: %v", w.ShiftServer.GetState())
+	log1.Printf("Connection state: %v\n", w.ShiftServer.GetState())
 
 	res, err := w.Context.Client.Register(w.Context.Context, req)
 	if err != nil {
-		log1.Printf("registration response: %s\n", res)
+		log1.Printf("registration response: %s \n ", res)
 		return fmt.Errorf("Worker registration failed: %v", err)
 	}
 
 	if res != nil && res.Registered {
-		log1.Println("Registration Successful.")
+		log1.Print("Registration Successful.\n ")
 	} else {
-		return fmt.Errorf("Registration failed.")
+		return fmt.Errorf("Registration failed. \n ")
 	}
 	return nil
 }
 
+// StartGRPCServer ..
 // Start the GRPC server to listen for commands from elasticshift server
 func (w *W) StartGRPCServer() {
 
@@ -366,7 +366,7 @@ func (w *W) StartGRPCServer() {
 		//start grpc
 		w.errch <- func() error {
 
-			log1.Println("Starting listener to obey shift server commands on " + w.Config.GRPC)
+			log1.Printf("Starting listener to obey shift server commands on %s \n", w.Config.GRPC)
 			listen, err := net.Listen("tcp", ":"+w.Config.GRPC)
 			if err != nil {
 				return fmt.Errorf("Failed to start GRPC server on %s : %v", w.Config.GRPC, err)
@@ -375,7 +375,7 @@ func (w *W) StartGRPCServer() {
 			grpcServer = grpc.NewServer(grpcOpts...)
 			w.GRPCServer = grpcServer
 
-			log1.Println("Exposing GRPC services on " + w.Config.GRPC)
+			log1.Printf("Exposing GRPC services on %s \n", w.Config.GRPC)
 
 			// register the grpc services
 			api.RegisterWorkServer(grpcServer, NewServer(w.Context))
@@ -397,14 +397,16 @@ func (w *W) Halt() {
 	w.ShiftServer.Close()
 }
 
+// StartBuilder ..
 // start the builder where the real execution happens.
 func (w *W) StartBuilder() error {
 	return builder.New(w.Context, w.ShiftServer, w.Context.Writer, w.done)
 }
 
+// Fatal ..
 // Post the log to error channel, that denotes the startup of the worker is failed
 func (w *W) Fatal(err error) {
-	w.Context.EnvLogger.Println(err)
+	w.Context.EnvLogger.Printf("%v \n", err)
 	w.errch <- err
 }
 
@@ -412,6 +414,7 @@ var (
 	statusFailed = "F"
 )
 
+// UpdateShiftServer ..
 func (w *W) UpdateShiftServer(status, checkpoint string) {
 
 	req := &api.UpdateBuildStatusReq{}
@@ -421,7 +424,7 @@ func (w *W) UpdateShiftServer(status, checkpoint string) {
 	if w.Context.Client != nil {
 		_, err := w.Context.Client.UpdateBuildStatus(w.Context.Context, req)
 		if err != nil {
-			log.Printf("Failed to update buld graph: %v", err)
+			log.Printf("Failed to update buld graph: %v\n", err)
 		}
 	}
 }

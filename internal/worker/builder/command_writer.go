@@ -3,7 +3,9 @@ Copyright 2018 The Elasticshift Authors.
 */
 package builder
 
-import "github.com/Sirupsen/logrus"
+import (
+	"github.com/Sirupsen/logrus"
+)
 
 type CommandWriter struct {
 	Logger *logrus.Entry
@@ -11,6 +13,12 @@ type CommandWriter struct {
 }
 
 func (cw *CommandWriter) Write(b []byte) (int, error) {
+
+	// data := string(b)
+	// if !strings.HasSuffix(data, "\n") {
+	// 	data = data + "\n"
+	// }
+
 	if cw.Type == "E" {
 		cw.Logger.Error(string(b))
 	} else {

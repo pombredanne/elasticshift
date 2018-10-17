@@ -95,9 +95,9 @@ func (b *builder) build(g *graph.Graph) error {
 					n.Wait()
 					n.Parallel = true
 
-					nodelogger, err := b.wctx.LogWriter.GetLogger(c.Node.ID)
+					nodelogger, err := b.wctx.LogWriter.GetLogger(n.ID)
 					if err != nil {
-						fmt.Printf("Error when getting logger for nodeid : %s", c.Node.ID)
+						fmt.Printf("Error when getting logger for nodeid : %s", n.ID)
 					}
 					n.Logger = nodelogger
 
@@ -186,7 +186,7 @@ func (b *builder) UpdateBuildGraphToShiftServer(status, checkpoint, reason strin
 
 	gph, err := b.g.JSON()
 	if err != nil {
-		logn.Printf("Eror when contructing status graph: %v", err)
+		logn.Printf("Eror when contructing status graph: %v\n", err)
 	}
 
 	req := &api.UpdateBuildStatusReq{}
@@ -201,7 +201,7 @@ func (b *builder) UpdateBuildGraphToShiftServer(status, checkpoint, reason strin
 	if b.shiftclient != nil {
 		_, err = b.shiftclient.UpdateBuildStatus(b.ctx, req)
 		if err != nil {
-			logn.Printf("Failed to update buld graph: %v", err)
+			logn.Printf("Failed to update buld graph: %v\n", err)
 		}
 	}
 }

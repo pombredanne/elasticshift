@@ -68,21 +68,11 @@ func (b *builder) run() error {
 	// Get the project information
 	proj, err := b.shiftclient.GetProject(b.ctx, &api.GetProjectReq{BuildId: b.config.BuildID, IncludeShiftfile: !b.config.RepoBasedShiftFile})
 	if err != nil {
-		return fmt.Errorf("Failed to get the project/repository detail from shift server: %v", err)
+		return fmt.Errorf("Failed to get the project/repository detail from shift server: %v\n", err)
 	}
 	b.project = proj
 
-	b.wctx.EnvLogger.Printf("Project Info: %v", proj)
-
-	// restore build cache if any
-	// save the cache after every successful build
-	// err = b.restoreCache()
-	// if err != nil {
-	// 	log.Println("Restoring cache failed:", err)
-	// }
-
-	// TODO add duration
-	// log.Println("E:~0.2:Restoring Cache::~")
+	b.wctx.EnvLogger.Printf("Project Info: %v\n", proj)
 
 	// 1. Ensure connection to log storage is good, this container should be loaded with
 
@@ -95,7 +85,7 @@ func (b *builder) run() error {
 	if b.config.RepoBasedShiftFile {
 		f, err = vcs.GetShiftFile(proj.Source, proj.CloneUrl, proj.Branch)
 		if err != nil {
-			return errors.Errorf("Failed to get shift file (source: %s, CloneUrl: %s, branch : %s): %v", proj.Source, proj.CloneUrl, proj.Branch, err)
+			return errors.Errorf("Failed to get shift file (source: %s, CloneUrl: %s, branch : %s): %v\n", proj.Source, proj.CloneUrl, proj.Branch, err)
 		}
 	} else {
 		f = []byte(proj.GetShiftfile())
