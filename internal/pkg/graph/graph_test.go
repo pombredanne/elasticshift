@@ -149,11 +149,9 @@ func TestDuration(t *testing.T) {
 
 	//t1 := time.Date(2016, time.August, 15, 0, 20, 15, 125, time.UTC)
 	t1 := time.Date(2017, time.February, 16, 0, 0, 0, 0, time.UTC)
-	t2 := time.Date(2017, time.February, 16, 0, 0, 0, 123267565, time.UTC)
+	t2 := time.Date(2017, time.February, 16, 0, 0, 22, 0, time.UTC)
 
 	d := t2.Sub(t1)
-
-	fmt.Println(d.String())
 
 	// text := ""
 	var text string
@@ -165,15 +163,15 @@ func TestDuration(t *testing.T) {
 	s := int(d.Seconds()) - (int(d.Minutes()) * 60)
 
 	if h > 0 {
-		text += fmt.Sprintf("%.02dh ", h)
+		text += fmt.Sprintf("%dh ", h)
 	}
 
 	if m > 0 {
-		text += fmt.Sprintf("%.02dm ", m)
+		text += fmt.Sprintf("%dm ", m)
 	}
 
 	if s > 0 {
-		text += fmt.Sprintf("%.02ds ", s)
+		text += fmt.Sprintf("%ds ", s)
 	} else {
 
 		durStr := d.String()
@@ -192,19 +190,16 @@ func TestDuration(t *testing.T) {
 		dotIdx := strings.Index(dur, ".")
 		if dotIdx > 0 {
 
-			befrDec := dur[:dotIdx+1]
-			aftrDec := dur[dotIdx+1:]
-			if len(aftrDec) > 3 {
-				finalDur = befrDec + aftrDec[:3] + notation
-			} else {
-				finalDur = befrDec + aftrDec + notation
-			}
+			befrDec := dur[:dotIdx]
+			finalDur = befrDec + notation
 		} else {
-			finalDur = d.String()
+			finalDur = durStr
 		}
 
 		text += finalDur
 	}
+
+	fmt.Print("Duration = ", text)
 }
 
 func TestNodeLevel(t *testing.T) {

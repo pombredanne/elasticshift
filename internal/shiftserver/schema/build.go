@@ -144,6 +144,11 @@ var (
 			Type:        graphql.String,
 			Description: "Reason for build failures.",
 		},
+
+		"duration": &graphql.Field{
+			Type:        graphql.String,
+			Description: "Duration of the actual build time",
+		},
 	}
 
 	BuildType = graphql.NewObject(

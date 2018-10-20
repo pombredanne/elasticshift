@@ -18,6 +18,7 @@ message UpdateBuildStatusReq {
 	string status = 3;
 	string checkpoint = 4;
 	string reason = 5;
+	string duration = 6;
 }
 
 message UpdateBuildStatusRes {

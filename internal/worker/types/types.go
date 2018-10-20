@@ -9,6 +9,7 @@ import (
 
 	"github.com/Sirupsen/logrus"
 	"gitlab.com/conspico/elasticshift/api"
+	"gitlab.com/conspico/elasticshift/internal/pkg/utils"
 	"gitlab.com/conspico/elasticshift/internal/worker/logwriter"
 )
 
@@ -22,6 +23,7 @@ type Context struct {
 
 	LogWriter logwriter.LogWriter
 	EnvLogger *logrus.Entry
+	EnvTimer  utils.Timer
 }
 
 type Config struct {

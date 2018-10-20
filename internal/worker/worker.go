@@ -14,6 +14,7 @@ import (
 	"time"
 
 	"gitlab.com/conspico/elasticshift/api"
+	"gitlab.com/conspico/elasticshift/internal/pkg/utils"
 	"gitlab.com/conspico/elasticshift/internal/worker/builder"
 	"gitlab.com/conspico/elasticshift/internal/worker/logwriter"
 	"gitlab.com/conspico/elasticshift/internal/worker/types"
@@ -29,16 +30,10 @@ const (
 // Run ..
 func Run() error {
 
+	timer := utils.NewTimer()
+	timer.Start()
 	bctx := context.Background()
 	cfg := types.Config{}
-
-	// os.Setenv("SHIFT_HOST", "127.0.0.1")
-	// os.Setenv("SHIFT_PORT", "9101")
-	// os.Setenv("SHIFT_BUILDID", "5ba20b3016986f00017f5b00")
-	// os.Setenv("SHIFT_DIR", "/Users/ghazni/.elasticshift/storage")
-	// os.Setenv("WORKER_PORT", "9200")
-	// os.Setenv("SHIFT_TEAMID", "5a3a41f08011e098fb86b41f")
-	// os.Setenv("SHIFT_REPOFILE", "true")
 
 	logLevel := os.Getenv("SHIFT_LOG_LEVEL")
 	if logLevel == "" {
@@ -156,6 +151,7 @@ func Run() error {
 	//ctx.Logdir = dir
 	ctx.LogWriter = lw
 	ctx.EnvLogger = log1
+	ctx.EnvTimer = timer
 
 	// Start the worker
 	err = Start(ctx)

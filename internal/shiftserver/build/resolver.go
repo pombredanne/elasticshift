@@ -34,14 +34,14 @@ var (
   {
     "node": {
       "name": "START",
-      "description": "Start node of the execution/graph",
+      "description": "Start Point",
       "status": "N"
     }
   },
   {
     "node": {
       "name": "END",
-      "description": "End node of the execution/graph",
+      "description": "Finish Line",
       "status": "N"
     }
   }

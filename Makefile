@@ -80,16 +80,17 @@ docker-image:
 .PHONY: grpc
 grpc: pb/gen-pb.go
 
-pb/gen-pb.go: bin/protoc bin/protoc-gen-go bin/protoc-gen-grpc-gateway bin/protoc-gen-swagger get-proto-descriptor
+#pb/gen-pb.go: bin/protoc bin/protoc-gen-go bin/protoc-gen-grpc-gateway bin/protoc-gen-swagger get-proto-descriptor
+pb/gen-pb.go: bin/protoc bin/protoc-gen-go get-proto-descriptor
 	@./bin/protoc -I/usr/local/include -I. \
 	-I${PWD}/vendor \
 	--go_out=pMgoogle/api/annotations.proto=github.com/google/go-genproto/googleapis/api/annotations,Mgoogle/protobuf/descriptor.proto=github.com/golang/protobuf/protoc-gen-go/descriptor,plugins=grpc:. \
 	api/*.proto
-	@./bin/protoc -I/usr/local/include -I. \
-	-I${PWD}/vendor \
-	--plugin=protoc-gen-grpc-gateway=$(PWD)/bin/protoc-gen-grpc-gateway \
-	--grpc-gateway_out=logtostderr=true:. \
-	api/*.proto
+	# @./bin/protoc -I/usr/local/include -I. \
+	# -I${PWD}/vendor \
+	# --plugin=protoc-gen-grpc-gateway=$(PWD)/bin/protoc-gen-grpc-gateway \
+	# --grpc-gateway_out=logtostderr=true:. \
+	# api/*.proto
 	@./bin/protoc --go_out=import_path=dex,plugins=grpc:. api/dex/api.proto
 
 bin/protoc: scripts/get-protoc

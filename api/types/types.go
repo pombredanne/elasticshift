@@ -185,6 +185,7 @@ type Build struct {
 	TriggeredBy       string        `json:"triggered_by" bson:"triggered_by"`
 	Status            string        `json:"status" bson:"status"`
 	Reason            string        `json:"reason" bson:"reason,omitempty"`
+	Duration          string        `json:"duration" bson:"duration,omitempty"`
 	Branch            string        `json:"branch" bson:"branch"`
 	CloneURL          string        `json:"clone_url" bson:"clone_url"`
 	Language          string        `json:"language" bson:"language"`

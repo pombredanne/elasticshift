@@ -99,6 +99,10 @@ func (s *shift) UpdateBuildStatus(ctx context.Context, req *api.UpdateBuildStatu
 		b.Reason = req.GetReason()
 	}
 
+	if req.GetDuration() != "" {
+		b.Duration = req.GetDuration()
+	}
+
 	var stopContainer bool
 	if status != "" {
 

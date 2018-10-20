@@ -8,6 +8,7 @@ import (
 	"os"
 	"runtime"
 	"sync"
+	"time"
 
 	"github.com/Sirupsen/logrus"
 	homedir "github.com/minio/go-homedir"
@@ -144,52 +145,60 @@ func (b *builder) build(g *graph.Graph) error {
 			}
 
 		} else {
-
-			nodelogger, err := b.wctx.LogWriter.GetLogger(c.Node.ID)
-			if err != nil {
-				fmt.Printf("Error when getting logger for nodeid : %s", c.Node.ID)
-			}
-			c.Node.Logger = nodelogger
-
-			c.Node.Start()
-			b.UpdateBuildGraphToShiftServer(graph.StatusRunning, c.Node.Name, "", nodelogger)
-
-			// sequential checkpoint execution
-			msg, err := b.invokePlugin(c.Node)
-			if err != nil {
-				c.Node.End(graph.StatusFailed, msg)
-				b.UpdateBuildGraphToShiftServer(graph.StatusFailed, c.Node.Name, msg, nodelogger)
-
-				failed = true
-			} else {
-
-				c.Node.End(graph.StatusSuccess, "")
-				b.UpdateBuildGraphToShiftServer(graph.StatusSuccess, c.Node.Name, "", nodelogger)
-			}
+			failed = b.runNode(c.Node)
 		}
 	}
 
 	return nil
 }
 
+func (b *builder) runNode(n *graph.N) bool {
+
+	var failed bool
+
+	nodelogger, err := b.wctx.LogWriter.GetLogger(n.ID)
+	if err != nil {
+		fmt.Printf("Error when getting logger for nodeid : %s", n.ID)
+	}
+	n.Logger = nodelogger
+
+	n.Start()
+	b.UpdateBuildGraphToShiftServer(graph.StatusRunning, n.Name, "", nodelogger)
+
+	// sequential checkpoint execution
+	msg, err := b.invokePlugin(n)
+	if err != nil {
+		n.End(graph.StatusFailed, msg)
+		b.UpdateBuildGraphToShiftServer(graph.StatusFailed, n.Name, msg, nodelogger)
+
+		failed = true
+	} else {
+
+		n.End(graph.StatusSuccess, "")
+		b.UpdateBuildGraphToShiftServer(graph.StatusSuccess, n.Name, "", nodelogger)
+	}
+	return failed
+}
+
 func (b *builder) UpdateBuildGraphToShiftServer(status, checkpoint, reason string, logn *logrus.Entry) {
 
-	// if graph.StatusFailed == status || (graph.END == checkpoint && graph.StatusSuccess == status) {
+	req := &api.UpdateBuildStatusReq{}
+	if graph.StatusFailed == status || (graph.END == checkpoint && graph.StatusSuccess == status) {
 
-	// 	log.Println("S:~0.3:Saving cache:~")
+		// 	b.saveCache()
+		if !b.g.IsCacheSaved() {
+			n := b.g.GetSaveCacheNode()
+			b.runNode(n)
+		}
 
-	// 	b.saveCache()
-
-	// 	// TODO add duration
-	// 	log.Println("E:~0.3:Saving cache::~")
-	// }
+		req.Duration = utils.CalculateDuration(b.wctx.EnvTimer.StartedAt(), time.Now())
+	}
 
 	gph, err := b.g.JSON()
 	if err != nil {
 		logn.Printf("Eror when contructing status graph: %v\n", err)
 	}
 
-	req := &api.UpdateBuildStatusReq{}
 	req.BuildId = b.config.BuildID
 	req.Graph = gph
 	req.Status = status

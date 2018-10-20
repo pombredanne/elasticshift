@@ -98,6 +98,8 @@ func (b *builder) run() error {
 	}
 	b.f = sf
 
+	b.wctx.EnvTimer.Stop()
+
 	// 6. Ensure the arguments are inputted as static or dynamic values (through env)
 	// TODO
 
@@ -106,6 +108,8 @@ func (b *builder) run() error {
 	if err != nil {
 		return err
 	}
+	graph.SetEnvTimer(b.wctx.EnvTimer)
+
 	b.g = graph
 
 	// 8. Fetch the secrets

@@ -65,6 +65,8 @@ var (
 type N struct {
 	value map[string]interface{}
 
+	timer utils.Timer
+
 	Name        string    `json:"name"`
 	Description string    `json:"description,omitempty"`
 	Status      string    `json:"status,omitempty"`
@@ -83,6 +85,7 @@ func newN(value map[string]interface{}) *N {
 
 	n := &N{}
 	n.value = value
+	n.timer = utils.NewTimer()
 	n.Name = value[keys.NAME].(string)
 	n.Description = value[keys.DESC].(string)
 	if n.Name != START || n.Name != END || n.Name != FANOUT || n.Name != FANIN {
@@ -119,43 +122,31 @@ func (i *N) TimeTaken() string {
 func (i *N) Start() {
 
 	i.Status = StatusRunning
-	i.StartedAt = time.Now()
+	if i.Name != ENV {
+		i.timer.Start()
+		i.StartedAt = i.timer.StartedAt()
+	}
 }
 
 func (i *N) Wait() {
-	i.Status = StatusWaiting
+	if i.Status == "" {
+		i.Status = StatusWaiting
+	}
 }
 
 func (i *N) End(status, message string) {
-	i.Status = status
-	if message != "" {
-		i.Message = message
+
+	if i.Name != ENV {
+
+		i.Status = status
+		if message != "" {
+			i.Message = message
+		}
+
+		i.timer.Stop()
+		i.EndedAt = i.timer.StoppedAt()
+		i.Duration = i.timer.Duration()
 	}
-	i.EndedAt = time.Now()
-
-	d := i.EndedAt.Sub(i.StartedAt)
-
-	var dur string
-
-	h := int(d.Hours())
-	m := int(d.Minutes()) - (h * 60)
-	s := int(d.Seconds()) - (int(d.Minutes()) * 60)
-
-	if h > 0 {
-		dur += fmt.Sprintf("%.02dh ", h)
-	}
-
-	if m > 0 {
-		dur += fmt.Sprintf("%.02dm ", m)
-	}
-
-	if s > 0 {
-		dur += fmt.Sprintf("%.02ds ", s)
-	} else {
-		dur += d.String()
-	}
-
-	i.Duration = dur
 }
 
 // MarshalJSON ..
@@ -310,6 +301,36 @@ func (g *Graph) constructGraph() error {
 	// add end node
 	g.addNode(g.constructNode(END, END_DESC))
 
+	return nil
+}
+
+// Update the ENV graph details to existing nodes.
+func (g *Graph) SetEnvTimer(timer utils.Timer) {
+
+	n := g.node(ENV)
+
+	n.StartedAt = timer.StartedAt()
+	n.EndedAt = timer.StoppedAt()
+	n.Duration = timer.Duration()
+	n.Status = StatusSuccess
+}
+
+func (g *Graph) IsCacheSaved() bool {
+	return g.GetSaveCacheNode().Status == StatusNotStarted
+}
+
+func (g *Graph) GetSaveCacheNode() *N {
+	return g.node(SAVE_CACHE)
+}
+
+func (g *Graph) node(name string) *N {
+
+	for _, n := range g.nodes {
+
+		if n.Name == name {
+			return n
+		}
+	}
 	return nil
 }
 
