@@ -10,7 +10,7 @@ import (
 	"gitlab.com/conspico/elasticshift/internal/pkg/logger"
 	mgo "gopkg.in/mgo.v2"
 
-	"github.com/Sirupsen/logrus"
+	"github.com/sirupsen/logrus"
 )
 
 // Config ..

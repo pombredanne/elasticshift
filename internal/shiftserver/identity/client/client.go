@@ -8,7 +8,7 @@ import (
 
 	"golang.org/x/net/context"
 
-	"github.com/Sirupsen/logrus"
+	"github.com/sirupsen/logrus"
 	"gitlab.com/conspico/elasticshift/api"
 	"gitlab.com/conspico/elasticshift/api/dex"
 	stypes "gitlab.com/conspico/elasticshift/internal/types"

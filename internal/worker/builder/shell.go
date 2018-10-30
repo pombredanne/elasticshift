@@ -8,7 +8,7 @@ import (
 	"io"
 	"os/exec"
 
-	"github.com/Sirupsen/logrus"
+	"github.com/sirupsen/logrus"
 	"gitlab.com/conspico/elasticshift/internal/pkg/graph"
 	"gitlab.com/conspico/elasticshift/internal/pkg/shiftfile/keys"
 )

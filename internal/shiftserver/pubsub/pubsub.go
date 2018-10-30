@@ -6,8 +6,8 @@ package pubsub
 import (
 	"fmt"
 
-	"github.com/Sirupsen/logrus"
 	"github.com/graphql-go/graphql"
+	"github.com/sirupsen/logrus"
 	"gitlab.com/conspico/elasticshift/internal/pkg/logger"
 )
 

@@ -6,8 +6,8 @@ package pubsub
 import (
 	"net/http"
 
-	"github.com/Sirupsen/logrus"
 	"github.com/gorilla/websocket"
+	"github.com/sirupsen/logrus"
 	"gitlab.com/conspico/elasticshift/internal/pkg/logger"
 )
 

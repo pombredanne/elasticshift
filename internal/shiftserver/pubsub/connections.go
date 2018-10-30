@@ -10,8 +10,8 @@ import (
 	"sync"
 	"time"
 
-	"github.com/Sirupsen/logrus"
 	"github.com/gorilla/websocket"
+	"github.com/sirupsen/logrus"
 	"gitlab.com/conspico/elasticshift/internal/pkg/utils"
 )
 

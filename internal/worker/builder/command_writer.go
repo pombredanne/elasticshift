@@ -4,7 +4,7 @@ Copyright 2018 The Elasticshift Authors.
 package builder
 
 import (
-	"github.com/Sirupsen/logrus"
+	"github.com/sirupsen/logrus"
 )
 
 type CommandWriter struct {

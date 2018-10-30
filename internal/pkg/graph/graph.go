@@ -11,7 +11,7 @@ import (
 	"sync"
 	"time"
 
-	"github.com/Sirupsen/logrus"
+	"github.com/sirupsen/logrus"
 	"gitlab.com/conspico/elasticshift/internal/pkg/shiftfile/ast"
 	"gitlab.com/conspico/elasticshift/internal/pkg/shiftfile/keys"
 	"gitlab.com/conspico/elasticshift/internal/pkg/utils"

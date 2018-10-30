@@ -10,8 +10,8 @@ import (
 	"sync"
 	"time"
 
-	"github.com/Sirupsen/logrus"
 	homedir "github.com/minio/go-homedir"
+	"github.com/sirupsen/logrus"
 	"gitlab.com/conspico/elasticshift/api"
 	"gitlab.com/conspico/elasticshift/internal/pkg/graph"
 	"gitlab.com/conspico/elasticshift/internal/pkg/utils"

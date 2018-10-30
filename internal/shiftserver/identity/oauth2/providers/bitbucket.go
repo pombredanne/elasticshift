@@ -1,7 +1,7 @@
 package providers
 
 import (
-	"github.com/Sirupsen/logrus"
+	"github.com/sirupsen/logrus"
 
 	"net/url"
 

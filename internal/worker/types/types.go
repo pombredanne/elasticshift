@@ -7,7 +7,7 @@ import (
 	"context"
 	"io"
 
-	"github.com/Sirupsen/logrus"
+	"github.com/sirupsen/logrus"
 	"gitlab.com/conspico/elasticshift/api"
 	"gitlab.com/conspico/elasticshift/internal/pkg/utils"
 	"gitlab.com/conspico/elasticshift/internal/worker/logwriter"

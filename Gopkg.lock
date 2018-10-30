@@ -10,14 +10,6 @@
   version = "v0.4.11"
 
 [[projects]]
-  digest = "1:5f48b818f16848d05cf74f4cbdd0cbe9e0dcddb3c459b4c510c6e2c8e1b4dff1"
-  name = "github.com/Sirupsen/logrus"
-  packages = ["."]
-  pruneopts = ""
-  revision = "ad15b42461921f1fb3529b058c6786c6a45d5162"
-  version = "v1.1.1"
-
-[[projects]]
   branch = "v2"
   digest = "1:f3561ca1e798044ac9a31592d75fc44b61a679ecb2175a9268434d636c129c19"
   name = "github.com/coreos/go-oidc"
@@ -103,6 +95,14 @@
   ]
   pruneopts = ""
   revision = "cc9eb1d7ad760af14e8f918698f745e80377af4f"
+
+[[projects]]
+  digest = "1:f1a75a8e00244e5ea77ff274baa9559eb877437b240ee7b278f3fc560d9f08bf"
+  name = "github.com/dustin/go-humanize"
+  packages = ["."]
+  pruneopts = ""
+  revision = "9f541cc9db5d55bce703bd99987c9d5cb8eea45e"
+  version = "v1.0.0"
 
 [[projects]]
   digest = "1:b13707423743d41665fd23f0c36b2f37bb49c30e94adb813319c44188a51ba22"
@@ -309,20 +309,27 @@
   revision = "4d76aabb80b22bad8695d3904e943f1fb5e6199f"
 
 [[projects]]
-  digest = "1:3c3bd97561257647218ff5adfd61e701ed365f7b32246048ca8b9588b3d6d4d9"
+  digest = "1:07feac797895cd753977155591a9b79df03a1a163ecfc5bf3087c24019e18a2d"
   name = "github.com/minio/minio-go"
   packages = [
     ".",
     "pkg/credentials",
     "pkg/encrypt",
-    "pkg/policy",
     "pkg/s3signer",
     "pkg/s3utils",
     "pkg/set",
   ]
   pruneopts = ""
-  revision = "5ca66c9a35ba1cd674484be99dc97aa0973afe12"
-  version = "v3.0.0"
+  revision = "31e3bbc8590bf72d763be83a191836f02eb61437"
+  version = "v6.0.9"
+
+[[projects]]
+  digest = "1:096a8a9182648da3d00ff243b88407838902b6703fc12657f76890e08d1899bf"
+  name = "github.com/mitchellh/go-homedir"
+  packages = ["."]
+  pruneopts = ""
+  revision = "ae18d6b8b3205b561c79e8e5f69bff09736185f4"
+  version = "v1.0.0"
 
 [[projects]]
   digest = "1:0c0ff2a89c1bb0d01887e1dac043ad7efbf3ec77482ef058ac423d13497e16fd"
@@ -419,6 +426,14 @@
   version = "v1.2.0"
 
 [[projects]]
+  digest = "1:5f48b818f16848d05cf74f4cbdd0cbe9e0dcddb3c459b4c510c6e2c8e1b4dff1"
+  name = "github.com/sirupsen/logrus"
+  packages = ["."]
+  pruneopts = ""
+  revision = "ad15b42461921f1fb3529b058c6786c6a45d5162"
+  version = "v1.1.1"
+
+[[projects]]
   digest = "1:cbaf13cdbfef0e4734ed8a7504f57fe893d471d62a35b982bf6fb3f036449a66"
   name = "github.com/spf13/pflag"
   packages = ["."]
@@ -452,7 +467,9 @@
   digest = "1:78f41d38365ccef743e54ed854a2faf73313ba0750c621116a8eeb0395590bd0"
   name = "golang.org/x/crypto"
   packages = [
+    "argon2",
     "bcrypt",
+    "blake2b",
     "blowfish",
     "ed25519",
     "ed25519/internal/edwards25519",
@@ -499,6 +516,7 @@
   digest = "1:2ed0bf267e44950120acd95570227e28184573ffb099bd85b529ee148e004ddb"
   name = "golang.org/x/sys"
   packages = [
+    "cpu",
     "unix",
     "windows",
   ]
@@ -788,7 +806,6 @@
   analyzer-name = "dep"
   analyzer-version = 1
   input-imports = [
-    "github.com/Sirupsen/logrus",
     "github.com/coreos/go-oidc",
     "github.com/docker/docker/api/types",
     "github.com/docker/docker/api/types/container",
@@ -810,6 +827,7 @@
     "github.com/nsqio/go-nsq",
     "github.com/pkg/errors",
     "github.com/satori/go.uuid",
+    "github.com/sirupsen/logrus",
     "github.com/stretchr/testify/assert",
     "golang.org/x/crypto/bcrypt",
     "golang.org/x/net/context",

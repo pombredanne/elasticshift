@@ -9,8 +9,8 @@ import (
 	"fmt"
 	"strings"
 
-	"github.com/Sirupsen/logrus"
 	"github.com/graphql-go/graphql"
+	"github.com/sirupsen/logrus"
 	"gitlab.com/conspico/elasticshift/api/types"
 	"gitlab.com/conspico/elasticshift/internal/pkg/logger"
 	"gitlab.com/conspico/elasticshift/internal/shiftserver/store"

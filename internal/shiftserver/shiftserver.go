@@ -8,9 +8,9 @@ import (
 	"net/http/pprof"
 	"strings"
 
-	"github.com/Sirupsen/logrus"
 	"github.com/gorilla/mux"
 	"github.com/graphql-go/handler"
+	"github.com/sirupsen/logrus"
 	"gitlab.com/conspico/elasticshift/api"
 	"gitlab.com/conspico/elasticshift/api/dex"
 	"gitlab.com/conspico/elasticshift/internal/pkg/logger"

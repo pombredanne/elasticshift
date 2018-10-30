@@ -8,7 +8,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/Sirupsen/logrus"
+	"github.com/sirupsen/logrus"
 	"gitlab.com/conspico/elasticshift/core/store"
 
 	"github.com/stretchr/testify/assert"

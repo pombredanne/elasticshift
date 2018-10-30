@@ -7,7 +7,7 @@ import (
 	"io"
 	"strings"
 
-	"github.com/Sirupsen/logrus"
+	"github.com/sirupsen/logrus"
 	"github.com/minio/minio-go"
 	"gitlab.com/conspico/elasticshift/api/types"
 )

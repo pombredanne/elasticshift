@@ -4,9 +4,9 @@ Copyright 2018 The Elasticshift Authors.
 package pubsub
 
 import (
-	"github.com/Sirupsen/logrus"
 	nsq "github.com/nsqio/go-nsq"
 	"github.com/pkg/errors"
+	"github.com/sirupsen/logrus"
 	"gitlab.com/conspico/elasticshift/internal/pkg/logger"
 )
 

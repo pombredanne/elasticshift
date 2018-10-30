@@ -10,7 +10,7 @@ import (
 	"io"
 	"os"
 
-	"github.com/Sirupsen/logrus"
+	"github.com/sirupsen/logrus"
 	"github.com/pkg/errors"
 	uuid "github.com/satori/go.uuid"
 	"gitlab.com/conspico/elasticshift/api/types"

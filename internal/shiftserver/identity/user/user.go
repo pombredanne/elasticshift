@@ -9,7 +9,7 @@ import (
 
 	"net/mail"
 
-	"github.com/Sirupsen/logrus"
+	"github.com/sirupsen/logrus"
 	"gitlab.com/conspico/elasticshift/api"
 	"gitlab.com/conspico/elasticshift/api/dex"
 	"golang.org/x/crypto/bcrypt"

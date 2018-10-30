@@ -7,7 +7,7 @@ import (
 	"bufio"
 	"os"
 
-	"github.com/Sirupsen/logrus"
+	"github.com/sirupsen/logrus"
 	"gitlab.com/conspico/elasticshift/internal/pkg/storage"
 )
 

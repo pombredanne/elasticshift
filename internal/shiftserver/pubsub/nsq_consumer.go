@@ -9,9 +9,9 @@ import (
 	"context"
 	"fmt"
 
-	"github.com/Sirupsen/logrus"
 	"github.com/graphql-go/graphql"
-	"github.com/nsqio/go-nsq"
+	nsq "github.com/nsqio/go-nsq"
+	"github.com/sirupsen/logrus"
 	"gitlab.com/conspico/elasticshift/internal/pkg/utils"
 )
 

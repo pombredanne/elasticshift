@@ -6,7 +6,7 @@ package pubsub
 import (
 	"sync"
 
-	"github.com/Sirupsen/logrus"
+	"github.com/sirupsen/logrus"
 	"github.com/graphql-go/graphql"
 	"gitlab.com/conspico/elasticshift/internal/pkg/logger"
 )

@@ -13,9 +13,9 @@ import (
 	"runtime"
 	"sync"
 
-	"github.com/Sirupsen/logrus"
 	"github.com/mholt/archiver"
 	homedir "github.com/minio/go-homedir"
+	"github.com/sirupsen/logrus"
 	"gitlab.com/conspico/elasticshift/internal/pkg/utils"
 )
 
