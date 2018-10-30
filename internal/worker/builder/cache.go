@@ -95,10 +95,18 @@ func (b *builder) saveCache(nodelogger *logrus.Entry) error {
 				cached := filepath.Join(cachedir, id)
 				err := archiver.TarGz.Make(cached, []string{expanded})
 				if err != nil {
-					nodelogger.Printf("Failed to compress %s: %v\n", dir, err)
+					nodelogger.Errorf("Failed to compress %s: %v\n", dir, err)
+				} else {
+
+					// upload tar file
+					_, err = b.storage.PutCacheFile(id, cached)
+					if err != nil {
+						nodelogger.Errorf("Failed saving cache file: %s, %v", id, err)
+					} else {
+						newDirs = append(newDirs, ce)
+					}
 				}
 
-				newDirs = append(newDirs, ce)
 			} else {
 
 				// check the checksum after
@@ -129,6 +137,12 @@ func (b *builder) restoreCache(nodelogger *logrus.Entry) error {
 
 	cacdir := b.cacheDir()
 	nodelogger.Printf("Cache dir = %s \n ", cacdir)
+
+	// download cache file
+	err := b.storage.GetCacheFile(FILE_CACHE, cacdir)
+	if err != nil {
+		return fmt.Errorf("Failed to fetch %s: %v", FILE_CACHE, err)
+	}
 
 	exist, err := utils.PathExist(cacdir)
 	if err != nil {
@@ -166,6 +180,12 @@ func (b *builder) restoreCache(nodelogger *logrus.Entry) error {
 			dir, err := homedir.Expand(c.ExtractTo)
 			if err != nil {
 				nodelogger.Printf("Failed to expand the cache directory: %v \n", err)
+			}
+
+			//download the cache file
+			err = b.storage.GetCacheFile(c.ID, cacdir)
+			if err != nil {
+				nodelogger.Errorf("failed to fetch cache file: %s, %v", c.ID, err)
 			}
 
 			src := filepath.Join(cacdir, c.ID)
@@ -252,10 +272,13 @@ func (b *builder) writeCacheFile(cachepath string, cachefile *CacheFile) error {
 		return fmt.Errorf("Failed to convert config map to json : %v \n ", err)
 	}
 
-	err = ioutil.WriteFile(filepath.Join(cachepath, FILE_CACHE), data, os.ModePerm)
+	cfpath := filepath.Join(cachepath, FILE_CACHE)
+	err = ioutil.WriteFile(cfpath, data, os.ModePerm)
 	if err != nil {
 		return fmt.Errorf("Failed to write .cache file : %v \n ", err)
 	}
 
-	return nil
+	// upload cache files
+	_, err = b.storage.PutCacheFile("cache", cfpath)
+	return err
 }

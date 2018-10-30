@@ -22,12 +22,13 @@ type StorageInterface interface {
 	CreateBucket(name, region string) error
 	PutObjectStreaming(bucketName, objectName string, reader io.Reader) (int64, error)
 	PutObject(bucketName, objectName string, r io.Reader, contentType string) (int64, error)
+	GetObject(bucketName, objectName string) (io.ReadCloser, error)
+	PutFObject(bucketName, objectName, filepath, contentType string) (int64, error)
+	GetFObject(bucketName, objectName, filepath string) error
 }
 
-/*
-Copyright 2018 The Elasticshift Authors.
-*/
-func NewStorage(logger logrus.Logger, s types.Storage) (StorageInterface, error) {
+// NewStorage ..
+func NewStorage(logger *logrus.Entry, s types.Storage) (StorageInterface, error) {
 
 	switch s.Kind {
 	case AmazonS3:

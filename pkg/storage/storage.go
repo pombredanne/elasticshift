@@ -1,3 +1,6 @@
+/*
+Copyright 2018 The Elasticshift Authors.
+*/
 package storage
 
 import (
@@ -25,7 +28,7 @@ func WritePluginBundle(stor types.Storage, f multipart.File, destPath string) er
 
 	var err error
 	switch stor.Kind {
-
+	//writeMinio(stor, f)
 	case MINIO:
 	case AmazonS3:
 	case GoogleCloudStorage:

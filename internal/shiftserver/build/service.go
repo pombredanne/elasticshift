@@ -14,6 +14,7 @@ import (
 	"github.com/gorilla/mux"
 	"gitlab.com/conspico/elasticshift/api/types"
 	"gitlab.com/conspico/elasticshift/internal/pkg/logger"
+	"gitlab.com/conspico/elasticshift/internal/pkg/storage"
 	"gitlab.com/conspico/elasticshift/internal/pkg/utils"
 	"gitlab.com/conspico/elasticshift/internal/shiftserver/integration"
 	itypes "gitlab.com/conspico/elasticshift/internal/shiftserver/integration/types"
@@ -77,8 +78,13 @@ func (s service) Viewlog(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, "URL doesn't container build identifier.", http.StatusBadRequest)
 		return
 	}
-
 	s.logger.Infoln("BuildID=", buildID)
+
+	subBuildID := mux.Vars(r)["subbuildid"]
+	if subBuildID == "" {
+		http.Error(w, "URL doesn't container sub-build identifier.", http.StatusBadRequest)
+		return
+	}
 
 	var b types.Build
 	var err error
@@ -109,13 +115,15 @@ func (s service) Viewlog(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	var sb types.SubBuild
+
 	// fetch log directly from the container
 	if b.Status == types.BuildStatusWaiting || b.Status == types.BuildStatusPreparing || b.Status == types.BuildStatusRunning {
 
 		for {
 
-			b, err = s.buildStore.FetchBuildByID(buildID)
-			if err != nil || (b.Metadata != nil && b.Metadata.PodName != "") {
+			sb, err = s.buildStore.FetchSubBuild(buildID, subBuildID)
+			if err != nil || (sb.Metadata != nil && sb.Metadata.PodName != "") {
 				break
 			}
 
@@ -141,7 +149,7 @@ func (s service) Viewlog(w http.ResponseWriter, r *http.Request) {
 			http.Error(w, fmt.Sprintf("Failed to fetch log, error when connecting to container engine: %s", err.Error()), http.StatusInternalServerError)
 		}
 
-		opts := &itypes.StreamLogOptions{Pod: b.Metadata.PodName, BuildID: buildID, W: w, Follow: follow}
+		opts := &itypes.StreamLogOptions{Pod: sb.Metadata.PodName, BuildID: buildID, W: w, Follow: follow}
 		readCloser, err := ce.StreamLog(opts)
 		if err != nil {
 			fmt.Println(err)
@@ -159,8 +167,36 @@ func (s service) Viewlog(w http.ResponseWriter, r *http.Request) {
 		err = stream(w, readCloser)
 	} else {
 
+		nodeID := mux.Vars(r)["nodeid"]
+		if nodeID == "" {
+			http.Error(w, "URL doesn't container build identifier.", http.StatusBadRequest)
+			return
+		}
+
+		sm := &types.StorageMetadata{
+			TeamID:       b.Team,
+			BuildID:      buildID,
+			RepositoryID: b.RepositoryID,
+			SubBuildID:   subBuildID,
+		}
+
+		ss, err := storage.NewWithMetadata(s.logger, &stor, sm)
+		if err != nil {
+			http.Error(w, fmt.Sprintf("Cannot connect to storage: %v", err), http.StatusInternalServerError)
+		}
+
+		r, err := ss.GetLog(nodeID)
+		if err != nil {
+			http.Error(w, fmt.Sprintf("Failed to fetch log from storage: %v", err), http.StatusInternalServerError)
+		}
+
+		err = stream(w, r)
 		// Fetch logs from storage
-		w.Write([]byte("Streaming non running builds aren't supported yet. "))
+		// w.Write([]byte("Streaming non running builds aren't supported yet. "))
+	}
+
+	if err != nil {
+		//handle streaming error
 	}
 }
 
@@ -174,6 +210,7 @@ func stream(w http.ResponseWriter, r io.ReadCloser) error {
 			case <-notify:
 			case <-done:
 			}
+
 			r.Close()
 			break
 		}

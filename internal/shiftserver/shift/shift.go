@@ -78,14 +78,26 @@ func (s *shift) UpdateBuildStatus(ctx context.Context, req *api.UpdateBuildStatu
 		return nil, fmt.Errorf("BuildID is empty")
 	}
 
+	if req.GetSubBuildId() == "" {
+		return nil, fmt.Errorf("Sub BuildID is empty")
+	}
+
+	// s.logger.Printf("Input UpdateBuildStatusReq: %#v", req)
+
 	res := &api.UpdateBuildStatusRes{}
 
-	var b types.Build
+	var b types.SubBuild
 	var err error
-	err = s.buildStore.FindByID(req.GetBuildId(), &b)
+	b, err = s.buildStore.FetchSubBuild(req.GetBuildId(), req.GetSubBuildId())
 	if err != nil {
 		return res, fmt.Errorf("Failed to fetch build by id : %v", err)
 	}
+
+	// b.ID = req.GetSubBuildId()
+
+	// fmt.Println("error:", err)
+	// fmt.Printf("SubBuild = %v \n", b)
+	// fmt.Printf("ID = %s, Image = %s \n", b.ID, b.Image)
 
 	b.Graph = req.GetGraph()
 	status := req.GetStatus()
@@ -118,7 +130,7 @@ func (s *shift) UpdateBuildStatus(ctx context.Context, req *api.UpdateBuildStatu
 		b.EndedAt = time.Now()
 	}
 
-	err = s.buildStore.UpdateId(b.ID, &b)
+	err = s.buildStore.UpdateSubBuild(req.GetBuildId(), b)
 	if err != nil {
 		return res, fmt.Errorf("Failed to update the graph : %v", err)
 	}
@@ -129,7 +141,7 @@ func (s *shift) UpdateBuildStatus(ctx context.Context, req *api.UpdateBuildStatu
 	if stopContainer {
 
 		// kick off the next waiting build
-		s.rs.Build.TriggerNextIfAny(b.Team, b.RepositoryID, b.Branch)
+		s.rs.Build.TriggerNextIfAny(req.GetTeamId(), req.GetRepositoryId(), req.GetBranch())
 
 		// fmt.Println("-------------------------------------------------------------")
 		// fmt.Println("Stopping the container..... ")
@@ -137,12 +149,12 @@ func (s *shift) UpdateBuildStatus(ctx context.Context, req *api.UpdateBuildStatu
 		// fmt.Println("Checkpoint = ", cp)
 		// fmt.Println("-------------------------------------------------------------")
 		// request container engine to stop the live container
-		ce, err := s.getContainerEngine(b.Team)
+		ce, err := s.getContainerEngine(req.GetTeamId())
 		if err != nil {
 			return res, errors.Wrap(err, "Failed to get the default container engine: %v")
 		}
 
-		err = ce.DeleteContainer(req.GetBuildId())
+		err = ce.DeleteContainer(req.GetBuildId() + "-" + req.GetSubBuildId())
 		if err != nil {
 			return res, fmt.Errorf("Failed to stop the container: %v", err)
 		}
@@ -238,6 +250,37 @@ func (s *shift) GetProject(ctx context.Context, req *api.GetProjectReq) (*api.Ge
 	res.StoragePath = b.StoragePath
 	res.Source = b.Source
 	res.RepositoryId = b.RepositoryID
+
+	if req.GetIncludeShiftfile() {
+		// TODO fetch shiftfile from registry
+	}
+
+	// storage
+	def, err := s.defaultStore.FindByReferenceId(b.Team)
+	if err != nil {
+		return nil, errors.Wrap(err, "Failed to get default container engine:")
+	}
+
+	var stor types.Storage
+	err = s.integrationStore.FindByID(def.StorageID, &stor)
+	if err != nil {
+		return nil, errors.Wrap(err, "Failed to get default storage:")
+	}
+
+	storage := &api.Storage{}
+	storage.Kind = api.StorageKind(stor.Kind)
+
+	if stor.Kind == integration.Minio {
+
+		minio := &api.MinioStorage{}
+		minio.Host = stor.Minio.Host
+		minio.Certificate = stor.Minio.Certificate
+		minio.SecretKey = stor.Minio.SecretKey
+		minio.AccessKey = stor.Minio.AccessKey
+		storage.Minio = minio
+	}
+
+	res.Storage = storage
 
 	return res, nil
 }

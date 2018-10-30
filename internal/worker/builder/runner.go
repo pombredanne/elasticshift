@@ -144,6 +144,9 @@ func (b *builder) build(g *graph.Graph) error {
 				c.Node.End(graph.StatusSuccess, "")
 			}
 
+			f, _ := b.wctx.LogWriter.LogFile(c.Node.ID)
+			b.logshipper.Ship(f)
+
 		} else {
 			failed = b.runNode(c.Node)
 		}
@@ -177,6 +180,10 @@ func (b *builder) runNode(n *graph.N) bool {
 		n.End(graph.StatusSuccess, "")
 		b.UpdateBuildGraphToShiftServer(graph.StatusSuccess, n.Name, "", nodelogger)
 	}
+
+	f, _ := b.wctx.LogWriter.LogFile(n.ID)
+	b.logshipper.Ship(f)
+
 	return failed
 }
 
@@ -199,7 +206,12 @@ func (b *builder) UpdateBuildGraphToShiftServer(status, checkpoint, reason strin
 		logn.Printf("Eror when contructing status graph: %v\n", err)
 	}
 
-	req.BuildId = b.config.BuildID
+	//fmt.Printf("Config = %#v", b.wctx.Config)
+	req.BuildId = b.wctx.Config.BuildID
+	req.SubBuildId = b.wctx.Config.SubBuildID
+	req.TeamId = b.wctx.Config.TeamID
+	req.RepositoryId = b.project.GetRepositoryId()
+	req.Branch = b.project.GetBranch()
 	req.Graph = gph
 	req.Status = status
 	req.Checkpoint = checkpoint

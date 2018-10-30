@@ -52,38 +52,11 @@ var (
 		},
 	})
 
-	fields = graphql.Fields{
+	subBuildFields = graphql.Fields{
 		"id": &graphql.Field{
-			Type:        graphql.ID,
-			Description: "Build identifier",
-			Resolve: func(p graphql.ResolveParams) (interface{}, error) {
-				if t, ok := p.Source.(types.Build); ok {
-					return t.ID.Hex(), nil
-				}
-				return nil, nil
-			},
-		},
-
-		"repository_id": &graphql.Field{
 			Type:        graphql.String,
-			Description: "Repository identifier",
+			Description: "SubBuild identifier",
 		},
-
-		"vcs_id": &graphql.Field{
-			Type:        graphql.String,
-			Description: "Unique identifier for version control system",
-		},
-
-		"container_id": &graphql.Field{
-			Type:        graphql.String,
-			Description: "Container identifier",
-		},
-
-		"log": &graphql.Field{
-			Type:        graphql.String,
-			Description: "Location/path of the build log",
-		},
-
 		"started_at": &graphql.Field{
 			Type:        graphql.DateTime,
 			Description: "Time when the build triggered",
@@ -92,11 +65,6 @@ var (
 		"ended_at": &graphql.Field{
 			Type:        graphql.DateTime,
 			Description: "Time when the build completed",
-		},
-
-		"triggered_by": &graphql.Field{
-			Type:        graphql.String,
-			Description: "Show who triggered the build, it could be a pull request (automatially) or user (manually)",
 		},
 
 		"status": &graphql.Field{
@@ -130,11 +98,6 @@ var (
 			},
 		},
 
-		"branch": &graphql.Field{
-			Type:        graphql.String,
-			Description: "The branch to which the build is/was triggered",
-		},
-
 		"graph": &graphql.Field{
 			Type:        graphql.String,
 			Description: "Flow graph",
@@ -148,6 +111,69 @@ var (
 		"duration": &graphql.Field{
 			Type:        graphql.String,
 			Description: "Duration of the actual build time",
+		},
+	}
+
+	subBuildType = graphql.NewObject(
+		graphql.ObjectConfig{
+			Name:        "SubBuild",
+			Fields:      subBuildFields,
+			Description: "An object of SubBuild type",
+		},
+	)
+
+	fields = graphql.Fields{
+		"id": &graphql.Field{
+			Type:        graphql.ID,
+			Description: "Build identifier",
+			Resolve: func(p graphql.ResolveParams) (interface{}, error) {
+				if t, ok := p.Source.(types.Build); ok {
+					return t.ID.Hex(), nil
+				}
+				return nil, nil
+			},
+		},
+
+		"repository_id": &graphql.Field{
+			Type:        graphql.String,
+			Description: "Repository identifier",
+		},
+
+		"vcs_id": &graphql.Field{
+			Type:        graphql.String,
+			Description: "Unique identifier for version control system",
+		},
+
+		"container_id": &graphql.Field{
+			Type:        graphql.String,
+			Description: "Container identifier",
+		},
+
+		"log": &graphql.Field{
+			Type:        graphql.String,
+			Description: "Location/path of the build log",
+		},
+
+		"triggered_by": &graphql.Field{
+			Type:        graphql.String,
+			Description: "Show who triggered the build, it could be a pull request (automatially) or user (manually)",
+		},
+
+		"branch": &graphql.Field{
+			Type:        graphql.String,
+			Description: "The branch to which the build is/was triggered",
+		},
+
+		"sub_builds": &graphql.Field{
+			Type:        graphql.NewList(subBuildType),
+			Description: "Build status and other info",
+			Resolve: func(p graphql.ResolveParams) (interface{}, error) {
+
+				if t, ok := p.Source.(types.Build); ok {
+					return t.SubBuilds, nil
+				}
+				return nil, nil
+			},
 		},
 	}
 

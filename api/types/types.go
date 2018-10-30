@@ -180,12 +180,9 @@ type Build struct {
 	VcsID             string        `json:"vcs_id" bson:"vcs_id"`
 	Log               []Log         `json:"-" bson:"log"`
 	LogType           string        `json:"-" bson:"log_type"`
-	StartedAt         time.Time     `json:"started_at" bson:"started_at"`
-	EndedAt           time.Time     `json:"ended_at" bson:"ended_at"`
 	TriggeredBy       string        `json:"triggered_by" bson:"triggered_by"`
 	Status            string        `json:"status" bson:"status"`
 	Reason            string        `json:"reason" bson:"reason,omitempty"`
-	Duration          string        `json:"duration" bson:"duration,omitempty"`
 	Branch            string        `json:"branch" bson:"branch"`
 	CloneURL          string        `json:"clone_url" bson:"clone_url"`
 	Language          string        `json:"language" bson:"language"`
@@ -196,7 +193,23 @@ type Build struct {
 	Privatekey        string        `json:"-" bson:"private_key,omitempty"`
 	Graph             string        `json:"graph" bson:"graph,omitempty"`
 	Source            string        `json:"source" bson:"source"`
-	Metadata          *Metadata     `json:"-" bson:"metadata,omitempty"`
+	SubBuilds         []SubBuild    `json:"sub_builds" bson:"sub_builds,omitempty"`
+}
+
+type SubBuild struct {
+	ID        string    `json:"id" bson:"id"`
+	Image     string    `json:"image" bson:"image"`
+	Status    string    `json:"status" bson:"status"`
+	Graph     string    `json:"graph" bson:"graph,omitempty"`
+	Reason    string    `json:"reason" bson:"reason,omitempty"`
+	Duration  string    `json:"duration" bson:"duration,omitempty"`
+	StartedAt time.Time `json:"started_at" bson:"started_at,omitempty"`
+	EndedAt   time.Time `json:"ended_at" bson:"ended_at,omitempty"`
+	Metadata  *Metadata `json:"-" bson:"metadata,omitempty"`
+}
+
+type BuildContainer struct {
+	ID string
 }
 
 type BuildList struct {
@@ -428,4 +441,11 @@ type Metadata struct {
 
 	// Kubernetes
 	PodName string `json:"-" bson:"pod_name"`
+}
+
+type StorageMetadata struct {
+	TeamID       string
+	RepositoryID string
+	BuildID      string
+	SubBuildID   string
 }

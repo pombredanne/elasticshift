@@ -5,6 +5,7 @@ package logwriter
 
 import (
 	"fmt"
+	"os"
 
 	"github.com/Sirupsen/logrus"
 	"gitlab.com/conspico/elasticshift/internal/pkg/logger"
@@ -16,10 +17,12 @@ const (
 
 type LogWriter interface {
 	GetLogger(nodeid string) (*logrus.Entry, error)
+	LogFile(nodeid string) (*os.File, error)
 }
 
 type logw struct {
-	loggr logger.Loggr
+	loggr       logger.Loggr
+	nodewriters map[string]NodeWriter
 }
 
 /*
@@ -33,6 +36,7 @@ type logw struct {
 func New(logLevel, logFormat string) (LogWriter, error) {
 
 	lw := &logw{}
+	lw.nodewriters = make(map[string]NodeWriter)
 
 	loggr, err := logger.New(logLevel, logFormat)
 	if err != nil {
@@ -49,6 +53,21 @@ func (lw *logw) GetLogger(nodeid string) (*logrus.Entry, error) {
 	if err != nil {
 		return nil, err
 	}
+	lw.nodewriters[nodeid] = nw
 
 	return lw.loggr.GetLoggerWithField("node_id", nodeid, nw), nil
+}
+
+func (lw *logw) LogFile(nodeid string) (*os.File, error) {
+
+	var err error
+	var f *os.File
+	nw := lw.nodewriters[nodeid]
+	if nw != nil {
+		f = nw.File()
+		if f == nil {
+			err = fmt.Errorf("No logfile availe for %s \n ", nodeid)
+		}
+	}
+	return f, err
 }

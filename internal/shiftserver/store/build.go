@@ -4,6 +4,8 @@ Copyright 2017 The Elasticshift Authors.
 package store
 
 import (
+	"fmt"
+
 	"gitlab.com/conspico/elasticshift/api/types"
 	mgo "gopkg.in/mgo.v2"
 	"gopkg.in/mgo.v2/bson"
@@ -21,9 +23,14 @@ type Build interface {
 	FetchBuild(team, repositoryID, branch, id string, status []string) ([]types.Build, error)
 	FetchBuildByID(id string) (types.Build, error)
 	FetchBuildByRepositoryID(id string) ([]types.Build, error)
+
 	UpdateBuildLog(id bson.ObjectId, log string) error
 	UpdateBuildStatus(id bson.ObjectId, s string) error
 	UpdateContainerID(id bson.ObjectId, containerID string) error
+
+	SaveSubBuild(buildID string, sb *types.SubBuild) error
+	UpdateSubBuild(buildID string, sb types.SubBuild) error
+	FetchSubBuild(buildID, subBuildID string) (types.SubBuild, error)
 }
 
 // NewStore ..
@@ -105,4 +112,66 @@ func (s *build) UpdateBuildStatus(id bson.ObjectId, status string) error {
 
 func (s *build) UpdateContainerID(id bson.ObjectId, containerID string) error {
 	return s.UpdateId(id, bson.M{"$set": bson.M{"container_id": containerID}})
+}
+
+func (s *build) SaveSubBuild(buildID string, sb *types.SubBuild) error {
+
+	var err error
+	s.Execute(func(c *mgo.Collection) {
+		err = c.Update(
+			bson.M{"_id": bson.ObjectIdHex(buildID)},
+			bson.M{"$push": bson.M{"sub_builds": sb}},
+		)
+	})
+	return err
+}
+
+func (s *build) UpdateSubBuild(buildID string, sb types.SubBuild) error {
+
+	u := bson.M{}
+
+	if sb.Graph != "" {
+		u["sub_builds.$.graph"] = sb.Graph
+	}
+
+	if sb.Status != "" {
+		u["sub_builds.$.status"] = sb.Status
+
+	}
+
+	if sb.Reason != "" {
+		u["sub_builds.$.reason"] = sb.Reason
+	}
+
+	if sb.Duration != "" {
+		u["sub_builds.$.duration"] = sb.Duration
+	}
+
+	var err error
+	s.Execute(func(c *mgo.Collection) {
+		err = c.Update(
+			bson.M{"_id": bson.ObjectIdHex(buildID), "sub_builds.id": sb.ID},
+			bson.M{"$set": u})
+	})
+	return err
+}
+
+func (s *build) FetchSubBuild(buildID, subBuildID string) (types.SubBuild, error) {
+
+	var sb types.SubBuild
+	var b types.Build
+	var err error
+
+	s.Execute(func(c *mgo.Collection) {
+		err = c.Find(bson.M{"_id": bson.ObjectIdHex(buildID), "sub_builds.id": subBuildID}).Select(bson.M{"sub_builds.$": 1}).One(&b)
+	})
+
+	fmt.Printf("Len of sub_builds : %d", len(b.SubBuilds))
+
+	if len(b.SubBuilds) > 0 {
+		sb = b.SubBuilds[0]
+	}
+
+	fmt.Printf("Inside FetchSubBuild: ID = %s, Image = %s \n", sb.ID, sb.Image)
+	return sb, err
 }

@@ -12,10 +12,13 @@ import (
 
 	"github.com/pkg/errors"
 	"gitlab.com/conspico/elasticshift/api"
+	"gitlab.com/conspico/elasticshift/api/types"
 	"gitlab.com/conspico/elasticshift/internal/pkg/graph"
 	"gitlab.com/conspico/elasticshift/internal/pkg/shiftfile/ast"
 	"gitlab.com/conspico/elasticshift/internal/pkg/shiftfile/parser"
+	"gitlab.com/conspico/elasticshift/internal/pkg/storage"
 	"gitlab.com/conspico/elasticshift/internal/pkg/vcs"
+	"gitlab.com/conspico/elasticshift/internal/worker/logshipper"
 	wtypes "gitlab.com/conspico/elasticshift/internal/worker/types"
 	"google.golang.org/grpc"
 )
@@ -40,6 +43,8 @@ type builder struct {
 	config      wtypes.Config
 	shiftclient api.ShiftClient
 	project     *api.GetProjectRes
+	storage     *storage.ShiftStorage
+	logshipper  logshipper.LogShipper
 
 	f *ast.File
 	g *graph.Graph
@@ -97,6 +102,32 @@ func (b *builder) run() error {
 		return err
 	}
 	b.f = sf
+
+	m := &types.StorageMetadata{
+		TeamID:       b.config.BuildID,
+		RepositoryID: proj.GetRepositoryId(),
+		BuildID:      b.config.BuildID,
+		SubBuildID:   b.config.SubBuildID,
+	}
+
+	// conver storage object
+	stor := storage.Convert(proj.Storage)
+	fmt.Printf("%#v\n", stor)
+
+	// initialize the storage
+	ss, err := storage.NewWithMetadata(b.wctx.EnvLogger, stor, m)
+	if err != nil {
+		fmt.Printf("Storage error : %v", err)
+		return errors.Errorf("Failed to initialize storage: %v", err)
+	}
+	b.storage = ss
+
+	// start log shipper
+	ls, err := logshipper.New(b.wctx.EnvLogger, ss)
+	if err != nil {
+		return errors.Errorf("Failed to initialize log shipper: %v", err)
+	}
+	b.logshipper = ls
 
 	b.wctx.EnvTimer.Stop()
 

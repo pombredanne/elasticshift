@@ -8,32 +8,27 @@ import (
 	"fmt"
 	"io"
 	"log"
+	"strings"
 	"sync"
 	"testing"
+
+	"gitlab.com/conspico/elasticshift/api/types"
+	"gitlab.com/conspico/elasticshift/internal/pkg/logger"
 )
 
-func testCreateBucket(t *testing.T) {
+func TestCreateBucket(t *testing.T) {
 
-	// logger := logrus.New()
-	// logger.Out = os.Stdout
+	mc, err := connectToMinio()
+	if err != nil {
+		fmt.Println(err)
+		t.Fail()
+	}
 
-	// opts := types.Storage{
-	// 	StorageSource: types.StorageSource{
-	// 		&MinioStorage{
-	// 			Host:      "127.0.0.1:9000",
-	// 			AccessKey: "AKIAIOSFODNN7EXAMPLE",
-	// 			SecretKey: "wJalrXUtnFEMI/K7MDENG/bPxRfiCYEXAMPLEKEY",
-	// 		},
-	// 	},
-	// }
-
-	// mc, err := ConnectMinio(*logger, opts)
-
-	// if err != nil {
-	// 	fmt.Println(err)
-	// 	t.Fail()
-	// }
-
+	err = mc.CreateBucket("elasticshift", "")
+	if err != nil {
+		fmt.Println(err)
+		t.Fail()
+	}
 	// var f *os.File
 	// f, err = os.OpenFile("test.txt", os.O_RDWR|os.O_CREATE|os.O_APPEND, 0666)
 	// if err != nil {
@@ -60,6 +55,42 @@ func testCreateBucket(t *testing.T) {
 	// ch := make(chan int)
 
 	// <-ch
+}
+
+func TestUploadFile(t *testing.T) {
+
+	mc, err := connectToMinio()
+	if err != nil {
+		fmt.Println(err)
+		t.Fail()
+	}
+
+	r := strings.NewReader("this is sample text.")
+	_, err = mc.PutObject("elasticshift", "logs/12345/test2.log", r, "text/plain")
+	if err != nil {
+		fmt.Println(err)
+		t.Fail()
+	}
+}
+
+func connectToMinio() (StorageInterface, error) {
+
+	loggr, err := logger.New("info", "text")
+	if err != nil {
+		return nil, err
+	}
+	l := loggr.GetLogger("minio_test")
+
+	opts := types.Storage{}
+	ms := &types.MinioStorage{
+		Host:        "127.0.0.1:9000",
+		Certificate: "",
+		AccessKey:   "AKIAIOSFODNN7EXAMPLE",
+		SecretKey:   "wJalrXUtnFEMI/K7MDENG/bPxRfiCYEXAMPLEKEY",
+	}
+	opts.StorageSource = types.StorageSource{Minio: ms}
+
+	return ConnectMinio(l, opts)
 }
 
 type LogWriter struct {

@@ -154,7 +154,14 @@ func (c *kubernetesClient) CreateContainer(opts *itypes.CreateContainerOptions) 
 	volumes := []apiv1.Volume{}
 
 	var startupCmd string
-	if c.opts.Storage.Kind == 4 { //NFS
+	if c.opts.Storage.Kind == 4 || c.opts.Storage.Kind == 1 { //NFS
+
+		c.opts.Storage.NFS = &types.NFSStorage{
+			Server:    "10.10.7.151",
+			Path:      "/nfs/elasticshift",
+			ReadOnly:  false,
+			MountPath: "/lab/elasticshift",
+		}
 
 		// set shift_dir
 		envs = append(envs, apiv1.EnvVar{Name: KEY_SHIFTDIR, Value: c.opts.Storage.NFS.MountPath})
@@ -192,14 +199,15 @@ func (c *kubernetesClient) CreateContainer(opts *itypes.CreateContainerOptions) 
 
 	podClient := c.Kube.Core().Pods(c.opts.Namespace)
 
+	name := opts.BuildID + "-" + opts.SubBuildID
 	shiftID := uuid.NewV4()
 	pod := &apiv1.Pod{
 		ObjectMeta: metav1.ObjectMeta{
-			Name: opts.BuildID,
+			Name: name,
 			Labels: map[string]string{
 				KW_CREATEDBY: DefaultContext,
 				KW_SHIFTID:   shiftID.String(),
-				KW_BUILDID:   opts.BuildID,
+				KW_BUILDID:   name,
 			},
 		},
 
@@ -207,7 +215,7 @@ func (c *kubernetesClient) CreateContainer(opts *itypes.CreateContainerOptions) 
 			RestartPolicy: apiv1.RestartPolicyNever,
 			Containers: []apiv1.Container{
 				{
-					Name:         opts.BuildID,
+					Name:         name,
 					Image:        opts.Image,
 					Command:      []string{startupCmd},
 					Env:          envs,
@@ -325,7 +333,7 @@ func (c *kubernetesClient) CreateContainer(opts *itypes.CreateContainerOptions) 
 								if updateMetadata {
 
 									if opts.UpdateMetadata != nil {
-										opts.UpdateMetadata(Kubernetes, opts.BuildID, pod.Name)
+										opts.UpdateMetadata(Kubernetes, opts.BuildID, opts.SubBuildID, pod.Name)
 										updateMetadata = false
 									}
 								}
@@ -335,7 +343,7 @@ func (c *kubernetesClient) CreateContainer(opts *itypes.CreateContainerOptions) 
 							finishedAt := cs.State.Terminated.FinishedAt.Time
 
 							if cs.State.Terminated.Reason != "Completed" {
-								opts.FailureFunc(opts.BuildID, cs.State.Terminated.Reason, finishedAt)
+								opts.FailureFunc(opts.BuildID, opts.SubBuildID, cs.State.Terminated.Reason, finishedAt)
 								terminated = true
 							}
 
@@ -349,7 +357,7 @@ func (c *kubernetesClient) CreateContainer(opts *itypes.CreateContainerOptions) 
 								}
 
 								finishedAt := cs.State.Terminated.FinishedAt.Time
-								opts.FailureFunc(opts.BuildID, cs.State.Terminated.Reason, finishedAt)
+								opts.FailureFunc(opts.BuildID, opts.SubBuildID, cs.State.Terminated.Reason, finishedAt)
 								terminated = true
 							}
 						}
@@ -360,7 +368,7 @@ func (c *kubernetesClient) CreateContainer(opts *itypes.CreateContainerOptions) 
 							}
 
 							finishedAt := cs.State.Terminated.FinishedAt.Time
-							opts.FailureFunc(opts.BuildID, cs.State.Terminated.Reason, finishedAt)
+							opts.FailureFunc(opts.BuildID, opts.SubBuildID, cs.State.Terminated.Reason, finishedAt)
 							terminated = true
 						}
 					}

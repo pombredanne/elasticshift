@@ -21,9 +21,10 @@ type CreateContainerOptions struct {
 
 	VolumeMounts []Volume
 	BuildID      string
+	SubBuildID   string
 
-	FailureFunc    func(string, string, time.Time)
-	UpdateMetadata func(int, string, string)
+	FailureFunc    func(string, string, string, time.Time)
+	UpdateMetadata func(int, string, string, string)
 }
 
 type Volume struct {

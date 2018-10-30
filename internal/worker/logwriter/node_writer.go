@@ -1,3 +1,6 @@
+/*
+Copyright 2018 The Elasticshift Authors.
+*/
 package logwriter
 
 import (
@@ -15,6 +18,7 @@ var (
 
 type NodeWriter interface {
 	Write(b []byte) (int, error)
+	File() *os.File
 }
 
 type nodew struct {
@@ -52,4 +56,8 @@ func newNodeWriter(nodeid string) (NodeWriter, error) {
 
 func (w *nodew) Write(b []byte) (int, error) {
 	return w.writer.Write(b)
+}
+
+func (w *nodew) File() *os.File {
+	return w.file
 }

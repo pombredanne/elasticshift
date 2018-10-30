@@ -14,11 +14,15 @@ message RegisterRes {
 
 message UpdateBuildStatusReq {
 	string build_id = 1;
-	string graph = 2;
-	string status = 3;
-	string checkpoint = 4;
-	string reason = 5;
-	string duration = 6;
+	string sub_build_id = 2;
+	string repository_id = 3;
+	string team_id = 4;
+	string branch = 5;
+	string graph = 6;
+	string status = 7;
+	string checkpoint = 8;
+	string reason = 9;
+	string duration = 10;
 }
 
 message UpdateBuildStatusRes {
@@ -42,6 +46,31 @@ message GetProjectRes {
 	string storage_path = 10;
 	string source = 11;
 	string shiftfile = 12;
+	Storage storage  = 13;
+}
+
+message MinioStorage {
+	string host = 1;
+	string certificate = 2;
+	string access_key = 3;
+	string secret_key = 4;
+}
+
+message NFSStorage {
+	
+}
+
+enum StorageKind {
+	NONE = 0;
+	Minio = 1;
+	AmazonS3 = 2;
+	GoogleCloudStorage = 3;
+	NFS = 4;
+}
+
+message Storage {
+	StorageKind kind = 1;
+	MinioStorage minio = 2;
 }
 
 service Shift {

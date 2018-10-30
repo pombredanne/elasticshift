@@ -143,7 +143,6 @@ func (r *resolver) TriggerBuild(params graphql.ResolveParams) (interface{}, erro
 	b.VcsID = repo.VcsID
 	b.Status = status
 	b.TriggeredBy = "Anonymous" //TODO fill in with logged-in user
-	b.StartedAt = time.Now()
 	b.Team = repo.Team
 	b.Branch = branch
 	b.StorageID = def.StorageID
@@ -214,16 +213,15 @@ func (r *resolver) pushToQueue(b types.Build) {
 	r.BuildQueue <- b
 }
 
-func (r *resolver) UpdateBuildStatusAsFailed(id, reason string, endedAt time.Time) {
-	r.UpdateBuildStatus(id, reason, types.BuildStatusFailed, endedAt)
+func (r *resolver) UpdateBuildStatusAsFailed(id, subid, reason string, endedAt time.Time) {
+	r.UpdateBuildStatus(id, subid, reason, types.BuildStatusFailed, endedAt)
 }
 
-func (r *resolver) UpdateBuildStatus(id, reason, status string, endedAt time.Time) {
+func (r *resolver) UpdateBuildStatus(id, subid, reason, status string, endedAt time.Time) {
 
 	// should be the container startup log, if startup failed
 	// should be the err log if build failed.
-	var b types.Build
-	err := r.store.FindByID(id, &b)
+	b, err := r.store.FetchSubBuild(id, subid)
 	if err != nil {
 		// TODO handler error
 	}
@@ -232,7 +230,7 @@ func (r *resolver) UpdateBuildStatus(id, reason, status string, endedAt time.Tim
 	b.Status = status
 	b.EndedAt = time.Now()
 
-	err = r.store.UpdateId(b.ID, b)
+	err = r.store.UpdateSubBuild(id, b)
 	if err != nil {
 		r.logger.Errorf("failed to update build status: %v", err)
 	}

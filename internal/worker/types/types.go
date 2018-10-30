@@ -35,6 +35,7 @@ type Config struct {
 	ShiftDir           string
 	Timeout            string
 	BuildID            string
+	SubBuildID         string
 	TeamID             string
 	RepoBasedShiftFile bool
 }

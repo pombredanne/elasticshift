@@ -85,6 +85,14 @@ func Run() error {
 	}
 	cfg.BuildID = buildID
 
+	subBuildID := os.Getenv("SHIFT_SUBBUILDID")
+	if subBuildID == "" {
+		log1.Print("SHIFT_SUBBUILDID must be passed through environment variable.\n")
+	} else {
+		log1.Printf("SHIFT_SUBBUILDID=%s\n", subBuildID)
+	}
+	cfg.SubBuildID = subBuildID
+
 	teamID := os.Getenv("SHIFT_TEAMID")
 	if teamID == "" {
 		log1.Print("SHIFT_TEAMID  must be passed through environment variable.\n")
@@ -92,13 +100,6 @@ func Run() error {
 		log1.Printf("SHIFT_TEAMID=%s\n", teamID)
 	}
 	cfg.TeamID = teamID
-
-	// logr, err := logger.New(bctx, buildID, teamID)
-	// defer logr.Close()
-	// if err != nil {
-	// 	log.Printf("Initializing logger failed : %v", err)
-	// 	return fmt.Errorf("Error initializing logger: %v", err)
-	// }
 
 	var isError bool
 	host := os.Getenv("SHIFT_HOST")
@@ -198,6 +199,7 @@ func Start(ctx types.Context) error {
 
 	var err error
 	go func() {
+
 		// // Start the log shipper
 		// err = w.StartLogShipper()
 		// if err != nil {
@@ -414,7 +416,9 @@ var (
 func (w *W) UpdateShiftServer(status, checkpoint string) {
 
 	req := &api.UpdateBuildStatusReq{}
+	req.TeamId = w.Config.BuildID
 	req.BuildId = w.Context.Config.BuildID
+	req.SubBuildId = w.Config.SubBuildID
 	req.Status = statusFailed
 
 	if w.Context.Client != nil {
