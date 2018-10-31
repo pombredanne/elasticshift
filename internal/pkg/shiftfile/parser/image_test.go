@@ -1,6 +1,7 @@
 package parser
 
 import (
+	"fmt"
 	"io/ioutil"
 	"path/filepath"
 	"testing"
@@ -38,6 +39,12 @@ func TestImageBlock(t *testing.T) {
 			"image3.shift",
 			[]Expected{
 				{keys.NAME, "elasticshift/java,elasticshift/java6,elasticshift/java7"},
+			},
+		},
+		{
+			"image4.shift",
+			[]Expected{
+				{keys.NAME, "openjdk:7,openjdk:8"},
 			},
 		},
 	}

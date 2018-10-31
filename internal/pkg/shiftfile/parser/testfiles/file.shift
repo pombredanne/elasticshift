@@ -27,8 +27,8 @@ VAR proj_url "https://github.com/ghazninattarshah/hybrid.test.runner.git"
 # The container where the build is going to happen
 IMAGE "elasticshift/java:1.9" {
 	registry "http://dockerregistry.com/elasticshift"
-		username "testuser"
-		token "isdf1i41i23iu12i"
+	username "testuser"
+	token "isdf1i41i23iu12i"
 }
 
 #Directories to be cached
