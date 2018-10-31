@@ -6,7 +6,7 @@ package builder
 import (
 	"fmt"
 	"os"
-	"runtime"
+	"strings"
 	"sync"
 	"time"
 
@@ -41,18 +41,11 @@ func (b *builder) build(g *graph.Graph) error {
 	}
 
 	// set the parallel capability
-	var parallel int
-	nCpu := runtime.NumCPU()
-	if nCpu < 2 {
-		parallel = 1
-	} else {
-		parallel = nCpu - 1
-	}
+	parallel := utils.NumOfCPU()
 
 	var failed bool
 
 	// walk through the checkpoints and execute them
-	// s := ""
 	checkpoints := g.Checkpoints()
 	for i := 0; i < len(checkpoints); i++ {
 
@@ -104,6 +97,7 @@ func (b *builder) build(g *graph.Graph) error {
 
 					b.UpdateBuildGraphToShiftServer(graph.StatusWaiting, n.Name, "", nodelogger)
 
+					defer b.ShipLog(n.ID, n.Name)
 					defer wg.Done()
 					parallelCh <- 1
 
@@ -144,9 +138,6 @@ func (b *builder) build(g *graph.Graph) error {
 				c.Node.End(graph.StatusSuccess, "")
 			}
 
-			f, _ := b.wctx.LogWriter.LogFile(c.Node.ID)
-			b.logshipper.Ship(f)
-
 		} else {
 			failed = b.runNode(c.Node)
 		}
@@ -165,6 +156,8 @@ func (b *builder) runNode(n *graph.N) bool {
 	}
 	n.Logger = nodelogger
 
+	// defer b.ShipLog(n.ID, n.Name)
+
 	n.Start()
 	b.UpdateBuildGraphToShiftServer(graph.StatusRunning, n.Name, "", nodelogger)
 
@@ -172,19 +165,33 @@ func (b *builder) runNode(n *graph.N) bool {
 	msg, err := b.invokePlugin(n)
 	if err != nil {
 		n.End(graph.StatusFailed, msg)
+
+		b.ShipLog(n.ID, n.Name)
 		b.UpdateBuildGraphToShiftServer(graph.StatusFailed, n.Name, msg, nodelogger)
 
 		failed = true
 	} else {
 
 		n.End(graph.StatusSuccess, "")
+
+		b.ShipLog(n.ID, n.Name)
 		b.UpdateBuildGraphToShiftServer(graph.StatusSuccess, n.Name, "", nodelogger)
 	}
 
-	f, _ := b.wctx.LogWriter.LogFile(n.ID)
-	b.logshipper.Ship(f)
-
 	return failed
+}
+
+func (b *builder) ShipLog(nodeid, name string) {
+
+	if name == graph.START || name == graph.END || strings.HasPrefix(name, graph.FANOUT) || strings.HasPrefix(name, graph.FANIN) {
+		return
+	}
+
+	lpath, _ := b.wctx.LogWriter.LogPath(nodeid)
+	f, _ := b.wctx.LogWriter.LogFile(nodeid)
+	f.Close()
+
+	b.logshipper.Ship(nodeid, lpath)
 }
 
 func (b *builder) UpdateBuildGraphToShiftServer(status, checkpoint, reason string, logn *logrus.Entry) {
@@ -192,13 +199,15 @@ func (b *builder) UpdateBuildGraphToShiftServer(status, checkpoint, reason strin
 	req := &api.UpdateBuildStatusReq{}
 	if graph.StatusFailed == status || (graph.END == checkpoint && graph.StatusSuccess == status) {
 
-		// 	b.saveCache()
 		if !b.g.IsCacheSaved() {
 			n := b.g.GetSaveCacheNode()
 			b.runNode(n)
 		}
 
 		req.Duration = utils.CalculateDuration(b.wctx.EnvTimer.StartedAt(), time.Now())
+
+		// wait until log shipper finish
+		b.logshipper.WaitUntilLogShipperCompletes()
 	}
 
 	gph, err := b.g.JSON()

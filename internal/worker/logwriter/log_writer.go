@@ -18,6 +18,7 @@ const (
 type LogWriter interface {
 	GetLogger(nodeid string) (*logrus.Entry, error)
 	LogFile(nodeid string) (*os.File, error)
+	LogPath(nodeid string) (string, error)
 }
 
 type logw struct {
@@ -60,14 +61,32 @@ func (lw *logw) GetLogger(nodeid string) (*logrus.Entry, error) {
 
 func (lw *logw) LogFile(nodeid string) (*os.File, error) {
 
-	var err error
-	var f *os.File
-	nw := lw.nodewriters[nodeid]
-	if nw != nil {
-		f = nw.File()
-		if f == nil {
-			err = fmt.Errorf("No logfile availe for %s \n ", nodeid)
-		}
+	nw, err := lw.nodewriter(nodeid)
+	if err != nil {
+		return nil, err
 	}
-	return f, err
+
+	f := nw.File()
+	if f == nil {
+		return nil, fmt.Errorf("No logfile availe for %s \n ", nodeid)
+	}
+	return f, nil
+}
+
+func (lw *logw) LogPath(nodeid string) (string, error) {
+
+	nw, err := lw.nodewriter(nodeid)
+	if err != nil {
+		return "", err
+	}
+	return nw.Filepath(), nil
+}
+
+func (lw *logw) nodewriter(nodeid string) (NodeWriter, error) {
+
+	nw := lw.nodewriters[nodeid]
+	if nw == nil {
+		return nil, fmt.Errorf("No nodewriter found for %s", nodeid)
+	}
+	return nw, nil
 }

@@ -19,11 +19,13 @@ var (
 type NodeWriter interface {
 	Write(b []byte) (int, error)
 	File() *os.File
+	Filepath() string
 }
 
 type nodew struct {
 	NodeID string
 	file   *os.File
+	path   string
 	writer io.Writer
 }
 
@@ -44,7 +46,8 @@ func newNodeWriter(nodeid string) (NodeWriter, error) {
 		}
 	}
 
-	f, err := os.OpenFile(filepath.Join(logDir, nodeid), os.O_RDWR|os.O_CREATE|os.O_APPEND, 0666)
+	nw.path = filepath.Join(logDir, nodeid)
+	f, err := os.OpenFile(nw.path, os.O_RDWR|os.O_CREATE|os.O_APPEND, 0666)
 	if err != nil {
 		return nil, fmt.Errorf("error opening file: %v", err)
 	}
@@ -60,4 +63,8 @@ func (w *nodew) Write(b []byte) (int, error) {
 
 func (w *nodew) File() *os.File {
 	return w.file
+}
+
+func (w nodew) Filepath() string {
+	return w.path
 }

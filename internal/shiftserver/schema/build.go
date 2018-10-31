@@ -72,7 +72,7 @@ var (
 			Description: "The status of the build",
 			Resolve: func(p graphql.ResolveParams) (interface{}, error) {
 
-				if t, ok := p.Source.(types.Build); ok {
+				if t, ok := p.Source.(types.SubBuild); ok {
 
 					var status int
 					switch t.Status {

@@ -316,7 +316,7 @@ func (g *Graph) SetEnvTimer(timer utils.Timer) {
 }
 
 func (g *Graph) IsCacheSaved() bool {
-	return g.GetSaveCacheNode().Status == StatusNotStarted
+	return g.GetSaveCacheNode().Status == StatusSuccess
 }
 
 func (g *Graph) GetSaveCacheNode() *N {

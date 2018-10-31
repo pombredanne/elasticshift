@@ -100,7 +100,6 @@ func Convert(s *api.Storage) *types.Storage {
 
 		stor.Minio = m
 	}
-	fmt.Printf("StorageTYpe = %v \n", stor)
 
 	return &stor
 }

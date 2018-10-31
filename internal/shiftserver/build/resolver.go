@@ -11,8 +11,8 @@ import (
 	"strings"
 	"time"
 
-	"github.com/sirupsen/logrus"
 	"github.com/graphql-go/graphql"
+	"github.com/sirupsen/logrus"
 	"gitlab.com/conspico/elasticshift/api/types"
 	"gitlab.com/conspico/elasticshift/internal/pkg/logger"
 	"gitlab.com/conspico/elasticshift/internal/pkg/shiftfile/ast"
@@ -141,7 +141,6 @@ func (r *resolver) TriggerBuild(params graphql.ResolveParams) (interface{}, erro
 	b.RepositoryID = repositoryID
 	b.ContainerEngineID = def.ContainerEngineID
 	b.VcsID = repo.VcsID
-	b.Status = status
 	b.TriggeredBy = "Anonymous" //TODO fill in with logged-in user
 	b.Team = repo.Team
 	b.Branch = branch
@@ -149,23 +148,26 @@ func (r *resolver) TriggerBuild(params graphql.ResolveParams) (interface{}, erro
 	b.CloneURL = repo.CloneURL
 	b.Language = repo.Language
 	b.Source = repo.Source
-	b.Graph = defaultGraph
-
-	buildID := b.ID.Hex()
+	sb := types.SubBuild{
+		ID:     "1",
+		Graph:  defaultGraph,
+		Status: status,
+	}
+	b.SubBuilds = []types.SubBuild{sb}
 
 	// Build file path - (for NFS)
 	// <cache>/team-id/vcs-id/repository-id/branch-name/build-id/log
 	// <cache>/team-id/vcs-id/repository-id/branch-name/build-id/reports
 	// <cache>/team-id/vcs-id/repository-id/branch-name/build-id/archive.zip
 	// cache must be mounted as /elasticshift to containers
-	b.StoragePath = filepath.Join(repo.Team, repo.Identifier, repo.Name, branch, buildID)
+	b.StoragePath = filepath.Join(repo.Team, repo.Identifier, repo.Name, branch)
 
 	err = r.store.Save(&b)
 	if err != nil {
 		return nil, fmt.Errorf("Failed to save build details: %v", err)
 	}
 
-	if b.Status == types.BuildStatusPreparing {
+	if sb.Status == types.BuildStatusPreparing {
 		r.pushToQueue(b)
 	}
 
@@ -175,16 +177,16 @@ func (r *resolver) TriggerBuild(params graphql.ResolveParams) (interface{}, erro
 func (r *resolver) TriggerNextIfAny(teamID, repositoryID, branch string) {
 
 	query := bson.M{
-		"team":          teamID,
-		"repository_id": repositoryID,
-		"branch":        branch,
-		"status":        types.BuildStatusWaiting,
+		"team":              teamID,
+		"repository_id":     repositoryID,
+		"branch":            branch,
+		"sub_builds.status": types.BuildStatusWaiting,
 	}
 
 	var b types.Build
 	var err error
 	r.store.Execute(func(c *mgo.Collection) {
-		err = c.Find(query).Sort("-started_at").Limit(1).One(&b)
+		err = c.Find(query).Sort("-sub_build.started_at").Limit(1).One(&b)
 	})
 
 	if err != nil && err.Error() != "not found" {
@@ -304,16 +306,21 @@ func (r *resolver) CancelBuild(params graphql.ResolveParams) (interface{}, error
 		return nil, fmt.Errorf("Build id not found")
 	}
 
-	if types.BuildStatusCancel == b.Status || types.BuildStatusFailed == b.Status || types.BuildStatusSuccess == b.Status {
-		return fmt.Sprintf("Cancelling the build is not possible, because it seems that it was already %s", b.Status), nil
+	for _, sb := range b.SubBuilds {
+
+		if types.BuildStatusCancel == sb.Status || types.BuildStatusFailed == sb.Status || types.BuildStatusSuccess == sb.Status {
+			//fmt.Sprintf("Cancelling the build is not possible, because it seems that it was already %s", sb.Status), nil
+		} else {
+
+			// TODO trigger the cancel build, only if the current status is RUNNING | WAITING | STUCK
+
+			err = r.store.UpdateBuildStatus(b.ID, types.BuildStatusCancel)
+			if err != nil {
+				return nil, fmt.Errorf("Failed to cancel the build: %v", err)
+			}
+		}
 	}
 
-	// TODO trigger the cancel build, only if the current status is RUNNING | WAITING | STUCK
-
-	err = r.store.UpdateBuildStatus(b.ID, types.BuildStatusCancel)
-	if err != nil {
-		return nil, fmt.Errorf("Failed to cancel the build: %v", err)
-	}
 	return nil, nil
 }
 

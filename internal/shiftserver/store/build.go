@@ -54,9 +54,9 @@ func (s *build) FetchBuild(team, repositoryID, branch, id string, status []strin
 
 	if statusLen := len(status); statusLen > 0 {
 		if statusLen == 1 {
-			q["status"] = status[0]
+			q["sub_builds.status"] = status[0]
 		} else {
-			q["status"] = bson.M{"$in": status}
+			q["sub_builds.status"] = bson.M{"$in": status}
 		}
 	}
 
@@ -105,7 +105,7 @@ func (s *build) UpdateBuildStatus(id bson.ObjectId, status string) error {
 
 	var err error
 	s.Execute(func(c *mgo.Collection) {
-		err = c.Update(bson.M{"_id": id}, bson.M{"$set": bson.M{"status": status}})
+		err = c.Update(bson.M{"_id": id}, bson.M{"$set": bson.M{"sub_builds.$.status": status}})
 	})
 	return err
 }
@@ -129,6 +129,10 @@ func (s *build) SaveSubBuild(buildID string, sb *types.SubBuild) error {
 func (s *build) UpdateSubBuild(buildID string, sb types.SubBuild) error {
 
 	u := bson.M{}
+
+	if sb.Image != "" {
+		u["sub_builds.$.image"] = sb.Image
+	}
 
 	if sb.Graph != "" {
 		u["sub_builds.$.graph"] = sb.Graph

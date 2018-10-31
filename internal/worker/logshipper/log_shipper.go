@@ -4,21 +4,28 @@ Copyright 2018 The Elasticshift Authors.
 package logshipper
 
 import (
-	"bufio"
-	"os"
+	"sync"
 
 	"github.com/sirupsen/logrus"
 	"gitlab.com/conspico/elasticshift/internal/pkg/storage"
+	"gitlab.com/conspico/elasticshift/internal/pkg/utils"
 )
 
 type LogShipper interface {
-	Ship(f *os.File)
+	Ship(nodeid, filepath string)
+	WaitUntilLogShipperCompletes()
 }
 
 type logshipper struct {
-	queue   chan *os.File
+	queue   chan *info
 	logger  *logrus.Entry
 	storage *storage.ShiftStorage
+	wg      sync.WaitGroup
+}
+
+type info struct {
+	nodeid   string
+	filepath string
 }
 
 // New ..
@@ -26,7 +33,7 @@ type logshipper struct {
 func New(l *logrus.Entry, s *storage.ShiftStorage) (LogShipper, error) {
 
 	ls := &logshipper{
-		queue:   make(chan *os.File),
+		queue:   make(chan *info),
 		storage: s,
 		logger:  l,
 	}
@@ -36,17 +43,31 @@ func New(l *logrus.Entry, s *storage.ShiftStorage) (LogShipper, error) {
 	return ls, nil
 }
 
-func (s *logshipper) Ship(f *os.File) {
-	s.queue <- f
+func (s *logshipper) Ship(nodeid, filepath string) {
+	s.wg.Add(1)
+	s.queue <- &info{nodeid, filepath}
 }
 
 func (s *logshipper) start() {
 
-	for f := range s.queue {
+	parallelCh := make(chan int, utils.NumOfCPU())
+	for i := range s.queue {
 
-		err := s.storage.PutLog(f.Name(), bufio.NewReader(f))
-		if err != nil {
-			s.logger.Errorf("Failed to store build log %v \n ", err)
-		}
+		go func(i *info) {
+
+			parallelCh <- 1
+			defer s.wg.Done()
+
+			err := s.storage.PutLog(i.nodeid, i.filepath)
+			if err != nil {
+				s.logger.Errorf("Failed to store build log %v \n ", err)
+			}
+
+			<-parallelCh
+		}(i)
 	}
+}
+
+func (s *logshipper) WaitUntilLogShipperCompletes() {
+	s.wg.Wait()
 }

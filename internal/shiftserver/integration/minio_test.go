@@ -16,7 +16,7 @@ import (
 	"gitlab.com/conspico/elasticshift/internal/pkg/logger"
 )
 
-func TestCreateBucket(t *testing.T) {
+func TestMinioCreateBucket(t *testing.T) {
 
 	mc, err := connectToMinio()
 	if err != nil {
@@ -57,7 +57,7 @@ func TestCreateBucket(t *testing.T) {
 	// <-ch
 }
 
-func TestUploadFile(t *testing.T) {
+func TestMinioPutObject(t *testing.T) {
 
 	mc, err := connectToMinio()
 	if err != nil {
@@ -71,6 +71,59 @@ func TestUploadFile(t *testing.T) {
 		fmt.Println(err)
 		t.Fail()
 	}
+}
+
+func TestMinioPutFObject(t *testing.T) {
+
+	mc, err := connectToMinio()
+	if err != nil {
+		fmt.Println(err)
+		t.Fail()
+	}
+
+	_, err = mc.PutFObject("elasticshift", "cache/12345/.cache", "/Users/ghazni/sample.txt", "text/plain")
+	if err != nil {
+		fmt.Println(err)
+		t.Fail()
+	}
+}
+
+func TestMinioGetFObject(t *testing.T) {
+
+	mc, err := connectToMinio()
+	if err != nil {
+		fmt.Println(err)
+		t.Fail()
+	}
+
+	src := "cache/5a3a41f08011e098fb86b41f/github.com/nshahm/hybrid.test.runner/master/metadata"
+	err = mc.GetFObject("elasticshift", src, "/tmp/cache/12345/.cache")
+	// err = mc.GetFObject("elasticshift", "cache/12345/.cache", "/tmp/cache/12345/.cache")
+	if err != nil {
+		fmt.Println(err)
+		t.Fail()
+	}
+}
+
+func TestMinioGetObject(t *testing.T) {
+
+	mc, err := connectToMinio()
+	if err != nil {
+		fmt.Println(err)
+		t.Fail()
+	}
+
+	r, err := mc.GetObject("elasticshift", "cache/12345/.cache")
+	if err != nil {
+		fmt.Println(err)
+		t.Fail()
+	}
+
+	buf := new(bytes.Buffer)
+	buf.ReadFrom(r)
+	newStr := buf.String()
+
+	fmt.Println("Content=", newStr)
 }
 
 func connectToMinio() (StorageInterface, error) {

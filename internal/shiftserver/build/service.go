@@ -10,8 +10,8 @@ import (
 	"strconv"
 	"time"
 
-	"github.com/sirupsen/logrus"
 	"github.com/gorilla/mux"
+	"github.com/sirupsen/logrus"
 	"gitlab.com/conspico/elasticshift/api/types"
 	"gitlab.com/conspico/elasticshift/internal/pkg/logger"
 	"gitlab.com/conspico/elasticshift/internal/pkg/storage"
@@ -117,8 +117,15 @@ func (s service) Viewlog(w http.ResponseWriter, r *http.Request) {
 
 	var sb types.SubBuild
 
+	for _, v := range b.SubBuilds {
+		if v.ID == subBuildID {
+			sb = v
+			break
+		}
+	}
+
 	// fetch log directly from the container
-	if b.Status == types.BuildStatusWaiting || b.Status == types.BuildStatusPreparing || b.Status == types.BuildStatusRunning {
+	if sb.Status == types.BuildStatusWaiting || sb.Status == types.BuildStatusPreparing || sb.Status == types.BuildStatusRunning {
 
 		for {
 
@@ -164,7 +171,7 @@ func (s service) Viewlog(w http.ResponseWriter, r *http.Request) {
 			f.Flush()
 		}
 
-		err = stream(w, readCloser)
+		stream(w, readCloser)
 	} else {
 
 		nodeID := mux.Vars(r)["nodeid"]
@@ -178,6 +185,8 @@ func (s service) Viewlog(w http.ResponseWriter, r *http.Request) {
 			BuildID:      buildID,
 			RepositoryID: b.RepositoryID,
 			SubBuildID:   subBuildID,
+			Branch:       b.Branch,
+			Path:         b.StoragePath,
 		}
 
 		ss, err := storage.NewWithMetadata(s.logger, &stor, sm)
@@ -190,14 +199,14 @@ func (s service) Viewlog(w http.ResponseWriter, r *http.Request) {
 			http.Error(w, fmt.Sprintf("Failed to fetch log from storage: %v", err), http.StatusInternalServerError)
 		}
 
-		err = stream(w, r)
+		stream(w, r)
 		// Fetch logs from storage
 		// w.Write([]byte("Streaming non running builds aren't supported yet. "))
 	}
 
-	if err != nil {
-		//handle streaming error
-	}
+	//if err != nil {
+	//	//handle streaming error
+	//}
 }
 
 func stream(w http.ResponseWriter, r io.ReadCloser) error {

@@ -20,14 +20,14 @@ func (s *ShiftStorage) GetLogWithMetadata(name string, m *types.StorageMetadata)
 	return s.stor.GetObject(s.bucketName, objectName)
 }
 
-func (s *ShiftStorage) PutLog(name string, r io.Reader) error {
-	return s.PutLogWithMetadata(name, r, s.metadata)
+func (s *ShiftStorage) PutLog(name, path string) error {
+	return s.PutLogWithMetadata(name, path, s.metadata)
 }
 
-func (s *ShiftStorage) PutLogWithMetadata(name string, r io.Reader, m *types.StorageMetadata) error {
+func (s *ShiftStorage) PutLogWithMetadata(name, path string, m *types.StorageMetadata) error {
 
 	objectName := GetObjectName(m, name, logDir)
-	_, err := s.stor.PutObject(s.bucketName, objectName, r, logContentType)
+	_, err := s.stor.PutFObject(s.bucketName, objectName, path, logContentType)
 	return err
 }
 
@@ -46,9 +46,7 @@ func GetPath(m *types.StorageMetadata, typee string) string {
 	var b strings.Builder
 	b.WriteString(typee)
 	b.WriteString(objectSeparator)
-	b.WriteString(m.TeamID)
-	b.WriteString(objectSeparator)
-	b.WriteString(m.RepositoryID)
+	b.WriteString(m.Path)
 	b.WriteString(objectSeparator)
 	b.WriteString(m.BuildID)
 	b.WriteString(objectSeparator)

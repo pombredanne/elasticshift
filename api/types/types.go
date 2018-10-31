@@ -181,8 +181,6 @@ type Build struct {
 	Log               []Log         `json:"-" bson:"log"`
 	LogType           string        `json:"-" bson:"log_type"`
 	TriggeredBy       string        `json:"triggered_by" bson:"triggered_by"`
-	Status            string        `json:"status" bson:"status"`
-	Reason            string        `json:"reason" bson:"reason,omitempty"`
 	Branch            string        `json:"branch" bson:"branch"`
 	CloneURL          string        `json:"clone_url" bson:"clone_url"`
 	Language          string        `json:"language" bson:"language"`
@@ -191,7 +189,6 @@ type Build struct {
 	StorageID         string        `json:"-" bson:"storage_id"`
 	StoragePath       string        `json:"-" bson:"storage_path"`
 	Privatekey        string        `json:"-" bson:"private_key,omitempty"`
-	Graph             string        `json:"graph" bson:"graph,omitempty"`
 	Source            string        `json:"source" bson:"source"`
 	SubBuilds         []SubBuild    `json:"sub_builds" bson:"sub_builds,omitempty"`
 }
@@ -448,4 +445,6 @@ type StorageMetadata struct {
 	RepositoryID string
 	BuildID      string
 	SubBuildID   string
+	Branch       string
+	Path         string
 }

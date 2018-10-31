@@ -7,6 +7,7 @@ import (
 	"context"
 	"fmt"
 	"io"
+	"time"
 
 	"path/filepath"
 
@@ -104,20 +105,20 @@ func (b *builder) run() error {
 	b.f = sf
 
 	m := &types.StorageMetadata{
-		TeamID:       b.config.BuildID,
+		TeamID:       b.config.TeamID,
 		RepositoryID: proj.GetRepositoryId(),
 		BuildID:      b.config.BuildID,
 		SubBuildID:   b.config.SubBuildID,
+		Branch:       b.project.Branch,
+		Path:         b.project.StoragePath,
 	}
 
 	// conver storage object
 	stor := storage.Convert(proj.Storage)
-	fmt.Printf("%#v\n", stor)
 
 	// initialize the storage
 	ss, err := storage.NewWithMetadata(b.wctx.EnvLogger, stor, m)
 	if err != nil {
-		fmt.Printf("Storage error : %v", err)
 		return errors.Errorf("Failed to initialize storage: %v", err)
 	}
 	b.storage = ss

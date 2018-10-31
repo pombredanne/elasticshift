@@ -125,7 +125,13 @@ func (r *resolver) ContainerLauncher() {
 					sb.Status = types.BuildStatusFailed
 					sb.Reason = fmt.Sprintf("Failed when constructing execution graph: %v", err)
 
-					err := r.store.SaveSubBuild(buildID, &sb)
+					var err error
+					if subBuildID == 1 {
+						err = r.store.UpdateSubBuild(buildID, sb)
+					} else {
+						err = r.store.SaveSubBuild(buildID, &sb)
+					}
+
 					if err != nil {
 						r.logger.Errorf("Error when updating the build status: %v", err)
 					}
@@ -135,7 +141,14 @@ func (r *resolver) ContainerLauncher() {
 				}
 
 				sb.Graph, _ = g.JSON()
-				err = r.store.SaveSubBuild(buildID, &sb)
+				sb.Image = imgName
+
+				if subBuildID == 1 {
+					err = r.store.UpdateSubBuild(buildID, sb)
+				} else {
+					err = r.store.SaveSubBuild(buildID, &sb)
+				}
+
 				if err != nil {
 					r.logger.Errorf("Error when updating the sub build: %v", err)
 				}
@@ -223,7 +236,14 @@ func (r *resolver) ContainerLauncher() {
 					r.logger.Errorf("Create container failed: %v", err)
 					sb.Status = types.BuildStatusFailed
 					sb.Reason = err.Error()
-					err := r.store.UpdateSubBuild(buildID, sb)
+
+					var err error
+					if subBuildID == 1 {
+						err = r.store.UpdateSubBuild(buildID, sb)
+					} else {
+						err = r.store.SaveSubBuild(buildID, &sb)
+					}
+
 					if err != nil {
 						r.logger.Errorf("Error when updating the build status: %v", err)
 					}
@@ -237,7 +257,12 @@ func (r *resolver) ContainerLauncher() {
 					sb.Metadata = &types.Metadata{}
 				}
 				sb.Metadata.ContainerID = res.UID
-				err = r.store.UpdateSubBuild(buildID, sb)
+
+				if subBuildID == 1 {
+					err = r.store.UpdateSubBuild(buildID, sb)
+				} else {
+					err = r.store.SaveSubBuild(buildID, &sb)
+				}
 				if err != nil {
 					r.logger.Errorln("Failed to update the container id: ", res.UID)
 				}

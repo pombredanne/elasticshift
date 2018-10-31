@@ -82,8 +82,6 @@ func (s *shift) UpdateBuildStatus(ctx context.Context, req *api.UpdateBuildStatu
 		return nil, fmt.Errorf("Sub BuildID is empty")
 	}
 
-	// s.logger.Printf("Input UpdateBuildStatusReq: %#v", req)
-
 	res := &api.UpdateBuildStatusRes{}
 
 	var b types.SubBuild
@@ -92,12 +90,6 @@ func (s *shift) UpdateBuildStatus(ctx context.Context, req *api.UpdateBuildStatu
 	if err != nil {
 		return res, fmt.Errorf("Failed to fetch build by id : %v", err)
 	}
-
-	// b.ID = req.GetSubBuildId()
-
-	// fmt.Println("error:", err)
-	// fmt.Printf("SubBuild = %v \n", b)
-	// fmt.Printf("ID = %s, Image = %s \n", b.ID, b.Image)
 
 	b.Graph = req.GetGraph()
 	status := req.GetStatus()
@@ -149,6 +141,7 @@ func (s *shift) UpdateBuildStatus(ctx context.Context, req *api.UpdateBuildStatu
 		// fmt.Println("Checkpoint = ", cp)
 		// fmt.Println("-------------------------------------------------------------")
 		// request container engine to stop the live container
+
 		ce, err := s.getContainerEngine(req.GetTeamId())
 		if err != nil {
 			return res, errors.Wrap(err, "Failed to get the default container engine: %v")

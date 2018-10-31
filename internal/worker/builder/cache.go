@@ -20,8 +20,8 @@ import (
 )
 
 var (
-	DIR_CACHE  = "cache"
-	FILE_CACHE = ".cache"
+	DIR_CACHE  = "/tmp/shiftcache"
+	FILE_CACHE = "metadata"
 )
 
 type CacheEntry struct {
@@ -138,21 +138,24 @@ func (b *builder) restoreCache(nodelogger *logrus.Entry) error {
 	cacdir := b.cacheDir()
 	nodelogger.Printf("Cache dir = %s \n ", cacdir)
 
+	err := utils.Mkdir(cacdir)
+	if err != nil {
+		return fmt.Errorf("Failed to create cache directory: %v \n", err)
+	}
+
+	cachefile := filepath.Join(cacdir, FILE_CACHE)
+
 	// download cache file
-	err := b.storage.GetCacheFile(FILE_CACHE, cacdir)
+	err = b.storage.GetCacheFile(FILE_CACHE, cachefile)
 	if err != nil {
 		return fmt.Errorf("Failed to fetch %s: %v", FILE_CACHE, err)
 	}
 
-	exist, err := utils.PathExist(cacdir)
-	if err != nil {
-		return fmt.Errorf("failed to check if the path exist :%v \n ", err)
-	}
-
-	if !exist {
-		nodelogger.Printf("No cache available. \n ")
-		return nil
-	}
+	// by, err := ioutil.ReadFile(filepath.Join(cacdir, FILE_CACHE))
+	// if err != nil {
+	// 	fmt.Println(err)
+	// }
+	// fmt.Printf("Cachefile metadata content: %s \n", string(by))
 
 	// load the cache
 	cf, err := b.readCacheFile(cacdir, nodelogger)
@@ -182,13 +185,13 @@ func (b *builder) restoreCache(nodelogger *logrus.Entry) error {
 				nodelogger.Printf("Failed to expand the cache directory: %v \n", err)
 			}
 
+			src := filepath.Join(cacdir, c.ID)
+
 			//download the cache file
-			err = b.storage.GetCacheFile(c.ID, cacdir)
+			err = b.storage.GetCacheFile(c.ID, src)
 			if err != nil {
 				nodelogger.Errorf("failed to fetch cache file: %s, %v", c.ID, err)
 			}
-
-			src := filepath.Join(cacdir, c.ID)
 
 			exist, err := utils.PathExist(src)
 			if err != nil {
@@ -197,7 +200,7 @@ func (b *builder) restoreCache(nodelogger *logrus.Entry) error {
 
 			if exist {
 
-				nodelogger.Printf("Extracting tar from %s to %s \n", src, dir)
+				nodelogger.Printf("Extracting cache from %s to %s \n", src, dir)
 				err = archiver.TarGz.Open(src, dir)
 				if err != nil {
 					nodelogger.Printf("Failed to untar cache file: %v \n", err)
@@ -208,11 +211,7 @@ func (b *builder) restoreCache(nodelogger *logrus.Entry) error {
 		}(c)
 	}
 
-	nodelogger.Print("Waiting to extract the cache \n ")
-
 	wg.Wait()
-
-	nodelogger.Print("Finished extracting the cache.\n ")
 
 	return nil
 }
@@ -228,21 +227,20 @@ func ncpu() int {
 }
 
 func (b *builder) cacheDir() string {
-	return filepath.Join(b.config.ShiftDir, DIR_CACHE, b.config.TeamID, b.project.GetRepositoryId(), b.project.GetBranch())
+	//return filepath.Join(b.config.ShiftDir, DIR_CACHE, b.config.TeamID, b.project.GetRepositoryId(), b.project.GetBranch())
+	return DIR_CACHE
 }
 
 func (b *builder) readCacheFile(cachepath string, nodelogger *logrus.Entry) (*CacheFile, error) {
 
 	name := path.Join(cachepath, FILE_CACHE)
 
-	nodelogger.Printf("Cache file: %s \n", name)
 	exist, err := utils.PathExist(name)
 	if err != nil {
 		nodelogger.Printf("Checking cachefile exist failed: %v \n ", err)
 		return nil, err
 	}
 
-	nodelogger.Printf("Cache file exist: %s \n ", exist)
 	if !exist {
 		return nil, nil
 	}
@@ -279,6 +277,6 @@ func (b *builder) writeCacheFile(cachepath string, cachefile *CacheFile) error {
 	}
 
 	// upload cache files
-	_, err = b.storage.PutCacheFile("cache", cfpath)
+	_, err = b.storage.PutCacheFile(FILE_CACHE, cfpath)
 	return err
 }

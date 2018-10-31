@@ -162,7 +162,7 @@ func (r resolver) AddRepository(params graphql.ResolveParams) (interface{}, erro
 
 	repo.Team = teamName
 	repo.VcsID = account.ID
-	repo.Identifier = strings.Join([]string{source, vcsName}, ":")
+	repo.Identifier = strings.Join([]string{source, vcsName}, "/")
 
 	var currentRepo types.Repository
 	err = r.store.FindOne(bson.M{"repo_id": repo.RepoID, "team": teamName, "name": repoName, "identifier": repo.Identifier}, &currentRepo)

@@ -7,8 +7,8 @@ import (
 	"io"
 	"strings"
 
-	"github.com/sirupsen/logrus"
 	"github.com/minio/minio-go"
+	"github.com/sirupsen/logrus"
 	"gitlab.com/conspico/elasticshift/api/types"
 )
 
@@ -36,21 +36,22 @@ func (m minioClient) CreateBucket(name, region string) error {
 }
 
 func (m minioClient) PutObjectStreaming(bucketName, objectName string, r io.Reader) (int64, error) {
-	return m.cli.PutObjectStreaming(bucketName, objectName, r)
+	// return m.cli.PutObjectStreaming(bucketName, objectName, r)
+	return 0, nil
 }
 
 func (m minioClient) PutObject(bucketName, objectName string, r io.Reader, contentType string) (int64, error) {
-	return m.cli.PutObject(bucketName, objectName, r, contentType)
+	return m.cli.PutObject(bucketName, objectName, r, -1, minio.PutObjectOptions{ContentType: contentType})
 }
 
 func (m minioClient) GetObject(bucketName, objectName string) (io.ReadCloser, error) {
-	return m.cli.GetObject(bucketName, objectName)
+	return m.cli.GetObject(bucketName, objectName, minio.GetObjectOptions{})
 }
 
 func (m minioClient) PutFObject(bucketName, objectName, filepath, contentType string) (int64, error) {
-	return m.cli.FPutObject(bucketName, objectName, filepath, contentType)
+	return m.cli.FPutObject(bucketName, objectName, filepath, minio.PutObjectOptions{ContentType: contentType})
 }
 
 func (m minioClient) GetFObject(bucketName, objectName, filepath string) error {
-	return m.cli.FGetObject(bucketName, objectName, filepath)
+	return m.cli.FGetObject(bucketName, objectName, filepath, minio.GetObjectOptions{})
 }
