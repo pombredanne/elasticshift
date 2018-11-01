@@ -1,7 +1,6 @@
 package parser
 
 import (
-	"fmt"
 	"io/ioutil"
 	"path/filepath"
 	"testing"

@@ -255,6 +255,8 @@ func (p *Parser) nodeKey() ([]*ast.NodeKey, error) {
 		switch p.tok.Type {
 		case token.EOF:
 			return keys, errEofToken
+		case token.RBRACE, token.RPAREN:
+			break
 		case token.VAR:
 			p.kind(scope.Var)
 		case token.VERSION:
@@ -275,8 +277,7 @@ func (p *Parser) nodeKey() ([]*ast.NodeKey, error) {
 			p.kind(scope.Img)
 		case token.CACHE:
 			p.kind(scope.Cac)
-			p.forceNextScan()
-			goto exit
+			keys = append(keys, &ast.NodeKey{Key: p.tok})
 		case token.WORKDIR:
 			p.kind(scope.Wdi)
 			p.forceNextScan()
@@ -301,7 +302,6 @@ func (p *Parser) nodeKey() ([]*ast.NodeKey, error) {
 			goto exit
 		case token.STRING:
 			keys = append(keys, &ast.NodeKey{Key: p.tok})
-			// fmt.Printf("\n%#v", p.tok)
 			p.forceNextScan() // avoid buffer
 			keycount++
 		case token.COMMA:
@@ -324,13 +324,17 @@ func (p *Parser) nodeKey() ([]*ast.NodeKey, error) {
 			// if img block with multiple keys, dont break let the keys be parsed.
 			multiImg = true
 		case token.RBRACK:
-			if !multiImg {
+			if multiImg {
+				multiImg = false
+				p.scan()
+				if p.tok.Type != token.LBRACE {
+					p.unscan()
+					return keys, nil
+				}
+			} else {
 				break
 			}
-			multiImg = false
 
-		case token.RBRACE, token.RPAREN:
-			break
 		case token.ILLEGAL:
 			return keys, &PositionErr{
 				Position: p.tok.Position,
@@ -351,6 +355,7 @@ func (p *Parser) nodeKey() ([]*ast.NodeKey, error) {
 			p.unscan()
 			return keys, nil
 		}
+
 	}
 
 exit:
