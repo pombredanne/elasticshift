@@ -4,6 +4,7 @@ Copyright 2018 The Elasticshift Authors.
 package integration
 
 import (
+	"context"
 	"fmt"
 	"io"
 
@@ -15,7 +16,7 @@ import (
 //container engine
 const (
 	Kubernetes int = iota + 1
-	DockerSwarm
+	Docker
 	DCOS
 )
 
@@ -36,7 +37,15 @@ func NewContainerEngine(loggr logger.Loggr, i types.ContainerEngine, s types.Sto
 
 	switch i.Kind {
 	case DCOS:
-	case DockerSwarm:
+	case Docker:
+		opts := &ConnectOptions{}
+		opts.Storage = s
+		opts.Host = i.Host
+		opts.Version = i.Version
+		opts.InsecureSkipTLSVerify = true
+		opts.ServerCertificate = i.Certificate
+		opts.Ctx = context.Background()
+		return ConnectDocker(loggr.GetLogger("engine/docker"), opts)
 	case Kubernetes:
 		opts := &ConnectOptions{}
 		opts.Storage = s

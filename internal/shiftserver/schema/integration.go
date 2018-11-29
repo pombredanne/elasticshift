@@ -54,7 +54,7 @@ func newIntegrationSchema(ctx context.Context, loggr logger.Loggr, s store.Shift
 				Value: 1,
 			},
 
-			"DOCKERSWARM": &graphql.EnumValueConfig{
+			"DOCKER": &graphql.EnumValueConfig{
 				Value: 2,
 			},
 
@@ -168,6 +168,11 @@ func newIntegrationSchema(ctx context.Context, loggr logger.Loggr, s store.Shift
 		"secret_key": &graphql.Field{
 			Type:        graphql.String,
 			Description: "Token to access the storage provider",
+		},
+
+		"bucket_name": &graphql.Field{
+			Type:        graphql.String,
+			Description: "Name of the bucket to use.",
 		},
 	}
 
@@ -430,7 +435,7 @@ func newIntegrationSchema(ctx context.Context, loggr logger.Loggr, s store.Shift
 
 	mutations = graphql.Fields{
 
-		"addKubernetesCluster": &graphql.Field{
+		"addContainerEngine": &graphql.Field{
 			Type: containerEngineType,
 			Args: graphql.FieldConfigArgument{
 				"name": &graphql.ArgumentConfig{
@@ -462,7 +467,7 @@ func newIntegrationSchema(ctx context.Context, loggr logger.Loggr, s store.Shift
 					Description: "Team identifier",
 				},
 			},
-			Resolve: r.AddKubernetesCluster,
+			Resolve: r.AddContainerEngine,
 		},
 
 		"addStorage": &graphql.Field{

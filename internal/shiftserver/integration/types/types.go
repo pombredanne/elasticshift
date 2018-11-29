@@ -53,9 +53,10 @@ type PersistentVolumeClaimOptions struct {
 }
 
 type StreamLogOptions struct {
-	Follow  string
-	Pod     string
-	BuildID string
-	ShiftId string
-	W       io.Writer
+	Follow      string
+	Pod         string
+	ContainerID string
+	BuildID     string
+	ShiftID     string
+	W           io.Writer
 }

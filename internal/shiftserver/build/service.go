@@ -100,23 +100,7 @@ func (s service) Viewlog(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	// Get the default storage based on team defaults
-	def, err := s.defaultsStore.FindByReferenceId(b.Team)
-	if err != nil {
-		http.Error(w, "Failed to get default storage :", http.StatusBadRequest)
-		return
-	}
-
-	// Get the details of the storeage
-	var stor types.Storage
-	err = s.integrationStore.FindByID(def.StorageID, &stor)
-	if err != nil {
-		http.Error(w, "Failed to fetch log", http.StatusInternalServerError)
-		return
-	}
-
 	var sb types.SubBuild
-
 	for _, v := range b.SubBuilds {
 		if v.ID == subBuildID {
 			sb = v
@@ -126,6 +110,21 @@ func (s service) Viewlog(w http.ResponseWriter, r *http.Request) {
 
 	// fetch log directly from the container
 	if sb.Status == types.BuildStatusWaiting || sb.Status == types.BuildStatusPreparing || sb.Status == types.BuildStatusRunning {
+
+		// Get the default storage based on team defaults
+		def, err := s.defaultsStore.FindByReferenceId(b.Team)
+		if err != nil {
+			http.Error(w, "Failed to get default storage :", http.StatusBadRequest)
+			return
+		}
+
+		// Get the details of the storeage
+		var stor types.Storage
+		err = s.integrationStore.FindByID(def.StorageID, &stor)
+		if err != nil {
+			http.Error(w, "Failed to fetch log", http.StatusInternalServerError)
+			return
+		}
 
 		for {
 
@@ -157,6 +156,12 @@ func (s service) Viewlog(w http.ResponseWriter, r *http.Request) {
 		}
 
 		opts := &itypes.StreamLogOptions{Pod: sb.Metadata.PodName, BuildID: buildID, W: w, Follow: follow}
+		if i.Kind == integration.KIND_KUBERNETES_TYPE {
+			opts.Pod = sb.Metadata.PodName
+		} else if i.Kind == integration.KIND_DOCKERSWARM {
+			opts.ContainerID = sb.Metadata.ContainerID
+		}
+
 		readCloser, err := ce.StreamLog(opts)
 		if err != nil {
 			fmt.Println(err)
@@ -187,6 +192,14 @@ func (s service) Viewlog(w http.ResponseWriter, r *http.Request) {
 			SubBuildID:   subBuildID,
 			Branch:       b.Branch,
 			Path:         b.StoragePath,
+		}
+
+		// Get the details of the storeage
+		var stor types.Storage
+		err = s.integrationStore.FindByID(b.StorageID, &stor)
+		if err != nil {
+			http.Error(w, "Failed to fetch log", http.StatusInternalServerError)
+			return
 		}
 
 		ss, err := storage.NewWithMetadata(s.logger, &stor, sm)

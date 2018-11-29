@@ -288,6 +288,7 @@ type ContainerEngine struct {
 	Token        string        `json:"token" bson:"token,omitempty"`
 	InternalType int           `json:"-" bson:"internal_type"`
 	Team         string        `json:"team" bson:"team"`
+	Version      string        `json:"version" bson:"version,omitempty"`
 	KubeFile     KubeConfig    `json:"kube_config" bson:"kube_config,omitempty"`
 }
 
@@ -301,6 +302,7 @@ type MinioStorage struct {
 	Certificate string `json:"certificate" bson:"certificate"`
 	AccessKey   string `json:"access_key" bson:"access_key"`
 	SecretKey   string `json:"secret_key" bson:"secret_key"`
+	BucketName  string `json:"bucket_name" bson:"bucket_name,omitempty"`
 }
 
 type NFSStorage struct {
@@ -322,6 +324,9 @@ type Storage struct {
 	Kind          int           `json:"kind" bson:"kind"`
 	InternalType  int           `json:"-" bson:"internal_type"`
 	Team          string        `json:"team" bson:"team"`
+	Status        string        `json:"status" bson:"status,omitempty"`
+	Reason        string        `json:"reason" bson:"reason,omitempty"`
+	WorkerPath    string        `json:"worker_path" bson:"worker_path,omitempty"`
 	StorageSource `json:"storage_source" bson:"storage_source"`
 }
 

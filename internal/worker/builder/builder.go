@@ -7,9 +7,6 @@ import (
 	"context"
 	"fmt"
 	"io"
-	"time"
-
-	"path/filepath"
 
 	"github.com/pkg/errors"
 	"gitlab.com/conspico/elasticshift/api"
@@ -22,19 +19,6 @@ import (
 	"gitlab.com/conspico/elasticshift/internal/worker/logshipper"
 	wtypes "gitlab.com/conspico/elasticshift/internal/worker/types"
 	"google.golang.org/grpc"
-)
-
-var (
-	DIR_CODE    = "code"
-	DIR_PLUGINS = "plugins"
-	DIR_WORKER  = "worker"
-	DIR_LOGS    = "logs"
-
-	// TODO check for windows container
-	VOL_SHIFT   = "/opt/elasticshift"
-	VOL_CODE    = filepath.Join(VOL_SHIFT, DIR_CODE)
-	VOL_PLUGINS = filepath.Join(VOL_SHIFT, DIR_PLUGINS)
-	VOL_LOGS    = filepath.Join(VOL_SHIFT, DIR_LOGS)
 )
 
 type builder struct {

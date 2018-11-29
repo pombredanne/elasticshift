@@ -16,6 +16,12 @@ const (
 	Minio int = iota + 1
 	AmazonS3
 	GoogleCloudStorage
+	NFS
+)
+
+var (
+	defaultWorkerContentType = "application/octet-stream"
+	defaultSysObject         = "sys"
 )
 
 type StorageInterface interface {
@@ -25,6 +31,7 @@ type StorageInterface interface {
 	GetObject(bucketName, objectName string) (io.ReadCloser, error)
 	PutFObject(bucketName, objectName, filepath, contentType string) (int64, error)
 	GetFObject(bucketName, objectName, filepath string) error
+	SetupStorage(bucketName, workerURL string) (string, error)
 }
 
 // NewStorage ..

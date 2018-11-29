@@ -133,7 +133,7 @@ func (s *shift) UpdateBuildStatus(ctx context.Context, req *api.UpdateBuildStatu
 	if stopContainer {
 
 		// kick off the next waiting build
-		s.rs.Build.TriggerNextIfAny(req.GetTeamId(), req.GetRepositoryId(), req.GetBranch())
+		//s.rs.Build.TriggerNextIfAny(req.GetTeamId(), req.GetRepositoryId(), req.GetBranch())
 
 		// fmt.Println("-------------------------------------------------------------")
 		// fmt.Println("Stopping the container..... ")
@@ -142,7 +142,7 @@ func (s *shift) UpdateBuildStatus(ctx context.Context, req *api.UpdateBuildStatu
 		// fmt.Println("-------------------------------------------------------------")
 		// request container engine to stop the live container
 
-		ce, err := s.getContainerEngine(req.GetTeamId())
+		/*ce, err := s.getContainerEngine(req.GetTeamId())
 		if err != nil {
 			return res, errors.Wrap(err, "Failed to get the default container engine: %v")
 		}
@@ -150,7 +150,7 @@ func (s *shift) UpdateBuildStatus(ctx context.Context, req *api.UpdateBuildStatu
 		err = ce.DeleteContainer(req.GetBuildId() + "-" + req.GetSubBuildId())
 		if err != nil {
 			return res, fmt.Errorf("Failed to stop the container: %v", err)
-		}
+		}*/
 	}
 
 	return res, nil

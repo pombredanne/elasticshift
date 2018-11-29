@@ -32,7 +32,7 @@ const (
 type Resolver interface {
 	FetchContainerEngine(params graphql.ResolveParams) (interface{}, error)
 	FetchStorage(params graphql.ResolveParams) (interface{}, error)
-	AddKubernetesCluster(params graphql.ResolveParams) (interface{}, error)
+	AddContainerEngine(params graphql.ResolveParams) (interface{}, error)
 	AddStorage(params graphql.ResolveParams) (interface{}, error)
 }
 
@@ -107,7 +107,7 @@ func (r *resolver) FetchStorage(params graphql.ResolveParams) (interface{}, erro
 	return &res, err
 }
 
-func (r *resolver) AddKubernetesCluster(params graphql.ResolveParams) (interface{}, error) {
+func (r *resolver) AddContainerEngine(params graphql.ResolveParams) (interface{}, error) {
 
 	team, _ := params.Args["team"].(string)
 	name, _ := params.Args["name"].(string)
@@ -115,7 +115,7 @@ func (r *resolver) AddKubernetesCluster(params graphql.ResolveParams) (interface
 	var ce types.ContainerEngine
 	err := r.store.FindOne(bson.M{"team": team, "name": name}, &ce)
 	if err != nil && !strings.EqualFold("not found", err.Error()) {
-		return nil, fmt.Errorf("Failed to check if the given kubernetes integration already exist :%v", err)
+		return nil, fmt.Errorf("Failed to check if the given integration already exist :%v", err)
 	}
 
 	if ce.ID.Hex() != "" {
@@ -127,6 +127,7 @@ func (r *resolver) AddKubernetesCluster(params graphql.ResolveParams) (interface
 	host, _ := params.Args["host"].(string)
 	certificate, _ := params.Args["certificate"].(string)
 	token, _ := params.Args["token"].(string)
+	version, _ := params.Args["version"].(string)
 
 	i := types.ContainerEngine{}
 	i.Name = name
@@ -137,6 +138,7 @@ func (r *resolver) AddKubernetesCluster(params graphql.ResolveParams) (interface
 	i.Token = token
 	i.Provider = provider
 	i.InternalType = INT_ContainerEngine
+	i.Version = version
 
 	err = r.store.Save(&i)
 	if err != nil {
@@ -193,15 +195,60 @@ func (r *resolver) AddStorage(params graphql.ResolveParams) (interface{}, error)
 		minioType.Certificate, _ = val["certificate"].(string)
 		minioType.AccessKey, _ = val["accesskey"].(string)
 		minioType.SecretKey, _ = val["secretkey"].(string)
+		minioType.BucketName, _ = val["bucket_name"].(string)
 
 		sourceType.Minio = minioType
 	}
 	i.StorageSource = sourceType
 	i.InternalType = INT_Storage
 
+	var storag StorageInterface
+	if kind != NFS {
+
+		// setup the storage.
+		storag, err = NewStorage(r.logger, i)
+		if err != nil {
+			return nil, fmt.Errorf("Failed to connect : %v", err)
+		}
+	}
+
 	err = r.store.Save(&i)
 	if err != nil {
 		return nil, fmt.Errorf("Failed to add integration: %v", err)
 	}
+
+	// background goroutine to setup storage.
+	go r.setupStorage(storag, i)
+
 	return i, nil
+}
+
+func (r *resolver) setupStorage(stor StorageInterface, s types.Storage) {
+
+	workerURL := r.getWorkerURL()
+
+	// TODO get the bucketname as part of storage
+	bucketName := "elasticshift"
+
+	objectName, err := stor.SetupStorage(bucketName, workerURL)
+	if err != nil {
+		s.Reason = err.Error()
+		err = r.store.Update(s.ID, &s)
+		if err != nil {
+			r.logger.Errorf("Failed to update the reason while setting up the storage. %v", err)
+		}
+		return
+	}
+
+	s.WorkerPath = objectName
+	err = r.store.UpdateId(s.ID, &s)
+	if err != nil {
+		r.logger.Errorf("")
+	}
+}
+
+func (r *resolver) getWorkerURL() string {
+
+	// TODO fetch the url from sysconf
+	return "http://10.10.5.101:9000/elasticshift/worker/worker"
 }

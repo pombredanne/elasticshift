@@ -5,14 +5,16 @@ package integration
 
 import (
 	"bytes"
+	"context"
 	"encoding/json"
 	"fmt"
 	"io"
 	"os"
+	"path/filepath"
 
-	"github.com/sirupsen/logrus"
 	"github.com/pkg/errors"
 	uuid "github.com/satori/go.uuid"
+	"github.com/sirupsen/logrus"
 	"gitlab.com/conspico/elasticshift/api/types"
 	itypes "gitlab.com/conspico/elasticshift/internal/shiftserver/integration/types"
 	appsv1beta1 "k8s.io/api/apps/v1beta1"
@@ -37,12 +39,15 @@ type ConnectOptions struct {
 	ServerCertificate     string
 	Token                 string
 	Namespace             string
+	Version               string
 	InsecureSkipTLSVerify bool
 
 	Config    []byte
 	UseConfig bool
 
 	Storage types.Storage
+
+	Ctx context.Context
 }
 
 var (
@@ -51,7 +56,9 @@ var (
 	// DefaultNamespace = "shiftmk"
 	DefaultContext = "elasticshift"
 
-	KEY_SHIFTDIR = "SHIFT_DIR"
+	KEY_SHIFTDIR   = "SHIFT_DIR"
+	KEY_WORKER_URL = "WORKER_URL"
+	KEY_BUCKET     = "SHIFT_STORAGE_BUCKET"
 
 	STARTUP_COMMAND = "%s && %s"
 
@@ -99,7 +106,7 @@ func ConnectKubernetes(logger *logrus.Entry, opts *ConnectOptions) (ContainerEng
 		// use host, cert, user and token
 		config = clientcmdapi.NewConfig()
 		config.Clusters[DefaultContext] = &clientcmdapi.Cluster{
-			Server: opts.Host,
+			Server:                   opts.Host,
 			CertificateAuthorityData: []byte(opts.ServerCertificate),
 		}
 
@@ -154,7 +161,7 @@ func (c *kubernetesClient) CreateContainer(opts *itypes.CreateContainerOptions) 
 	volumes := []apiv1.Volume{}
 
 	var startupCmd string
-	if c.opts.Storage.Kind == 4 || c.opts.Storage.Kind == 1 { //NFS
+	if c.opts.Storage.Kind == 4 { //NFS
 
 		c.opts.Storage.NFS = &types.NFSStorage{
 			Server:    "10.10.7.151",
@@ -193,7 +200,16 @@ func (c *kubernetesClient) CreateContainer(opts *itypes.CreateContainerOptions) 
 		// 	},
 		// }
 		volumes = append(volumes, vol)
+	} else if c.opts.Storage.Kind == 1 { // Minio
+
+		workerURL := filepath.Join(c.opts.Storage.Minio.Host, c.opts.Storage.Minio.BucketName, c.opts.Storage.WorkerPath)
+
+		envs = append(envs, apiv1.EnvVar{Name: KEY_WORKER_URL, Value: workerURL})
+		envs = append(envs, apiv1.EnvVar{Name: KEY_BUCKET, Value: c.opts.Storage.Minio.BucketName})
+
+		startupCmd = opts.Command
 	}
+
 	// volumes = append(volumes, apiv1.Volume{Name: vol.Name, VolumeSource: apiv1.VolumeSource{PersistentVolumeClaim: &apiv1.PersistentVolumeClaimVolumeSource{ClaimName: vol.Claim}}})
 	// }
 

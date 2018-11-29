@@ -179,7 +179,8 @@ func (s *Server) registerEndpointServices() {
 
 	// build log
 	buildServ := build.NewService(s.Loggr, s.Shift)
-	s.Router.HandleFunc("/api/log/{buildid}", buildServ.Viewlog)
+	s.Router.HandleFunc("/api/log/{buildid}/{subbuildid}", buildServ.Viewlog)
+	s.Router.HandleFunc("/api/log/{buildid}/{subbuildid}/{nodeid}", buildServ.Viewlog)
 }
 
 func (s *Server) registerGraphQLServices() error {
