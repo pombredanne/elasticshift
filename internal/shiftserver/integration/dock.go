@@ -58,10 +58,20 @@ func (c *dockerClient) CreateContainer(opts *itypes.CreateContainerOptions) (*it
 	if c.opts.Storage.Kind == 4 { //NFS
 
 	} else if c.opts.Storage.Kind == 1 { // Minio
+
+		var bucketName string
+		if c.opts.Storage.Minio.BucketName != "" {
+			bucketName = c.opts.Storage.Minio.BucketName
+		} else if c.opts.Storage.Name != "" {
+			bucketName = c.opts.Storage.Name
+		} else {
+			bucketName = "elasticshift"
+		}
+
 		m := c.opts.Storage.StorageSource.Minio
 		envs = append(envs, KEY_SHIFTDIR+"=/tmp")
-		envs = append(envs, KEY_WORKER_URL+"="+m.Host+"/"+filepath.Join(m.BucketName, c.opts.Storage.WorkerPath))
-		envs = append(envs, KEY_BUCKET+"="+c.opts.Storage.Minio.BucketName)
+		envs = append(envs, KEY_WORKER_URL+"="+m.Host+"/"+filepath.Join(bucketName, c.opts.Storage.WorkerPath))
+		envs = append(envs, KEY_BUCKET+"="+bucketName)
 	}
 
 	hc := &container.HostConfig{}

@@ -57,7 +57,7 @@ type Resolver interface {
 
 	SLog(id interface{}, log string) error
 	Log(id interface{}, log types.Log) error
-	TriggerNextIfAny(teamID, repositoryID, branch string)
+	TriggerNextIfAny(prevBuildID, teamID, repositoryID, branch string)
 }
 
 type resolver struct {
@@ -174,7 +174,9 @@ func (r *resolver) TriggerBuild(params graphql.ResolveParams) (interface{}, erro
 	return b, err
 }
 
-func (r *resolver) TriggerNextIfAny(teamID, repositoryID, branch string) {
+func (r *resolver) TriggerNextIfAny(prevBuildID, teamID, repositoryID, branch string) {
+
+	// check if current build is completed.
 
 	query := bson.M{
 		"team":              teamID,
@@ -186,7 +188,7 @@ func (r *resolver) TriggerNextIfAny(teamID, repositoryID, branch string) {
 	var b types.Build
 	var err error
 	r.store.Execute(func(c *mgo.Collection) {
-		err = c.Find(query).Sort("-sub_build.started_at").Limit(1).One(&b)
+		err = c.Find(query).Sort("-sub_builds.started_at").Limit(1).One(&b)
 	})
 
 	if err != nil && err.Error() != "not found" {
@@ -198,7 +200,7 @@ func (r *resolver) TriggerNextIfAny(teamID, repositoryID, branch string) {
 		if b.ID != "" {
 
 			// update the status to preparing
-			r.store.UpdateBuildStatus(b.ID, types.BuildStatusPreparing)
+			r.store.UpdateSubBuild(b.ID.Hex(), types.SubBuild{ID: "0", Status: types.BuildStatusPreparing})
 
 			// post to build queue
 			r.pushToQueue(b)

@@ -45,7 +45,7 @@ func writeNFS(stor types.Storage, f multipart.File, destPath string) error {
 	defer plugfile.Close()
 
 	//extract the bundle
-	err = archiver.TarGz.Open(bundle, destPath)
+	err = archiver.Unarchive(bundle, destPath)
 	if err != nil {
 		return fmt.Errorf("Failed to extract the bundle to storage : %v", err)
 	}

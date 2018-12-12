@@ -40,6 +40,7 @@ type resolver struct {
 	store  store.Integration
 	logger *logrus.Entry
 	Ctx    context.Context
+	sysconfStore store.Sysconf
 }
 
 // NewResolver ...
@@ -49,6 +50,7 @@ func NewResolver(ctx context.Context, loggr logger.Loggr, s store.Shift) (Resolv
 		store:  s.Integration,
 		logger: loggr.GetLogger("graphql/integration"),
 		Ctx:    ctx,
+		sysconfStore: s.Sysconf,
 	}
 	return r, nil
 }
@@ -173,6 +175,7 @@ func (r *resolver) AddStorage(params graphql.ResolveParams) (interface{}, error)
 	}
 
 	i := types.Storage{}
+	i.ID = bson.NewObjectId()
 	i.Name = name
 	i.Team = team
 	i.Kind = kind
@@ -228,7 +231,14 @@ func (r *resolver) setupStorage(stor StorageInterface, s types.Storage) {
 	workerURL := r.getWorkerURL()
 
 	// TODO get the bucketname as part of storage
-	bucketName := "elasticshift"
+	var bucketName string 
+	if s.Minio.BucketName != "" {
+		bucketName = s.Minio.BucketName
+	} else if s.Name != "" {
+		bucketName = s.Name
+	} else {
+		bucketName = "elasticshift"
+	}
 
 	objectName, err := stor.SetupStorage(bucketName, workerURL)
 	if err != nil {
@@ -240,15 +250,20 @@ func (r *resolver) setupStorage(stor StorageInterface, s types.Storage) {
 		return
 	}
 
-	s.WorkerPath = objectName
-	err = r.store.UpdateId(s.ID, &s)
+	err = r.store.UpdateWorkerPath(s.ID, objectName)
 	if err != nil {
-		r.logger.Errorf("")
+		r.logger.Errorf("Failed to update worker path: %v", err)
 	}
 }
 
 func (r *resolver) getWorkerURL() string {
 
 	// TODO fetch the url from sysconf
-	return "http://10.10.5.101:9000/elasticshift/worker/worker"
+	var result types.GenericSysConf
+	err := r.sysconfStore.GetSysConf(store.GenericKind, "worker.url", &result)
+	if err != nil {
+		return "" 
+	}
+	
+	return result.Value	
 }

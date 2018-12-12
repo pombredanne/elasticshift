@@ -20,6 +20,8 @@ type Integration interface {
 	// Kube config
 	GetKubeConfig(team string) (types.KubeConfig, error)
 	SaveKubeConfig(team string, f types.KubeConfig) error
+
+	UpdateWorkerPath(id bson.ObjectId, path string) error
 }
 
 // NewStore ..
@@ -50,4 +52,16 @@ func (r *integration) GetKubeConfig(team string) (types.KubeConfig, error) {
 		err = c.Find(bson.M{"name": team}).One(&t)
 	})
 	return t.KubeConfig, err
+}
+
+func (r *integration) UpdateWorkerPath(id bson.ObjectId, path string) error {
+
+	var err error
+	r.Execute(func(c *mgo.Collection) {
+		err = c.Update(bson.M{"_id": id},
+			bson.M{"$set": bson.M{
+				"worker_path": path,
+			}})
+	})
+	return err
 }

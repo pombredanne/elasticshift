@@ -383,6 +383,10 @@ func newIntegrationSchema(ctx context.Context, loggr logger.Loggr, s store.Shift
 					Type:        graphql.NewNonNull(graphql.String),
 					Description: "secret key to storage provider",
 				},
+				"bucket_name": &graphql.InputObjectFieldConfig{
+					Type:        graphql.String,
+					Description: "bucketname used in minio storage",
+				},
 			},
 		},
 	)

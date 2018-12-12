@@ -93,7 +93,9 @@ func (b *builder) saveCache(nodelogger *logrus.Entry) error {
 				utils.Mkdir(cachedir)
 
 				cached := filepath.Join(cachedir, id)
-				err := archiver.TarGz.Make(cached, []string{expanded})
+
+				// err := archiver.TarGz.Make(cached, []string{expanded})
+				archiver.Archive([]string{expanded}, cached)
 				if err != nil {
 					nodelogger.Errorf("Failed to compress %s: %v\n", dir, err)
 				} else {
@@ -201,7 +203,7 @@ func (b *builder) restoreCache(nodelogger *logrus.Entry) error {
 			if exist {
 
 				nodelogger.Printf("Extracting cache from %s to %s \n", src, dir)
-				err = archiver.TarGz.Open(src, dir)
+				err = archiver.Unarchive(src, dir)
 				if err != nil {
 					nodelogger.Printf("Failed to untar cache file: %v \n", err)
 				}

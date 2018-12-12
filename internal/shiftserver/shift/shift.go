@@ -133,7 +133,7 @@ func (s *shift) UpdateBuildStatus(ctx context.Context, req *api.UpdateBuildStatu
 	if stopContainer {
 
 		// kick off the next waiting build
-		//s.rs.Build.TriggerNextIfAny(req.GetTeamId(), req.GetRepositoryId(), req.GetBranch())
+		s.rs.Build.TriggerNextIfAny(req.GetBuildId(), req.GetTeamId(), req.GetRepositoryId(), req.GetBranch())
 
 		// fmt.Println("-------------------------------------------------------------")
 		// fmt.Println("Stopping the container..... ")
