@@ -9,6 +9,8 @@
 *.iml
 bin
 debug
+elasticshift
+worker
 
 # Workspace
 .idea/
