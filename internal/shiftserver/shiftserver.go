@@ -12,7 +12,6 @@ import (
 	"github.com/graphql-go/handler"
 	"github.com/sirupsen/logrus"
 	"github.com/elasticshift/elasticshift/api"
-	"github.com/elasticshift/elasticshift/api/dex"
 	"github.com/elasticshift/elasticshift/internal/pkg/logger"
 	"github.com/elasticshift/elasticshift/internal/shiftserver/build"
 	"github.com/elasticshift/elasticshift/internal/shiftserver/identity/oauth2/providers"
@@ -50,7 +49,6 @@ type Server struct {
 	Logger    *logrus.Entry
 	DB        store.Database
 	Router    *mux.Router
-	Dex       dex.DexClient
 	Providers providers.Providers
 	Ctx       context.Context
 
@@ -99,12 +97,6 @@ func New(ctx context.Context, c ServerConfig) (*Server, error) {
 	s.DB = store.NewDatabase(c.Store.Name, c.Session)
 	s.Shift = s.DB.InitShiftStore()
 	s.Resolver = &resolver.Shift{}
-
-	// d, err := newDexClient(ctx, c.Identity)
-	// if err != nil {
-	// 	return nil, err
-	// }
-	// s.Dex = d
 
 	r := mux.NewRouter()
 	s.Router = r
