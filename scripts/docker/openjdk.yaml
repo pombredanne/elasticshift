@@ -1,0 +1,20 @@
+version : "3"
+
+services:
+  openjdk:
+    image: openjdk
+    environment:
+      - SHIFT_HOST=${SHIFT_HOST}
+      - SHIFT_PORT=${SHIFT_PORT}
+      - SHIFT_BUILDID=${SHIFT_BUILDID}
+      - SHIFT_TEAMID=${SHIFT_TEAMID}
+      - SHIFT_DIR=${SHIFT_DIR}
+      - WORKER_PORT=${WORKER_PORT}
+      - WORKER_URL=${WORKER_URL}
+    command:
+      - echo "running..."
+    entrypoint:
+      # - /bin/bash while :; do echo 'Hit CTRL+C'; sleep 1; done
+      - echo WORKER_URL=$WORKER_URL
+      - echo SHIFT_DIR=$SHIFT_DIR
+      - /bin/bash
