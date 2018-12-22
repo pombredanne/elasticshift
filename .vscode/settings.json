@@ -27,7 +27,9 @@
     "[go]": {
         "editor.insertSpaces": false,
         "editor.formatOnSave": true
-    }
+    },
+    "git.ignoreLimitWarning": true,
+    "editor.cursorStyle": "line",
     // "vim.handleKeys": {
     //     "<C-d>": true
     // },
