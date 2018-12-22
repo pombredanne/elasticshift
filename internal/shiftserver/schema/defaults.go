@@ -8,10 +8,10 @@ import (
 	"encoding/json"
 
 	"github.com/graphql-go/graphql"
-	"gitlab.com/conspico/elasticshift/api/types"
-	"gitlab.com/conspico/elasticshift/internal/pkg/logger"
-	"gitlab.com/conspico/elasticshift/internal/shiftserver/defaults"
-	"gitlab.com/conspico/elasticshift/internal/shiftserver/store"
+	"github.com/elasticshift/elasticshift/api/types"
+	"github.com/elasticshift/elasticshift/internal/pkg/logger"
+	"github.com/elasticshift/elasticshift/internal/shiftserver/defaults"
+	"github.com/elasticshift/elasticshift/internal/shiftserver/store"
 )
 
 func newDefaultsSchema(ctx context.Context, loggr logger.Loggr, s store.Shift) (queries graphql.Fields, mutations graphql.Fields) {

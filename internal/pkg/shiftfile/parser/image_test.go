@@ -5,8 +5,8 @@ import (
 	"path/filepath"
 	"testing"
 
-	"gitlab.com/conspico/elasticshift/internal/pkg/shiftfile/ast"
-	"gitlab.com/conspico/elasticshift/internal/pkg/shiftfile/keys"
+	"github.com/elasticshift/elasticshift/internal/pkg/shiftfile/ast"
+	"github.com/elasticshift/elasticshift/internal/pkg/shiftfile/keys"
 )
 
 func TestImageBlock(t *testing.T) {

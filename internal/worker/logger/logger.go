@@ -13,7 +13,7 @@ import (
 
 	"context"
 
-	"gitlab.com/conspico/elasticshift/internal/pkg/utils"
+	"github.com/elasticshift/elasticshift/internal/pkg/utils"
 
 	homedir "github.com/minio/go-homedir"
 )

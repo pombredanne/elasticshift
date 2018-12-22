@@ -8,7 +8,7 @@ import (
 
 	"github.com/gorilla/websocket"
 	"github.com/sirupsen/logrus"
-	"gitlab.com/conspico/elasticshift/internal/pkg/logger"
+	"github.com/elasticshift/elasticshift/internal/pkg/logger"
 )
 
 // NewHandler ..

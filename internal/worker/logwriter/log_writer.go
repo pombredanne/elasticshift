@@ -7,8 +7,8 @@ import (
 	"fmt"
 	"os"
 
+	"github.com/elasticshift/elasticshift/internal/pkg/logger"
 	"github.com/sirupsen/logrus"
-	"gitlab.com/conspico/elasticshift/internal/pkg/logger"
 )
 
 const (

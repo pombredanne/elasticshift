@@ -9,9 +9,9 @@ import (
 
 	"github.com/sirupsen/logrus"
 
-	"gitlab.com/conspico/elasticshift/api/types"
-	"gitlab.com/conspico/elasticshift/internal/pkg/logger"
-	"gitlab.com/conspico/elasticshift/pkg/dispatch"
+	"github.com/elasticshift/elasticshift/api/types"
+	"github.com/elasticshift/elasticshift/internal/pkg/logger"
+	"github.com/elasticshift/elasticshift/pkg/dispatch"
 	"golang.org/x/oauth2"
 	gh "golang.org/x/oauth2/github"
 )

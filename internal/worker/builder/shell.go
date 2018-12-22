@@ -8,9 +8,9 @@ import (
 	"io"
 	"os/exec"
 
+	"github.com/elasticshift/elasticshift/internal/pkg/graph"
+	"github.com/elasticshift/elasticshift/internal/pkg/shiftfile/keys"
 	"github.com/sirupsen/logrus"
-	"gitlab.com/conspico/elasticshift/internal/pkg/graph"
-	"gitlab.com/conspico/elasticshift/internal/pkg/shiftfile/keys"
 )
 
 func (b *builder) invokeShell(n *graph.N) (string, error) {

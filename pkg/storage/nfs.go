@@ -10,9 +10,9 @@ import (
 	"os"
 	"path/filepath"
 
+	"github.com/elasticshift/elasticshift/api/types"
+	"github.com/elasticshift/elasticshift/internal/pkg/utils"
 	"github.com/mholt/archiver"
-	"gitlab.com/conspico/elasticshift/api/types"
-	"gitlab.com/conspico/elasticshift/internal/pkg/utils"
 )
 
 func writeNFS(stor types.Storage, f multipart.File, destPath string) error {

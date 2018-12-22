@@ -7,8 +7,8 @@ import (
 	"sync"
 
 	"github.com/sirupsen/logrus"
-	"gitlab.com/conspico/elasticshift/internal/pkg/storage"
-	"gitlab.com/conspico/elasticshift/internal/pkg/utils"
+	"github.com/elasticshift/elasticshift/internal/pkg/storage"
+	"github.com/elasticshift/elasticshift/internal/pkg/utils"
 )
 
 type LogShipper interface {

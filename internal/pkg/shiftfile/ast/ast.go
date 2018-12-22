@@ -4,8 +4,8 @@ Copyright 2018 The Elasticshift Authors.
 package ast
 
 import (
-	"gitlab.com/conspico/elasticshift/internal/pkg/shiftfile/scope"
-	"gitlab.com/conspico/elasticshift/internal/pkg/shiftfile/token"
+	"github.com/elasticshift/elasticshift/internal/pkg/shiftfile/scope"
+	"github.com/elasticshift/elasticshift/internal/pkg/shiftfile/token"
 )
 
 type Node interface {

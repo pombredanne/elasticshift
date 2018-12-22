@@ -7,11 +7,11 @@ import (
 	"context"
 
 	"github.com/graphql-go/graphql"
-	"gitlab.com/conspico/elasticshift/internal/pkg/logger"
-	"gitlab.com/conspico/elasticshift/internal/pkg/utils"
-	"gitlab.com/conspico/elasticshift/internal/shiftserver/identity/oauth2/providers"
-	"gitlab.com/conspico/elasticshift/internal/shiftserver/store"
-	"gitlab.com/conspico/elasticshift/internal/shiftserver/vcs"
+	"github.com/elasticshift/elasticshift/internal/pkg/logger"
+	"github.com/elasticshift/elasticshift/internal/pkg/utils"
+	"github.com/elasticshift/elasticshift/internal/shiftserver/identity/oauth2/providers"
+	"github.com/elasticshift/elasticshift/internal/shiftserver/store"
+	"github.com/elasticshift/elasticshift/internal/shiftserver/vcs"
 )
 
 func newVcsSchema(

@@ -7,7 +7,7 @@ import (
 	nsq "github.com/nsqio/go-nsq"
 	"github.com/pkg/errors"
 	"github.com/sirupsen/logrus"
-	"gitlab.com/conspico/elasticshift/internal/pkg/logger"
+	"github.com/elasticshift/elasticshift/internal/pkg/logger"
 )
 
 // Producer ..

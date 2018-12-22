@@ -7,7 +7,7 @@ import (
 	"fmt"
 	"testing"
 
-	"gitlab.com/conspico/elasticshift/internal/pkg/shiftfile/parser"
+	"github.com/elasticshift/elasticshift/internal/pkg/shiftfile/parser"
 )
 
 var testfileShellOnly = `

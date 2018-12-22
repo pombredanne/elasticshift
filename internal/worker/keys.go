@@ -13,7 +13,7 @@ import (
 	"os"
 	"path/filepath"
 
-	"gitlab.com/conspico/elasticshift/internal/pkg/utils"
+	"github.com/elasticshift/elasticshift/internal/pkg/utils"
 )
 
 // GenerateRSAKeys ..

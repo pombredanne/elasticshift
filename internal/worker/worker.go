@@ -13,11 +13,11 @@ import (
 	"strconv"
 	"time"
 
-	"gitlab.com/conspico/elasticshift/api"
-	"gitlab.com/conspico/elasticshift/internal/pkg/utils"
-	"gitlab.com/conspico/elasticshift/internal/worker/builder"
-	"gitlab.com/conspico/elasticshift/internal/worker/logwriter"
-	"gitlab.com/conspico/elasticshift/internal/worker/types"
+	"github.com/elasticshift/elasticshift/api"
+	"github.com/elasticshift/elasticshift/internal/pkg/utils"
+	"github.com/elasticshift/elasticshift/internal/worker/builder"
+	"github.com/elasticshift/elasticshift/internal/worker/logwriter"
+	"github.com/elasticshift/elasticshift/internal/worker/types"
 
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/keepalive"

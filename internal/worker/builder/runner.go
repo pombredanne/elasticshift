@@ -12,9 +12,9 @@ import (
 
 	homedir "github.com/minio/go-homedir"
 	"github.com/sirupsen/logrus"
-	"gitlab.com/conspico/elasticshift/api"
-	"gitlab.com/conspico/elasticshift/internal/pkg/graph"
-	"gitlab.com/conspico/elasticshift/internal/pkg/utils"
+	"github.com/elasticshift/elasticshift/api"
+	"github.com/elasticshift/elasticshift/internal/pkg/graph"
+	"github.com/elasticshift/elasticshift/internal/pkg/utils"
 )
 
 func (b *builder) build(g *graph.Graph) error {

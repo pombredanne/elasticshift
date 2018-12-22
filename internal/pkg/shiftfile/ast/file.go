@@ -6,8 +6,8 @@ package ast
 import (
 	"strings"
 
-	"gitlab.com/conspico/elasticshift/internal/pkg/shiftfile/keys"
-	"gitlab.com/conspico/elasticshift/internal/pkg/shiftfile/scope"
+	"github.com/elasticshift/elasticshift/internal/pkg/shiftfile/keys"
+	"github.com/elasticshift/elasticshift/internal/pkg/shiftfile/scope"
 )
 
 var (

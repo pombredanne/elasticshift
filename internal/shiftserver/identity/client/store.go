@@ -4,8 +4,8 @@ Copyright 2017 The Elasticshift Authors.
 package client
 
 import (
-	base "gitlab.com/conspico/elasticshift/internal/shiftserver/store"
-	stypes "gitlab.com/conspico/elasticshift/internal/types"
+	base "github.com/elasticshift/elasticshift/internal/shiftserver/store"
+	stypes "github.com/elasticshift/elasticshift/internal/types"
 	"gopkg.in/mgo.v2/bson"
 )
 

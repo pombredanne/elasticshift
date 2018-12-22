@@ -9,11 +9,11 @@ import (
 	"strconv"
 
 	"github.com/pkg/errors"
-	"gitlab.com/conspico/elasticshift/api/types"
-	"gitlab.com/conspico/elasticshift/internal/pkg/graph"
-	"gitlab.com/conspico/elasticshift/internal/shiftserver/integration"
-	itypes "gitlab.com/conspico/elasticshift/internal/shiftserver/integration/types"
-	"gitlab.com/conspico/elasticshift/internal/shiftserver/pubsub"
+	"github.com/elasticshift/elasticshift/api/types"
+	"github.com/elasticshift/elasticshift/internal/pkg/graph"
+	"github.com/elasticshift/elasticshift/internal/shiftserver/integration"
+	itypes "github.com/elasticshift/elasticshift/internal/shiftserver/integration/types"
+	"github.com/elasticshift/elasticshift/internal/shiftserver/pubsub"
 )
 
 var (

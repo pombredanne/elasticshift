@@ -184,7 +184,7 @@ spec:
           value: 10.10.7.152
         - name: no_proxy
           value: localhost,127.0.0.1
-        image: registry.gitlab.com/conspico/esh:0.0.7_3.8
+        image: registry.github.com/elasticshift/esh:0.0.7_3.8
         name: elasticshift.api
         ports:
         - containerPort: 9100

@@ -14,7 +14,7 @@ services:
 
   elasticshift:
     container_name: shiftserver
-    image: registry.gitlab.com/conspico/esh:latest
+    image: registry.github.com/elasticshift/esh:latest
     ports:
       - "5050:5050"
       - "5051:5051"

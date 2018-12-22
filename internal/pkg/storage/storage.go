@@ -8,9 +8,9 @@ import (
 	"os"
 
 	"github.com/sirupsen/logrus"
-	"gitlab.com/conspico/elasticshift/api"
-	"gitlab.com/conspico/elasticshift/api/types"
-	"gitlab.com/conspico/elasticshift/internal/shiftserver/integration"
+	"github.com/elasticshift/elasticshift/api"
+	"github.com/elasticshift/elasticshift/api/types"
+	"github.com/elasticshift/elasticshift/internal/shiftserver/integration"
 )
 
 var (

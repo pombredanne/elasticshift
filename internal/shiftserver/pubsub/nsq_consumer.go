@@ -12,7 +12,7 @@ import (
 	"github.com/graphql-go/graphql"
 	nsq "github.com/nsqio/go-nsq"
 	"github.com/sirupsen/logrus"
-	"gitlab.com/conspico/elasticshift/internal/pkg/utils"
+	"github.com/elasticshift/elasticshift/internal/pkg/utils"
 )
 
 const (

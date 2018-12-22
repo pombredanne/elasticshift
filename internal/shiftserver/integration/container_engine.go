@@ -8,9 +8,9 @@ import (
 	"fmt"
 	"io"
 
-	"gitlab.com/conspico/elasticshift/api/types"
-	"gitlab.com/conspico/elasticshift/internal/pkg/logger"
-	itypes "gitlab.com/conspico/elasticshift/internal/shiftserver/integration/types"
+	"github.com/elasticshift/elasticshift/api/types"
+	"github.com/elasticshift/elasticshift/internal/pkg/logger"
+	itypes "github.com/elasticshift/elasticshift/internal/shiftserver/integration/types"
 )
 
 //container engine

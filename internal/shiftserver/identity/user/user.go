@@ -10,8 +10,8 @@ import (
 	"net/mail"
 
 	"github.com/sirupsen/logrus"
-	"gitlab.com/conspico/elasticshift/api"
-	"gitlab.com/conspico/elasticshift/api/dex"
+	"github.com/elasticshift/elasticshift/api"
+	"github.com/elasticshift/elasticshift/api/dex"
 	"golang.org/x/crypto/bcrypt"
 	"golang.org/x/net/context"
 )

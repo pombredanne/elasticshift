@@ -9,7 +9,7 @@ import (
 	"time"
 
 	"github.com/sirupsen/logrus"
-	"gitlab.com/conspico/elasticshift/core/store"
+	"github.com/elasticshift/elasticshift/core/store"
 
 	"github.com/stretchr/testify/assert"
 	"golang.org/x/net/context"

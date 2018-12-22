@@ -3,7 +3,7 @@ package providers_test
 import (
 	"testing"
 
-	"gitlab.com/conspico/elasticshift/identity/oauth2/providers"
+	"github.com/elasticshift/elasticshift/identity/oauth2/providers"
 )
 
 func TestBitbucketAuthorized(t *testing.T) {

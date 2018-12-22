@@ -16,7 +16,7 @@ import (
 	"github.com/docker/docker/api/types/strslice"
 	dclient "github.com/docker/docker/client"
 	"github.com/sirupsen/logrus"
-	itypes "gitlab.com/conspico/elasticshift/internal/shiftserver/integration/types"
+	itypes "github.com/elasticshift/elasticshift/internal/shiftserver/integration/types"
 )
 
 type dockerClient struct {

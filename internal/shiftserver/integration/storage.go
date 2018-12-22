@@ -8,7 +8,7 @@ import (
 	"io"
 
 	"github.com/sirupsen/logrus"
-	"gitlab.com/conspico/elasticshift/api/types"
+	"github.com/elasticshift/elasticshift/api/types"
 )
 
 //storage

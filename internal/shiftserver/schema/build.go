@@ -7,13 +7,13 @@ import (
 	"context"
 
 	"github.com/graphql-go/graphql"
-	"gitlab.com/conspico/elasticshift/api/types"
-	"gitlab.com/conspico/elasticshift/internal/pkg/logger"
-	"gitlab.com/conspico/elasticshift/internal/pkg/utils"
-	"gitlab.com/conspico/elasticshift/internal/shiftserver/build"
-	"gitlab.com/conspico/elasticshift/internal/shiftserver/pubsub"
-	"gitlab.com/conspico/elasticshift/internal/shiftserver/resolver"
-	"gitlab.com/conspico/elasticshift/internal/shiftserver/store"
+	"github.com/elasticshift/elasticshift/api/types"
+	"github.com/elasticshift/elasticshift/internal/pkg/logger"
+	"github.com/elasticshift/elasticshift/internal/pkg/utils"
+	"github.com/elasticshift/elasticshift/internal/shiftserver/build"
+	"github.com/elasticshift/elasticshift/internal/shiftserver/pubsub"
+	"github.com/elasticshift/elasticshift/internal/shiftserver/resolver"
+	"github.com/elasticshift/elasticshift/internal/shiftserver/store"
 )
 
 // type & fields

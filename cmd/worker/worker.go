@@ -8,7 +8,7 @@ import (
 
 	"log"
 
-	"gitlab.com/conspico/elasticshift/internal/worker"
+	"github.com/elasticshift/elasticshift/internal/worker"
 )
 
 func main() {

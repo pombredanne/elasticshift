@@ -4,7 +4,7 @@ Copyright 2018 The Elasticshift Authors.
 package store
 
 import (
-	"gitlab.com/conspico/elasticshift/api/types"
+	"github.com/elasticshift/elasticshift/api/types"
 	mgo "gopkg.in/mgo.v2"
 	"gopkg.in/mgo.v2/bson"
 )

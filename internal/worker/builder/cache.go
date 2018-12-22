@@ -13,10 +13,10 @@ import (
 	"runtime"
 	"sync"
 
+	"github.com/elasticshift/elasticshift/internal/pkg/utils"
 	"github.com/mholt/archiver"
 	homedir "github.com/minio/go-homedir"
 	"github.com/sirupsen/logrus"
-	"gitlab.com/conspico/elasticshift/internal/pkg/utils"
 )
 
 var (

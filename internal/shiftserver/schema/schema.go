@@ -8,12 +8,12 @@ import (
 	"fmt"
 
 	"github.com/graphql-go/graphql"
-	"gitlab.com/conspico/elasticshift/internal/pkg/logger"
-	"gitlab.com/conspico/elasticshift/internal/shiftserver/identity/oauth2/providers"
-	"gitlab.com/conspico/elasticshift/internal/shiftserver/pubsub"
-	"gitlab.com/conspico/elasticshift/internal/shiftserver/resolver"
-	"gitlab.com/conspico/elasticshift/internal/shiftserver/secret"
-	"gitlab.com/conspico/elasticshift/internal/shiftserver/store"
+	"github.com/elasticshift/elasticshift/internal/pkg/logger"
+	"github.com/elasticshift/elasticshift/internal/shiftserver/identity/oauth2/providers"
+	"github.com/elasticshift/elasticshift/internal/shiftserver/pubsub"
+	"github.com/elasticshift/elasticshift/internal/shiftserver/resolver"
+	"github.com/elasticshift/elasticshift/internal/shiftserver/secret"
+	"github.com/elasticshift/elasticshift/internal/shiftserver/store"
 )
 
 // Construct ...

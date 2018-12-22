@@ -14,12 +14,12 @@ import (
 
 	"github.com/sirupsen/logrus"
 	"github.com/gorilla/mux"
-	"gitlab.com/conspico/elasticshift/api/types"
-	"gitlab.com/conspico/elasticshift/internal/pkg/logger"
-	"gitlab.com/conspico/elasticshift/internal/pkg/vcs"
-	"gitlab.com/conspico/elasticshift/internal/shiftserver/identity/oauth2/providers"
-	"gitlab.com/conspico/elasticshift/internal/shiftserver/secret"
-	"gitlab.com/conspico/elasticshift/internal/shiftserver/store"
+	"github.com/elasticshift/elasticshift/api/types"
+	"github.com/elasticshift/elasticshift/internal/pkg/logger"
+	"github.com/elasticshift/elasticshift/internal/pkg/vcs"
+	"github.com/elasticshift/elasticshift/internal/shiftserver/identity/oauth2/providers"
+	"github.com/elasticshift/elasticshift/internal/shiftserver/secret"
+	"github.com/elasticshift/elasticshift/internal/shiftserver/store"
 )
 
 var (

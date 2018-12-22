@@ -4,7 +4,7 @@ Copyright 2018 The Elasticshift Authors.
 package builder
 
 import (
-	"gitlab.com/conspico/elasticshift/internal/pkg/graph"
+	"github.com/elasticshift/elasticshift/internal/pkg/graph"
 )
 
 var (

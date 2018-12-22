@@ -6,7 +6,7 @@ package storage
 import (
 	"mime/multipart"
 
-	"gitlab.com/conspico/elasticshift/api/types"
+	"github.com/elasticshift/elasticshift/api/types"
 )
 
 var (

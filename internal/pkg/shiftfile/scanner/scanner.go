@@ -10,7 +10,7 @@ import (
 	"unicode"
 	"unicode/utf8"
 
-	"gitlab.com/conspico/elasticshift/internal/pkg/shiftfile/token"
+	"github.com/elasticshift/elasticshift/internal/pkg/shiftfile/token"
 )
 
 // eof represents a marker rune for the end of the reader.

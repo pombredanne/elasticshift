@@ -8,7 +8,7 @@ import (
 
 	"github.com/sirupsen/logrus"
 	"github.com/graphql-go/graphql"
-	"gitlab.com/conspico/elasticshift/internal/pkg/logger"
+	"github.com/elasticshift/elasticshift/internal/pkg/logger"
 )
 
 type Consumers interface {

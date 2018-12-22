@@ -8,8 +8,8 @@ import (
 	"fmt"
 	"strings"
 
-	"gitlab.com/conspico/elasticshift/internal/shiftserver/identity/oauth2/providers"
-	"gitlab.com/conspico/elasticshift/pkg/dispatch"
+	"github.com/elasticshift/elasticshift/internal/shiftserver/identity/oauth2/providers"
+	"github.com/elasticshift/elasticshift/pkg/dispatch"
 )
 
 var (

@@ -12,9 +12,9 @@ import (
 	"time"
 
 	"github.com/sirupsen/logrus"
-	"gitlab.com/conspico/elasticshift/internal/pkg/shiftfile/ast"
-	"gitlab.com/conspico/elasticshift/internal/pkg/shiftfile/keys"
-	"gitlab.com/conspico/elasticshift/internal/pkg/utils"
+	"github.com/elasticshift/elasticshift/internal/pkg/shiftfile/ast"
+	"github.com/elasticshift/elasticshift/internal/pkg/shiftfile/keys"
+	"github.com/elasticshift/elasticshift/internal/pkg/utils"
 )
 
 var (

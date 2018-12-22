@@ -3,7 +3,7 @@ image: golang:latest
 
 variables:
   # Please edit to your GitLab project
-  REPO_NAME: gitlab.com/conspico/elasticshift
+  REPO_NAME: github.com/elasticshift/elasticshift
 
 # The problem is that to be able to use go get, one needs to put
 # the repository in the $GOPATH. So for example if your gitlab domain
@@ -36,11 +36,11 @@ compile:
       - make
     artifacts:
       paths:
-        - /go/src/gitlab.com/conspico/elasticshift/bin/darwin_386/elasticshift
-        - /go/src/gitlab.com/conspico/elasticshift/bin/linux_386/elasticshift
-        - /go/src/gitlab.com/conspico/elasticshift/bin/darwin_amd64/elasticshift
-        - /go/src/gitlab.com/conspico/elasticshift/bin/linux_amd64/elasticshift
-        - /go/src/gitlab.com/conspico/elasticshift/bin/darwin_386/worker
-        - /go/src/gitlab.com/conspico/elasticshift/bin/linux_386/worker
-        - /go/src/gitlab.com/conspico/elasticshift/bin/darwin_amd64/worker
-        - /go/src/gitlab.com/conspico/elasticshift/bin/linux_amd64/worker
+        - /go/src/github.com/elasticshift/elasticshift/bin/darwin_386/elasticshift
+        - /go/src/github.com/elasticshift/elasticshift/bin/linux_386/elasticshift
+        - /go/src/github.com/elasticshift/elasticshift/bin/darwin_amd64/elasticshift
+        - /go/src/github.com/elasticshift/elasticshift/bin/linux_amd64/elasticshift
+        - /go/src/github.com/elasticshift/elasticshift/bin/darwin_386/worker
+        - /go/src/github.com/elasticshift/elasticshift/bin/linux_386/worker
+        - /go/src/github.com/elasticshift/elasticshift/bin/darwin_amd64/worker
+        - /go/src/github.com/elasticshift/elasticshift/bin/linux_amd64/worker

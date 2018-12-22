@@ -9,11 +9,11 @@ import (
 	"fmt"
 	"strings"
 
-	"gitlab.com/conspico/elasticshift/internal/pkg/shiftfile/scanner"
-	"gitlab.com/conspico/elasticshift/internal/pkg/shiftfile/scope"
+	"github.com/elasticshift/elasticshift/internal/pkg/shiftfile/scanner"
+	"github.com/elasticshift/elasticshift/internal/pkg/shiftfile/scope"
 
-	"gitlab.com/conspico/elasticshift/internal/pkg/shiftfile/ast"
-	"gitlab.com/conspico/elasticshift/internal/pkg/shiftfile/token"
+	"github.com/elasticshift/elasticshift/internal/pkg/shiftfile/ast"
+	"github.com/elasticshift/elasticshift/internal/pkg/shiftfile/token"
 )
 
 var errEofToken = errors.New("EOF token found")

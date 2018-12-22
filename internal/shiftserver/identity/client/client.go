@@ -9,9 +9,9 @@ import (
 	"golang.org/x/net/context"
 
 	"github.com/sirupsen/logrus"
-	"gitlab.com/conspico/elasticshift/api"
-	"gitlab.com/conspico/elasticshift/api/dex"
-	stypes "gitlab.com/conspico/elasticshift/internal/types"
+	"github.com/elasticshift/elasticshift/api"
+	"github.com/elasticshift/elasticshift/api/dex"
+	stypes "github.com/elasticshift/elasticshift/internal/types"
 )
 
 var (

@@ -2,7 +2,7 @@
 # Copyright 2015 The Elasticshift Authors.
 #
 PROJ=elasticshift
-ORG_PATH=gitlab.com/conspico
+ORG_PATH=github.com/elasticshift
 REPO_PATH=$(ORG_PATH)/$(PROJ)
 export PATH := $(PWD)/bin:$(PATH)
 

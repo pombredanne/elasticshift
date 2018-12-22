@@ -7,5 +7,5 @@ services:
     ports:
       - "7777:7777"
     volumes:
-      - "/Users/ghazni/sandbox/projects/go/src/gitlab.com/conspico/elasticshift/bin/linux_amd64:/var/www/assets/:ro"
-      - "/Users/ghazni/sandbox/projects/go/src/gitlab.com/conspico/elasticshift/scripts/nginx:/etc/nginx:ro"
+      - "/Users/ghazni/sandbox/projects/go/src/github.com/elasticshift/elasticshift/bin/linux_amd64:/var/www/assets/:ro"
+      - "/Users/ghazni/sandbox/projects/go/src/github.com/elasticshift/elasticshift/scripts/nginx:/etc/nginx:ro"

@@ -7,7 +7,7 @@ import (
 	"fmt"
 	"time"
 
-	"gitlab.com/conspico/elasticshift/internal/pkg/logger"
+	"github.com/elasticshift/elasticshift/internal/pkg/logger"
 	mgo "gopkg.in/mgo.v2"
 
 	"github.com/sirupsen/logrus"

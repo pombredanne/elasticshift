@@ -3,7 +3,7 @@ package parser
 import (
 	"fmt"
 
-	"gitlab.com/conspico/elasticshift/internal/pkg/shiftfile/token"
+	"github.com/elasticshift/elasticshift/internal/pkg/shiftfile/token"
 )
 
 type PositionErr struct {

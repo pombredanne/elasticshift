@@ -6,7 +6,7 @@ package dispatch_test
 import (
 	"testing"
 
-	"gitlab.com/conspico/elasticshift/core/dispatch"
+	"github.com/elasticshift/elasticshift/core/dispatch"
 )
 
 var (

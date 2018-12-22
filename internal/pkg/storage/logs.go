@@ -7,7 +7,7 @@ import (
 	"io"
 	"strings"
 
-	"gitlab.com/conspico/elasticshift/api/types"
+	"github.com/elasticshift/elasticshift/api/types"
 )
 
 func (s *ShiftStorage) GetLog(name string) (io.ReadCloser, error) {

@@ -6,8 +6,8 @@ package worker
 import (
 	"context"
 
-	"gitlab.com/conspico/elasticshift/api"
-	"gitlab.com/conspico/elasticshift/internal/worker/types"
+	"github.com/elasticshift/elasticshift/api"
+	"github.com/elasticshift/elasticshift/internal/worker/types"
 )
 
 type server struct {
