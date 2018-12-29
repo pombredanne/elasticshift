@@ -7,7 +7,7 @@ import (
 	"fmt"
 	"testing"
 
-	"github.com/elasticshift/elasticshift/core/identity/oauth2/providers"
+	"github.com/elasticshift/internal/shiftserver/identity/oauth2/providers"
 )
 
 func TestAuthorized(t *testing.T) {
