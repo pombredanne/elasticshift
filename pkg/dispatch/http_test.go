@@ -6,7 +6,7 @@ package dispatch_test
 import (
 	"testing"
 
-	"github.com/elasticshift/elasticshift/core/dispatch"
+	"github.com/elasticshift/elasticshift/pkg/dispatch"
 )
 
 var (

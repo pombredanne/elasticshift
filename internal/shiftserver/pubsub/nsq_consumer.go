@@ -9,10 +9,10 @@ import (
 	"context"
 	"fmt"
 
+	"github.com/elasticshift/elasticshift/internal/pkg/utils"
 	"github.com/graphql-go/graphql"
 	nsq "github.com/nsqio/go-nsq"
 	"github.com/sirupsen/logrus"
-	"github.com/elasticshift/elasticshift/internal/pkg/utils"
 )
 
 const (
@@ -94,11 +94,11 @@ func (c *consumer) HandleMessage() nsq.Handler {
 		if err != nil {
 			return err
 		}
-		c.logger.Infoln("Incoming message: id=%s, payload=%s", m.Topic, m.Payload)
+		c.logger.Infof("Incoming message: id=%s, payload=%s \n", m.Topic, m.Payload)
 
 		c.logger.Infof("consumers :%v", c.consumers.topics)
 
-		c.logger.Infof("subs: %v, c.consumers.subscriptions")
+		c.logger.Infof("subs: %v", c.consumers.subscriptions)
 
 		// operation identifier
 		operationID := m.Payload.(string)

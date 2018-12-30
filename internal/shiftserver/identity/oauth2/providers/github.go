@@ -102,7 +102,7 @@ func (g *Github) Authorized(id, code string) (types.VCS, error) {
 
 	u := types.VCS{}
 	if err != nil {
-		return u, fmt.Errorf("Exchange token after authorization failed: ", err)
+		return u, fmt.Errorf("Exchange token after authorization failed: %v", err)
 	}
 
 	u.AccessCode = code

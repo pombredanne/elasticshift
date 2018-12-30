@@ -10,11 +10,11 @@ import (
 
 	"strings"
 
-	"github.com/graphql-go/graphql"
-	"github.com/sirupsen/logrus"
 	"github.com/elasticshift/elasticshift/api/types"
 	"github.com/elasticshift/elasticshift/internal/pkg/logger"
 	"github.com/elasticshift/elasticshift/internal/shiftserver/store"
+	"github.com/graphql-go/graphql"
+	"github.com/sirupsen/logrus"
 )
 
 var (
@@ -75,7 +75,7 @@ func (r *resolver) CreateVCSSysConf(params graphql.ResolveParams) (interface{}, 
 
 	result, err := r.FetchVCSSysConfByName(params)
 	if err != nil && !strings.EqualFold("not found", err.Error()) {
-		return nil, fmt.Errorf("Failed to create vcs sysconf", err)
+		return nil, fmt.Errorf("Failed to create vcs sysconf: %v", err)
 	}
 
 	if result.(types.VCSSysConf).Name != "" {
@@ -98,7 +98,7 @@ func (r *resolver) CreateGenericSysConf(params graphql.ResolveParams) (interface
 
 	result, err := r.FetchGenericSysConfByName(params)
 	if err != nil && !strings.EqualFold("not found", err.Error()) {
-		return nil, fmt.Errorf("Failed to create generic sysconf", err)
+		return nil, fmt.Errorf("Failed to create generic sysconf: %v", err)
 	}
 
 	if result.(types.GenericSysConf).Name != "" {
@@ -124,7 +124,7 @@ func (r *resolver) CreateNFSVolumeSysConf(params graphql.ResolveParams) (interfa
 
 	result, err := r.FetchNFSVolumeSysConfByName(params)
 	if err != nil && !strings.EqualFold("not found", err.Error()) {
-		return nil, fmt.Errorf("Failed to create NFS volume sysconf", err)
+		return nil, fmt.Errorf("Failed to create NFS volume sysconf: %v", err)
 	}
 
 	if result.(types.NFSVolumeSysConf).Name != "" {

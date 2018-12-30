@@ -19,6 +19,7 @@ import (
 	"github.com/justinas/alice"
 	"github.com/elasticshift/elasticshift/internal/pkg/logger"
 	"github.com/elasticshift/elasticshift/internal/shiftserver/store"
+	sstypes "github.com/elasticshift/elasticshift/internal/shiftserver/types"
 	"golang.org/x/net/context"
 	"google.golang.org/grpc"
 	"gopkg.in/yaml.v2"
@@ -29,7 +30,7 @@ type Config struct {
 	Store    Store    `json:"store"`
 	Web      Web      `json:"web"`
 	Logger   Logger   `json:"logger"`
-	Identity Identity `json:"dex"`
+	Identity sstypes.Identity `json:"dex"`
 	NSQ      NSQ
 }
 
@@ -137,7 +138,7 @@ func Run() error {
 				GRPC: "0.0.0.0:9101",
 			},
 
-			Identity: Identity{
+			Identity: sstypes.Identity{
 				HostAndPort: "127.0.0.1:5557",
 				Issuer:      "http://127.0.0.1:5556/Identity",
 				ID:          "yyjw66rn2hso6wriuzlic62jiy",

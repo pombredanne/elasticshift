@@ -3,106 +3,93 @@ Copyright 2017 The Elasticshift Authors.
 */
 package shiftserver
 
-import (
-	"os"
-	"testing"
-	"time"
+// func TestServer(t *testing.T) {
 
-	"github.com/sirupsen/logrus"
-	"github.com/elasticshift/elasticshift/core/store"
+// 	ctx, cancel := context.WithCancel(context.Background())
+// 	defer cancel()
 
-	"github.com/stretchr/testify/assert"
-	"golang.org/x/net/context"
-)
+// 	tests := []struct {
+// 		name       string
+// 		configFunc func(c *Config)
+// 		err        bool
+// 	}{
+// 		{
+// 			name:       "Positive Test",
+// 			configFunc: nil,
+// 			err:        false,
+// 		},
+// 		// {
+// 		// 	name: "No logger",
+// 		// 	configFunc: func(c *Config) {
+// 		// 		c.Logger = nil
+// 		// 	},
+// 		// 	err: true,
+// 		// },
+// 	}
 
-func TestServer(t *testing.T) {
+// 	for _, test := range tests {
 
-	ctx, cancel := context.WithCancel(context.Background())
-	defer cancel()
+// 		_, err := newTestServer(ctx, t, test.configFunc)
+// 		if test.err {
+// 			assert.NotNil(t, err)
+// 		} else {
+// 			assert.Nil(t, err)
+// 		}
+// 	}
+// }
 
-	tests := []struct {
-		name       string
-		configFunc func(c *Config)
-		err        bool
-	}{
-		{
-			name:       "Positive Test",
-			configFunc: nil,
-			err:        false,
-		},
-		{
-			name: "No logger",
-			configFunc: func(c *Config) {
-				c.Logger = nil
-			},
-			err: true,
-		},
-	}
+// func newTestServer(ctx context.Context, t *testing.T, updateFunc func(conf *Config)) (*Server, error) {
 
-	for _, test := range tests {
+// 	timeout, _ := time.ParseDuration("10s")
 
-		_, err := newTestServer(ctx, t, test.configFunc)
-		if test.err {
-			assert.NotNil(t, err)
-		} else {
-			assert.Nil(t, err)
-		}
-	}
-}
+// 	l, err := logger.New("debug", "text")
+// 	if err != nil {
+// 		t.Log(err)
+// 		t.Fail()
+// 	}
 
-func newTestServer(ctx context.Context, t *testing.T, updateFunc func(conf *Config)) (*Server, error) {
+// 	c := Config{
 
-	timeout, _ := time.ParseDuration("10s")
+// 		Store: Store{
 
-	logger := &logrus.Logger{
-		Out:       os.Stderr,
-		Formatter: &logrus.TextFormatter{DisableColors: true},
-		Level:     logrus.DebugLevel,
-	}
+// 			Server:    "127.0.0.1",
+// 			Name:      "esh",
+// 			Username:  "esh",
+// 			Password:  "eshpazz",
+// 			Monotonic: true,
+// 			Timeout:   "2h",
+// 			Retry:     "10s",
+// 		},
 
-	c := Config{
+// 		Identity: sstypes.Identity{
+// 			HostAndPort: "127.0.0.1:5557",
+// 			Issuer:      "http://127.0.0.1:5556/dex",
+// 			ID:          "yyjw66rn2hso6wriuzlic62jiy",
+// 			Secret:      "l77r6wixjjtgmo4iym2kmk3jcuuxetj3afnqaw5w3rnl5nu5hehu",
+// 			RedirectURI: "http://127.0.0.1:5050/login/callback",
+// 		},
 
-		Store: store.Config{
+// 		// Logger: l.GetLogger("test_shiftserver"),
+// 	}
 
-			Server:        "127.0.0.1",
-			Name:          "esh",
-			Username:      "esh",
-			Password:      "eshpazz",
-			Monotonic:     true,
-			Timeout:       timeout,
-			AutoReconnect: false,
-			RetryIn:       timeout,
-		},
+// 	// session, err := store.Connect(c.Logger, c.Store)
+// 	// if err != nil {
 
-		Dex: Dex{
-			HostAndPort: "127.0.0.1:5557",
-			Issuer:      "http://127.0.0.1:5556/dex",
-			ID:          "yyjw66rn2hso6wriuzlic62jiy",
-			Secret:      "l77r6wixjjtgmo4iym2kmk3jcuuxetj3afnqaw5w3rnl5nu5hehu",
-			RedirectURI: "http://127.0.0.1:5050/login/callback",
-		},
+// 	// 	t.Logf("Failed connect to database : %v", err)
+// 	// 	return nil, err
+// 	// }
+// 	// c.Session = session
 
-		Logger: logger,
-	}
+// 	// if updateFunc != nil {
+// 	// 	updateFunc(&c)
+// 	// }
 
-	session, err := store.Connect(c.Logger, c.Store)
-	if err != nil {
+// 	// s, err := NewServer(ctx, c)
+// 	// if err != nil {
 
-		logger.Errorf("Failed connect to database : %v", err)
-		return nil, err
-	}
-	c.Session = session
+// 	// 	logger.Errorf("Failed initialize the server : %v", err)
+// 	// 	return nil, err
+// 	// }
 
-	if updateFunc != nil {
-		updateFunc(&c)
-	}
-
-	s, err := NewServer(ctx, c)
-	if err != nil {
-
-		logger.Errorf("Failed initialize the server : %v", err)
-		return nil, err
-	}
-
-	return s, nil
-}
+// 	return s, nil
+// }
