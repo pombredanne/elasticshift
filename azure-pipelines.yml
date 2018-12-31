@@ -15,6 +15,7 @@ variables:
   GOPATH: '$(system.defaultWorkingDirectory)/gopath' # Go workspace path
   modulePath: '$(GOPATH)/src/github.com/$(build.repository.name)' # Path to the module's code
   GO111MODULE: on
+  CODECOV_TOKEN: 'a8c88ddf-3b5c-418c-94ab-52c7d4eb354b'
 
 steps:
 - script: |
@@ -32,3 +33,14 @@ steps:
     make build
   workingDirectory: '$(modulePath)'
   displayName: 'Get dependencies, then build'
+
+- script: |
+    go test -run=nope ./...
+  workingDirectory: '$(modulePath)'
+  displayName: 'Build test files'
+
+- script: |
+    go test -v -cover ./... -coverprofile=coverage.out
+    bash <(curl -s https://codecov.io/bash)
+  workingDirectory: '$(modulePath)'
+  displayName: 'Check coverage'
