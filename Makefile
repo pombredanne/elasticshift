@@ -20,15 +20,14 @@ LD_FLAGS="-w -X $(REPO_PATH)/version.Version=$(VERSION)"
 build: bin/elasticshift
 
 bin/elasticshift: go-version-checker
-#	@go install -x
-		CGO_ENABLED=0 GOOS=darwin GOARCH=386 go build -o $(GOBIN)/darwin_386/elasticshift -tags netgo -ldflags '-s -w' ./cmd/elasticshift/elasticshift.go
-		CGO_ENABLED=0 GOOS=linux GOARCH=386 go build -o $(GOBIN)/linux_386/elasticshift -tags netgo -ldflags '-s -w' ./cmd/elasticshift/elasticshift.go
-		CGO_ENABLED=0 GOOS=darwin GOARCH=amd64 go build -o $(GOBIN)/darwin_amd64/elasticshift -tags netgo -ldflags '-s -w' ./cmd/elasticshift/elasticshift.go
-		CGO_ENABLED=0 GOOS=linux GOARCH=amd64 go build -o $(GOBIN)/linux_amd64/elasticshift -tags netgo -ldflags '-s -w' ./cmd/elasticshift/elasticshift.go
-		CGO_ENABLED=0 GOOS=darwin GOARCH=386 go build -o $(GOBIN)/darwin_386/worker -tags netgo -ldflags '-s -w' ./cmd/worker/worker.go
-		CGO_ENABLED=0 GOOS=linux GOARCH=386 go build -o $(GOBIN)/linux_386/worker -tags netgo -ldflags '-s -w' ./cmd/worker/worker.go
-		CGO_ENABLED=0 GOOS=darwin GOARCH=amd64 go build -o $(GOBIN)/darwin_amd64/worker -tags netgo -ldflags '-s -w' ./cmd/worker/worker.go
-		CGO_ENABLED=0 GOOS=linux GOARCH=amd64 go build -o $(GOBIN)/linux_amd64/worker -tags netgo -ldflags '-s -w' ./cmd/worker/worker.go
+	CGO_ENABLED=0 GOOS=darwin GOARCH=386 go build -o $(GOBIN)/darwin_386/elasticshift -tags netgo -ldflags '-s -w' ./cmd/elasticshift/elasticshift.go
+	CGO_ENABLED=0 GOOS=linux GOARCH=386 go build -o $(GOBIN)/linux_386/elasticshift -tags netgo -ldflags '-s -w' ./cmd/elasticshift/elasticshift.go
+	CGO_ENABLED=0 GOOS=darwin GOARCH=amd64 go build -o $(GOBIN)/darwin_amd64/elasticshift -tags netgo -ldflags '-s -w' ./cmd/elasticshift/elasticshift.go
+	CGO_ENABLED=0 GOOS=linux GOARCH=amd64 go build -o $(GOBIN)/linux_amd64/elasticshift -tags netgo -ldflags '-s -w' ./cmd/elasticshift/elasticshift.go
+	CGO_ENABLED=0 GOOS=darwin GOARCH=386 go build -o $(GOBIN)/darwin_386/worker -tags netgo -ldflags '-s -w' ./cmd/worker/worker.go
+	CGO_ENABLED=0 GOOS=linux GOARCH=386 go build -o $(GOBIN)/linux_386/worker -tags netgo -ldflags '-s -w' ./cmd/worker/worker.go
+	CGO_ENABLED=0 GOOS=darwin GOARCH=amd64 go build -o $(GOBIN)/darwin_amd64/worker -tags netgo -ldflags '-s -w' ./cmd/worker/worker.go
+	CGO_ENABLED=0 GOOS=linux GOARCH=amd64 go build -o $(GOBIN)/linux_amd64/worker -tags netgo -ldflags '-s -w' ./cmd/worker/worker.go
 
 .PHONY: outdated
 outdated:
@@ -54,22 +53,14 @@ fmt:
 
 lint: get-golint
 	@for package in $(shell go list ./... | grep -v '/api'); do \
-      golint -set_exit_status $$package $$i || exit 1; \
+	  golint -set_exit_status $$package $$i || exit 1; \
 	done
 
-.PHONY: test-cover-html
-PACKAGES = $(shell go list ./... | grep -v '/api')
-
-test-cover-html:
-
-	@rm -f bin/coverage.out
-	@rm -f bin/coverage-all.out
-
-	echo "mode: count" > bin/coverage-all.out
-	$(foreach pkg,$(PACKAGES),\
-		go test -coverprofile=coverage.out -covermode=count $(pkg);\
-		tail -n +2 coverage.out >> bin/coverage-all.out;)
-	go tool cover -html=bin/coverage-all.out
+.PHONY: cover
+cover:
+	@rm -f coverage.out
+	@go test -v -cover ./... -coverprofile=coverage.out
+	# @go tool cover -html=coverage.out -o coverage.html
 
 .PHONY: docker-image
 docker-image:
