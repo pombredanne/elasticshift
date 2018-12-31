@@ -8,7 +8,7 @@ import (
 	"testing"
 )
 
-func TestWorker(t *testing.T) {
+func testWorker(t *testing.T) {
 
 	os.Setenv("SHIFT_HOST", "127.0.0.1")
 	os.Setenv("SHIFT_PORT", "9101")

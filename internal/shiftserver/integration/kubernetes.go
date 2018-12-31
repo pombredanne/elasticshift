@@ -514,7 +514,7 @@ func (c *kubernetesClient) CreateContainerWithVolume(opts *itypes.CreateContaine
 
 	result, err := deploymentsClient.Create(deployment)
 	if err != nil {
-		fmt.Errorf("Error in creating container : %v", err)
+		c.logger.Errorf("Error in creating container : %v \n", err)
 	}
 	c.logger.Infof("Created deployment %q.\n", result.GetObjectMeta().GetName())
 
@@ -537,8 +537,9 @@ func (c *kubernetesClient) CreateContainerWithVolume(opts *itypes.CreateContaine
 	fmt.Printf("List options : %v", lo)
 	watch, err := c.Kube.CoreV1().Pods(apiv1.NamespaceDefault).Watch(*lo)
 	if err != nil {
-		fmt.Errorf("%v", err)
+		c.logger.Errorf("Error with watching pod: %s, %v", uid.String(), err)
 	}
+
 	for {
 		select {
 		//case res := <-watch.ResultChan():
@@ -547,7 +548,7 @@ func (c *kubernetesClient) CreateContainerWithVolume(opts *itypes.CreateContaine
 			z, err := json.Marshal(res)
 
 			if err != nil {
-				fmt.Errorf("%v", err)
+				c.logger.Errorf("Error when parsing watch result: %v", err)
 			}
 			var out bytes.Buffer
 			json.Indent(&out, z, "=", "\t")

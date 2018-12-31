@@ -202,7 +202,7 @@ func (r *RequestMaker) Dispatch() error {
 
 			bits, err := json.Marshal(r.body)
 			if err != nil {
-				return fmt.Errorf("Failed to marshall json request: ", err)
+				return fmt.Errorf("Failed to marshall json request: %v", err)
 			}
 
 			// create a request
@@ -217,7 +217,7 @@ func (r *RequestMaker) Dispatch() error {
 
 	// checks for http request creation errors if any
 	if err != nil {
-		return fmt.Errorf("Can't create request ", err)
+		return fmt.Errorf("Can't create request: %v", err)
 	}
 
 	// Sets the basic auth header
@@ -250,7 +250,7 @@ func (r *RequestMaker) Dispatch() error {
 		if r.unescapeQueryParams {
 			params, err = url.QueryUnescape(params)
 			if err != nil {
-				return fmt.Errorf("Query unescape failed:", err)
+				return fmt.Errorf("Query unescape failed: %v", err)
 			}
 		}
 
@@ -269,7 +269,7 @@ func (r *RequestMaker) Dispatch() error {
 		if res != nil {
 			res.Body.Close()
 		}
-		return fmt.Errorf("Dispatching request failed :", err)
+		return fmt.Errorf("Dispatching request failed: %v", err)
 	}
 	defer res.Body.Close()
 
@@ -285,7 +285,7 @@ func (r *RequestMaker) Dispatch() error {
 		// decode to response type
 		err = json.NewDecoder(bytes.NewBuffer(bits)).Decode(r.response)
 		if err != nil {
-			return fmt.Errorf("Failed to decode respose : ", err)
+			return fmt.Errorf("Failed to decode respose: %v", err)
 		}
 	}
 	return nil

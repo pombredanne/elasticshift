@@ -4,9 +4,7 @@ Copyright 2017 The Elasticshift Authors.
 package shiftserver
 
 import (
-	"encoding/base64"
 	"net/http/pprof"
-	"strings"
 
 	"github.com/gorilla/mux"
 	"github.com/graphql-go/handler"
@@ -16,6 +14,7 @@ import (
 	"github.com/elasticshift/elasticshift/internal/shiftserver/build"
 	"github.com/elasticshift/elasticshift/internal/shiftserver/identity/oauth2/providers"
 	"github.com/elasticshift/elasticshift/internal/shiftserver/integration"
+	sstypes "github.com/elasticshift/elasticshift/internal/shiftserver/types"
 	"github.com/elasticshift/elasticshift/internal/shiftserver/plugin"
 	"github.com/elasticshift/elasticshift/internal/shiftserver/pubsub"
 	"github.com/elasticshift/elasticshift/internal/shiftserver/resolver"
@@ -28,17 +27,6 @@ import (
 	"google.golang.org/grpc"
 
 	mgo "gopkg.in/mgo.v2"
-)
-
-// Constants for performing encode decode
-const (
-	EQUAL        = "="
-	DOUBLEEQUALS = "=="
-	DOT0         = ".0"
-	DOT1         = ".1"
-	DOT2         = ".2"
-	SLASH        = "/"
-	SEMICOLON    = ";"
 )
 
 // Server ..
@@ -69,17 +57,7 @@ type ServerConfig struct {
 	Logger   logger.Loggr
 	NSQ      NSQ
 	Session  *mgo.Session
-	Identity Identity
-}
-
-// Identity ..
-type Identity struct {
-	Issuer      string
-	HostAndPort string
-	caPath      string
-	ID          string
-	Secret      string
-	RedirectURI string
+	Identity sstypes.Identity
 }
 
 // New ..
@@ -264,28 +242,4 @@ func RegisterHTTPServices(ctx context.Context, router *mux.Router, grpcAddress s
 //	return dex.NewDexClient(conn), nil
 //}
 
-func encode(id string) string {
 
-	eid := base64.URLEncoding.EncodeToString([]byte(id))
-	if strings.Contains(eid, DOUBLEEQUALS) {
-		eid = strings.TrimRight(eid, DOUBLEEQUALS) + DOT2
-	} else if strings.Contains(eid, EQUAL) {
-		eid = strings.TrimRight(eid, EQUAL) + DOT1
-	} else {
-		eid = eid + DOT0
-	}
-	return eid
-}
-
-func decode(id string) string {
-
-	if strings.Contains(id, DOT2) {
-		id = strings.TrimRight(id, DOT2) + DOUBLEEQUALS
-	} else if strings.Contains(id, DOT1) {
-		id = strings.TrimRight(id, DOT1) + EQUAL
-	} else {
-		id = strings.TrimRight(id, DOT0)
-	}
-	did, _ := base64.URLEncoding.DecodeString(id)
-	return string(did[:])
-}

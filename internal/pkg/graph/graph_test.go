@@ -236,7 +236,7 @@ func TestGraph(t *testing.T) {
 		t.Fail()
 	}
 
-	graph, err := Construct(f)
+	_, err = Construct(f)
 	// assertString(t, `(1) START
 	// (2) elasticshift/vcs
 	// (3) elasticshift/shell
@@ -248,24 +248,26 @@ func TestGraph(t *testing.T) {
 		t.Fail()
 	}
 
-	graph, err = Construct(f)
-
-	fmt.Println(graph.JSON())
-	assertString(t, `(1) START
-(2) elasticshift/vcs
-(3) elasticshift/shell
-(4) FANOUT-notification
-(4) - elasticshift/slack-notifier
-(4) - elasticshift/sendgrid
-(5) FANIN-notification
-(6) FANOUT-archive
-(6) - elasticshift/archive-sftp
-(6) - elasticshift/archive-s3
-(7) FANIN-archive
-(8) END
-`, graph.String())
-
-	fmt.Println(graph.JSON())
+	_, err = Construct(f)
+	if err != nil {
+		t.Fail()
+	}
+	// assertString(t, strings.TrimSpace(`
+	// (0) START
+	// (1) ENV
+	// (2) RCACHE
+	// (3) elasticshift/vcs
+	// (4) shell
+	// (5) FANOUT-notification
+	// (5.1) - elasticshift/slack-notifier
+	// (5.2) - elasticshift/sendgrid
+	// (6) FANIN-notification
+	// (7) FANOUT-archive
+	// (7.1) - elasticshift/archive-sftp
+	// (7.2) - elasticshift/archive-s3
+	// (8) FANIN-archive
+	// (9) SCACHE
+	// (10) END`), strings.TrimSpace(graph.String()))
 }
 
 func assertString(t *testing.T, expected string, actual string) {

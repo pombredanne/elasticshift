@@ -1,10 +1,13 @@
 /*
+package oauth2...
+
 Copyright 2017 The Elasticshift Authors.
 */
 package oauth2
 
 import (
 	"context"
+	"encoding/base64"
 	"net/http"
 	"strconv"
 
@@ -20,6 +23,18 @@ import (
 	"strings"
 
 	oidc "github.com/coreos/go-oidc"
+	sstypes "github.com/elasticshift/elasticshift/internal/shiftserver/types"
+)
+
+// Constants for performing encode decode
+const (
+	EQUAL        = "="
+	DOUBLEEQUALS = "=="
+	DOT0         = ".0"
+	DOT1         = ".1"
+	DOT2         = ".2"
+	SLASH        = "/"
+	SEMICOLON    = ";"
 )
 
 // App ...
@@ -55,29 +70,29 @@ var (
 )
 
 // NewAuthServer ..
-func NewAuthServer(ctx context.Context, r *http.ServeMux, c Config) error {
+func NewAuthServer(ctx context.Context, r *http.ServeMux, c sstypes.Identity) error {
 
 	authServ := authServer{}
 	a := App{}
 	a.ctx = ctx
-	a.clientID = c.Identity.ID
-	a.clientSecret = c.Identity.Secret
-	a.redirectURI = c.Identity.RedirectURI
+	a.clientID = c.ID
+	a.clientSecret = c.Secret
+	a.redirectURI = c.RedirectURI
 
-	redirectURI, err := url.Parse(c.Identity.RedirectURI)
+	redirectURI, err := url.Parse(c.RedirectURI)
 	if err != nil {
-		return fmt.Errorf("Erorr when parsing dex redirect url %s : %v", c.Identity.RedirectURI, err)
+		return fmt.Errorf("Erorr when parsing dex redirect url %s : %v", c.RedirectURI, err)
 	}
 
-	issuer, err := url.Parse(c.Identity.Issuer)
+	issuer, err := url.Parse(c.Issuer)
 	if err != nil {
-		return fmt.Errorf("Erorr when parsing dex url %s : %v", c.Identity.Issuer, err)
+		return fmt.Errorf("Erorr when parsing dex url %s : %v", c.Issuer, err)
 	}
 	authServ.issuerURL = *issuer
 
-	provider, err := oidc.NewProvider(ctx, c.Identity.Issuer)
+	provider, err := oidc.NewProvider(ctx, c.Issuer)
 	if err != nil {
-		return fmt.Errorf("Failed to query provider %q: %v", c.Identity.Issuer, err)
+		return fmt.Errorf("Failed to query provider %q: %v", c.Issuer, err)
 	}
 
 	var s struct {
@@ -195,4 +210,30 @@ func (a *authServer) handleOAuth2Callback(w http.ResponseWriter, r *http.Request
 
 	homeURL := states[0] + "//" + states[1] + "/vcs"
 	http.Redirect(w, r, homeURL, http.StatusMovedPermanently)
+}
+
+func encode(id string) string {
+
+	eid := base64.URLEncoding.EncodeToString([]byte(id))
+	if strings.Contains(eid, DOUBLEEQUALS) {
+		eid = strings.TrimRight(eid, DOUBLEEQUALS) + DOT2
+	} else if strings.Contains(eid, EQUAL) {
+		eid = strings.TrimRight(eid, EQUAL) + DOT1
+	} else {
+		eid = eid + DOT0
+	}
+	return eid
+}
+
+func decode(id string) string {
+
+	if strings.Contains(id, DOT2) {
+		id = strings.TrimRight(id, DOT2) + DOUBLEEQUALS
+	} else if strings.Contains(id, DOT1) {
+		id = strings.TrimRight(id, DOT1) + EQUAL
+	} else {
+		id = strings.TrimRight(id, DOT0)
+	}
+	did, _ := base64.URLEncoding.DecodeString(id)
+	return string(did[:])
 }

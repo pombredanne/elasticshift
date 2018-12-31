@@ -108,5 +108,5 @@ func (p Providers) Get(name string) (Provider, error) {
 		return BitbucketProvider(p.loggr, conf.Key, conf.Secret, conf.CallbackURL, conf.HookURL), nil
 	}
 
-	return nil, fmt.Errorf("No provider found for ", name)
+	return nil, fmt.Errorf("No provider found for %s", name)
 }

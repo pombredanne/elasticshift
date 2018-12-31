@@ -106,7 +106,7 @@ func (g *Gitlab) Authorized(id, code string) (types.VCS, error) {
 
 	u := types.VCS{}
 	if err != nil {
-		return u, fmt.Errorf("Exchange token failed: ", err)
+		return u, fmt.Errorf("Exchange token failed: %v", err)
 	}
 
 	u.AccessCode = code
