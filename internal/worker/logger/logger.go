@@ -15,7 +15,7 @@ import (
 
 	"github.com/elasticshift/elasticshift/internal/pkg/utils"
 
-	homedir "github.com/minio/go-homedir"
+	homedir "github.com/mitchellh/go-homedir"
 )
 
 const (

@@ -7,7 +7,7 @@ import (
 	"path/filepath"
 	"time"
 
-	homedir "github.com/minio/go-homedir"
+	homedir "github.com/mitchellh/go-homedir"
 )
 
 var (

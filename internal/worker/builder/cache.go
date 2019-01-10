@@ -15,7 +15,7 @@ import (
 
 	"github.com/elasticshift/elasticshift/internal/pkg/utils"
 	"github.com/mholt/archiver"
-	homedir "github.com/minio/go-homedir"
+	homedir "github.com/mitchellh/go-homedir"
 	"github.com/sirupsen/logrus"
 )
 
