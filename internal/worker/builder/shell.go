@@ -9,7 +9,7 @@ import (
 	"os/exec"
 
 	"github.com/elasticshift/elasticshift/internal/pkg/graph"
-	"github.com/elasticshift/elasticshift/internal/pkg/shiftfile/keys"
+	"github.com/elasticshift/shiftfile/keys"
 	"github.com/sirupsen/logrus"
 )
 

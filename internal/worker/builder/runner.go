@@ -10,7 +10,7 @@ import (
 	"sync"
 	"time"
 
-	homedir "github.com/minio/go-homedir"
+	homedir "github.com/mitchellh/go-homedir"
 	"github.com/sirupsen/logrus"
 	"github.com/elasticshift/elasticshift/api"
 	"github.com/elasticshift/elasticshift/internal/pkg/graph"

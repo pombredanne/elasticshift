@@ -11,10 +11,10 @@ import (
 	"sync"
 	"time"
 
-	"github.com/sirupsen/logrus"
-	"github.com/elasticshift/elasticshift/internal/pkg/shiftfile/ast"
-	"github.com/elasticshift/elasticshift/internal/pkg/shiftfile/keys"
 	"github.com/elasticshift/elasticshift/internal/pkg/utils"
+	"github.com/elasticshift/shiftfile/ast"
+	"github.com/elasticshift/shiftfile/keys"
+	"github.com/sirupsen/logrus"
 )
 
 var (

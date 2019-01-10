@@ -7,8 +7,8 @@ import (
 	"testing"
 
 	"github.com/elasticshift/elasticshift/api"
-	"github.com/elasticshift/elasticshift/internal/pkg/shiftfile/parser"
 	wtypes "github.com/elasticshift/elasticshift/internal/worker/types"
+	"github.com/elasticshift/shiftfile/parser"
 )
 
 var cachetestfile = `

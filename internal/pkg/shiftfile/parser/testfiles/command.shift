@@ -1,4 +1,0 @@
-# Command based shift file
-"elasticshift/shell", "Running maven compilation" {
-	- mvn clean build
-}
