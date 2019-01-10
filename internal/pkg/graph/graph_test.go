@@ -9,7 +9,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/elasticshift/elasticshift/internal/pkg/shiftfile/parser"
+	"github.com/elasticshift/shiftfile/parser"
 )
 
 var file = `

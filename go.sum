@@ -32,6 +32,8 @@ github.com/dominikh/go-tools v0.0.0-20180920025451-e3ad64cb4ed3/go.mod h1:qBNLV2
 github.com/dsnet/compress v0.0.0-20171208185109-cc9eb1d7ad76 h1:eX+pdPPlD279OWgdx7f6KqIRSONuK7egk+jDx7OM3Ac=
 github.com/dsnet/compress v0.0.0-20171208185109-cc9eb1d7ad76/go.mod h1:KjxHHirfLaw19iGT70HvVjHQsL1vq1SRQB4yOsAfy2s=
 github.com/dustin/go-humanize v1.0.0/go.mod h1:HtrtbFcZ19U5GC7JDqmcUSB87Iq5E25KnS6fMYU6eOk=
+github.com/elasticshift/shiftfile v1.0.0 h1:jrg5MJlsOrFWBk/sdC2wrQHMOm60A+TAPo0/IF4tWXk=
+github.com/elasticshift/shiftfile v1.0.0/go.mod h1:gtP/zMZhs+HDqW5RZsxG0HE7GQ/RFaL8QhKjU8a3Ek8=
 github.com/fatih/camelcase v1.0.0 h1:hxNvNX/xYBp0ovncs8WyWZrOrpBNub/JfaMvbURyft8=
 github.com/fatih/camelcase v1.0.0/go.mod h1:yN2Sb0lFhZJUdVvtELVWefmrXpuZESvPmqwoZc+/fpc=
 github.com/fatih/gomodifytags v0.0.0-20180914191908-141225bf62b6 h1:iXJdM8Uob6EPOG/PFr5q0J124ysiZdJfACHqICBb3b8=

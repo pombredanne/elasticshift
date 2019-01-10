@@ -1,7 +1,0 @@
-#Current build image
-IMAGE "elasticshift/java:1.9" {
-
-# image registry
-	registry "http://dockerregistry.com/elasticshift"
-		secret "askjdflkjahsdlkjfhlkjs"
-}
