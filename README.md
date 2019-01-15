@@ -32,5 +32,5 @@ make build
 ```
 
 ## Where can I get more help, if I need it?
-You can always get help from the community, visit https://chat.elasticshift.com
+You can always get help from the community, visit http://chat.elasticshift.com
 
