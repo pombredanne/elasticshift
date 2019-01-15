@@ -1,7 +1,7 @@
 # ELASTICSHIFT
 ##
 [![Project Status: WIP – Initial development is in progress, but there has not yet been a stable, usable release suitable for the public..](https://www.repostatus.org/badges/latest/wip.svg)](https://www.repostatus.org/#wip)
-<a href="https://chat.elasticshift.com"><img src="https://img.shields.io/badge/chat-on%20discord-7289da.svg" alt="Chat"></a>
+<a href="http://chat.elasticshift.com"><img src="https://img.shields.io/badge/chat-on%20discord-7289da.svg" alt="Chat"></a>
 [![Build Status](https://dev.azure.com/elasticshift/elasticshift/_apis/build/status/elasticshift.elasticshift?branchName=develop)](https://dev.azure.com/elasticshift/elasticshift/_build/latest?definitionId=1?branchName=develop)
 [![codecov](https://codecov.io/gh/elasticshift/elasticshift/branch/develop/graph/badge.svg)](https://codecov.io/gh/elasticshift/elasticshift)
 
