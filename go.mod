@@ -69,6 +69,7 @@ require (
 	gopkg.in/inf.v0 v0.9.1
 	gopkg.in/mgo.v2 v2.0.0-20180705113604-9856a29383ce
 	gopkg.in/square/go-jose.v2 v2.2.2
+	gopkg.in/tomb.v2 v2.0.0-20161208151619-d5d1b5820637 // indirect
 	gopkg.in/yaml.v2 v2.2.2
 	honnef.co/go/tools v0.0.0-20190109154334-5bcec433c8ea // indirect
 	k8s.io/api v0.0.0-20181221193117-173ce66c1e39
